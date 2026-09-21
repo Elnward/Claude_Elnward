@@ -1,0 +1,73 @@
+{
+  "version": "4.2",
+  "scenarios": [
+    {
+      "name": "Bilbo 40+ each — Event-Drain Creature Pile",
+      "kind": "Win Condition",
+      "enabled": true,
+      "steer": true,
+      "description": "Conservative exact-library route for 3 opponents at 40 life. Bilbo must be ready/untapped at 111+ life with 2WBG available. Fetch Bogwater Lumaret, Dina, Marauding Blight-Priest, Corpse Knight, ANY 2 of Daxos / Elas / Prosperous Innkeeper, plus ANY 1 additional creature from the filler package = 7 entering creatures. Bogwater produces 7 lifegain events; the two selected 'another creature enters' lifegain creatures produce 6 each, for 19 lifegain events. Dina + Marauding drain each opponent 19 + 19 = 38. Corpse Knight sees the other 6 creatures and drains each opponent 6 more: 44 life loss to EACH opponent. Doctor Strange is a preferred filler because it doubles the life gained, but it is not mathematically required for this route. Scenario is intentionally strict: fetch pieces must still be in Library.",
+      "requirements": [
+        {"card": "Bilbo, Birthday Celebrant", "count": 1, "zones": ["battlefield"], "ready": "ready", "untapped": true},
+        {"card": "Bogwater Lumaret", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false},
+        {"card": "Dina, Soul Steeper", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false},
+        {"card": "Marauding Blight-Priest", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false},
+        {"card": "Corpse Knight", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false}
+      ],
+      "packages": [
+        {"name": "2 ETB Lifegain Engines", "enabled": true, "min_required": 2, "zones": ["library"], "ready": "ignore", "untapped": false, "count_per_card": 1,
+          "members": [{"card": "Daxos, Blessed by the Sun"}, {"card": "Elas il-Kor, Sadistic Pilgrim"}, {"card": "Prosperous Innkeeper"}],
+          "description": "Any two supply 6 additional lifegain events each in the 7-creature Bilbo batch."},
+        {"name": "1 Additional Fetched Creature", "enabled": true, "min_required": 1, "zones": ["library"], "ready": "ignore", "untapped": false, "count_per_card": 1,
+          "members": [{"card": "Doctor Strange, Surgeon"}, {"card": "Honor Troll"}, {"card": "Vito, Thorn of the Dusk Rose"}, {"card": "Defiant Bloodlord"}, {"card": "Arwen, Mortal Queen"}, {"card": "Baron Bertram Graywater"}, {"card": "Essence Channeler"}, {"card": "Gilded Goose"}, {"card": "Great Divide Guide"}, {"card": "Gyome, Master Chef"}, {"card": "Kambal, Profiteering Mayor"}, {"card": "Lobelia, Defender of Bag End"}, {"card": "Mirkwood Bats"}, {"card": "Moon-Blessed Cleric"}, {"card": "Noxious Gearhulk"}, {"card": "Peregrin Took"}, {"card": "Speaker of the Heavens"}, {"card": "Tippy-Toe, Terrific Partner"}, {"card": "Unlucky Cabbage Merchant"}, {"card": "Veinwitch Coven"}],
+          "description": "Any extra creature brings the Bilbo ETB batch from six to seven. Doctor Strange is the preferred high-upside member, but the 44-each event-drain math does not require its doubling effect."}
+      ],
+      "mana": {"total": 5, "W": 1, "U": 0, "B": 1, "R": 0, "G": 1, "C": 0},
+      "thresholds": {"life": 111, "lands": 0, "food": 0, "treasure": 0, "clues": 0}
+    },
+    {
+      "name": "Bilbo 40+ each — Amount-Drain Creature Pile",
+      "kind": "Win Condition",
+      "enabled": true,
+      "steer": true,
+      "description": "Creature-only amount-based drain route. Fetch Doctor Strange, Honor Troll, Bogwater Lumaret, Vito, Defiant Bloodlord, plus ANY 2 of Daxos / Elas / Prosperous Innkeeper = 7 creatures. Lifegain-event count is 7 + 6 + 6 = 19. For each base gain-1 event, choose Honor Troll's +1 before Doctor Strange's x2, so each event gains 4 life. Vito and Defiant each trigger on all 19 events: 38 targeted triggers of 4 = 152 total targetable life loss. Distribute at least 10 triggers to each of three opponents = 40 each (120 total), with 8 triggers spare. Bilbo itself is exiled as the activation cost, so Bilbo's +1 replacement is NOT included in this math.",
+      "requirements": [
+        {"card": "Bilbo, Birthday Celebrant", "count": 1, "zones": ["battlefield"], "ready": "ready", "untapped": true},
+        {"card": "Doctor Strange, Surgeon", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false},
+        {"card": "Honor Troll", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false},
+        {"card": "Bogwater Lumaret", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false},
+        {"card": "Vito, Thorn of the Dusk Rose", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false},
+        {"card": "Defiant Bloodlord", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false}
+      ],
+      "packages": [
+        {"name": "2 ETB Lifegain Engines", "enabled": true, "min_required": 2, "zones": ["library"], "ready": "ignore", "untapped": false, "count_per_card": 1,
+          "members": [{"card": "Daxos, Blessed by the Sun"}, {"card": "Elas il-Kor, Sadistic Pilgrim"}, {"card": "Prosperous Innkeeper"}]}
+      ],
+      "mana": {"total": 5, "W": 1, "U": 0, "B": 1, "R": 0, "G": 1, "C": 0},
+      "thresholds": {"life": 111, "lands": 0, "food": 0, "treasure": 0, "clues": 0}
+    },
+    {
+      "name": "Bilbo 40+ each — Sanguine Bond already online",
+      "kind": "Win Condition",
+      "enabled": true,
+      "steer": true,
+      "description": "Sanguine Bond is already on the battlefield, so the fetched pile can use redundancy. Fetch Doctor Strange, Honor Troll, Bogwater Lumaret, ANY 1 of Vito / Defiant Bloodlord, and ANY 2 of Daxos / Elas / Prosperous Innkeeper = 6 creatures. Lifegain-event count: Bogwater 6 + two ETB lifegain engines 5 each = 16. Honor +1 then Doctor x2 turns every gain-1 event into gain 4. Sanguine Bond plus the selected creature amount-drainer produce 2 triggers per event: 32 targeted triggers of 4 = 128 targetable life loss. Allocate 10 triggers (40) to each of three opponents; 2 triggers remain. Bilbo is exiled before these triggers resolve, so his own +1 replacement is not counted.",
+      "requirements": [
+        {"card": "Bilbo, Birthday Celebrant", "count": 1, "zones": ["battlefield"], "ready": "ready", "untapped": true},
+        {"card": "Sanguine Bond", "count": 1, "zones": ["battlefield"], "ready": "ignore", "untapped": false},
+        {"card": "Doctor Strange, Surgeon", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false},
+        {"card": "Honor Troll", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false},
+        {"card": "Bogwater Lumaret", "count": 1, "zones": ["library"], "ready": "ignore", "untapped": false}
+      ],
+      "packages": [
+        {"name": "1 Amount-Based Creature Drainer", "enabled": true, "min_required": 1, "zones": ["library"], "ready": "ignore", "untapped": false, "count_per_card": 1,
+          "members": [{"card": "Vito, Thorn of the Dusk Rose"}, {"card": "Defiant Bloodlord"}],
+          "description": "Sanguine Bond supplies one amount-drain trigger; one creature supplies the second."},
+        {"name": "2 ETB Lifegain Engines", "enabled": true, "min_required": 2, "zones": ["library"], "ready": "ignore", "untapped": false, "count_per_card": 1,
+          "members": [{"card": "Daxos, Blessed by the Sun"}, {"card": "Elas il-Kor, Sadistic Pilgrim"}, {"card": "Prosperous Innkeeper"}]}
+      ],
+      "mana": {"total": 5, "W": 1, "U": 0, "B": 1, "R": 0, "G": 1, "C": 0},
+      "thresholds": {"life": 111, "lands": 0, "food": 0, "treasure": 0, "clues": 0}
+    }
+  ]
+}

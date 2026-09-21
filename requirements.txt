@@ -1,0 +1,11 @@
+# Urza's Spearfishing Guide -- Laufzeit-Abhaengigkeiten
+#
+# tkinter/PIL werden nur fuer die alte Desktop-Oberflaeche (app/commander_goldfish.py)
+# gebraucht; die Web-Oberflaeche (Start_Urzas_Spearfishing_Guide.py) braucht nur
+# flask + numpy + pandas + requests. Pillow ist trotzdem mit drin, falls die
+# Desktop-Variante genutzt wird.
+flask>=3.0
+numpy>=1.24
+pandas>=2.0
+pillow>=10.0
+requests>=2.31

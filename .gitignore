@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.DS_Store
+Thumbs.db
+
+# Lokale Simulationslaeufe -- persoenliche Ergebnisse, kein Teil der
+# Installation. Der Ordner selbst bleibt im Repo (fuer neue Laeufe),
+# sein Inhalt nicht.
+app/Goldfish_Results/*
+!app/Goldfish_Results/.gitkeep

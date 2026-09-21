@@ -1,0 +1,79 @@
+// COMMANDER
+1 Katara, Water Tribe's Hope (TLA) 231
+
+1 Aang, Swift Savior (TLA) 204
+1 Aetherize (FDN) 151
+1 Arcane Epiphany (FDN) 29
+1 Arcane Signet (M3C) 283
+1 Austere Command (MSC) 121
+1 Aven Wind Guide (AKH) 195
+1 Azorius Chancery (DSC) 261
+1 Azorius Signet (TDC) 312
+1 Bender's Waterskin (TLA) 255
+1 Brave the Sands (CM2) 19
+1 Captain America, Living Legend (MSH) 210
+1 Cloudblazer (KHC) 84
+1 Command Tower (LCC) 325
+1 Commander's Sphere (ECC) 139
+1 Compassionate Healer (TLA) 13
+1 Counterspell (DSC) 114
+1 Dramatic Reversal (KLD) 44
+1 Elspeth, Sun's Champion (MKC) 62
+1 Empyrean Eagle (KHC) 85
+1 Exotic Orchard (ECC) 148
+1 Exotic Pets (SNC) 185
+1 Falcon's Wing Harness (MSH) 53
+1 Fell the Mighty (LTC) 167
+1 Gates of Istfell (KHM) 256
+1 Geist-Honored Monk (KHC) 25
+1 Ghostly Prison (MKC) 67
+1 Goldnight Commander (TDC) 117
+1 Grand Crescendo (TDC) 118
+1 Hallowed Fountain (ECL) 265
+1 Heraldic Banner (FDN) 254
+1 Inspiring Overseer (SNC) 18
+1 Intangible Virtue (INR) 29
+1 Invasion Reinforcements (TLA) 24
+13 Island (SOS) 274
+1 Katara, Bending Prodigy (TLA) 59
+1 Marble Diamond (VOC) 165
+1 Martial Coup (BLC) 146
+1 Migratory Route (MOC) 336
+1 Mind Stone (BLC) 280
+1 Myriad Landscape (EOC) 169
+1 Negate (M20) 69
+1 Noggle the Mind (ECL) 60
+1 Obscura Storefront (DSC) 291
+1 Okoye, Dora Milaje Leader (MSH) 27
+1 Omen Hawker (MOM) 70
+1 Path to Exile (BLC) 147
+12 Plains (SOS) 272
+1 Plumecreed Escort (BLB) 65
+1 Port Town (M3C) 364
+1 Prairie Stream (TDC) 384
+1 Preening Champion (MOM) 73
+1 Raff, Weatherlight Stalwart (DMU) 311
+1 Requisition Raid (SOA) 10
+1 Resolute Reinforcements (FDN) 145
+1 S.H.I.E.L.D. Deployment Drone (MSH) 73
+1 Secure the Wastes (MOC) 203
+1 Shore Up (BLB) 69
+1 Sky Diamond (VOC) 167
+1 Skybridge Towers (SNC) 256
+1 Skycloud Expanse (BLC) 332
+1 Sokka, Lateral Strategist (TLA) 241
+1 Sol Ring (M3C) 305
+1 Spirit Water Revival (TLA) 73
+1 Staff of the Storyteller (SOC) 111
+1 Swiftfoot Boots (TDC) 328
+1 Temple of Enlightenment (EOC) 186
+1 Temple of the False God (OTC) 334
+1 The Fifth Doctor (WHO) 127
+1 Thraben Charm (MH3) 45
+1 Thunderclap Wyvern (KHC) 94
+1 To Arms! (RVR) 30
+1 Tui and La, Moon and Ocean (TLE) 96
+1 United Front (TLA) 39
+1 Waterbending Lesson (TLA) 80
+1 Waterbending Scroll (TLA) 81
+1 Whirler Rogue (DRC) 85

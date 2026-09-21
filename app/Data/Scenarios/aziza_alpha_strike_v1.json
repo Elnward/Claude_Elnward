@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Aziza Alpha-Strike (Banefire Copy)",
+    "kind": "Win Condition",
+    "enabled": true,
+    "steer": true,
+    "description": "Die eigentliche Win Condition des Aziza-V2-Decks: Aziza, Mage Tower Captain im Spiel, drei ungetappte Kreaturen als Kopie-Bezahlung ('tap three untapped creatures you control' - kein Mana-Kosten, siehe Azizas echten Oracle-Text), und ein X-Schadenszauber (hier Banefire), der inklusive der Kopie ausreicht, um das Restleben eines Ziels zu erreichen. WP10: dieses Szenario ist deliberately fast vollstaendig 'derived' (nur ein einziges plain requirement, Aziza selbst) - der Steering-Fix in v4.15.0 (scenario_feasibility beruecksichtigt jetzt das derived-Block) ist Voraussetzung dafuer, dass der Goldfish tatsaechlich aktiv darauf hinsteuert (z.B. Kreaturen ungetappt halten, Banefire nicht vorzeitig fuer kleineren Wert spielen), statt es nur passiv zu erkennen, falls es zufaellig eintritt.",
+    "requirements": [
+      {"card": "Aziza, Mage Tower Captain", "count": 1, "zones": ["battlefield"]}
+    ],
+    "derived": [
+      {"type": "resource_available", "params": {"resource": "untapped_creatures", "min_count": 3}},
+      {"type": "x_spell_lethal", "params": {"card": "Banefire", "copy_multiplier": 2, "target": "any"}}
+    ]
+  },
+  {
+    "name": "Aziza Alpha-Strike (Crater's Claws Copy)",
+    "kind": "Win Condition",
+    "enabled": true,
+    "steer": true,
+    "description": "Gleiche Struktur wie das Banefire-Szenario, mit Crater's Claws statt Banefire - dem zweiten echten X-Schadenszauber im Aziza-V2-Deck (siehe Decks/Aziza V2.txt). Als eigenes, separates Win-Condition-Szenario statt einer ODER-Verknuepfung im selben Szenario, weil das bestehende Scenario-Schema derived-Eintraege innerhalb eines Szenarios UND-verknuepft (siehe SCENARIO_SCHEMA.md), nicht ODER. Zwei parallele WCs bedeuten gleichzeitig: mehr definierte Win Conditions insgesamt, was laut Route E (v4.14.0, ValueModel.win_condition_preservation_multiplier) den Bewahrungs-Bias pro einzelner WC-Karte automatisch abschwaecht.",
+    "requirements": [
+      {"card": "Aziza, Mage Tower Captain", "count": 1, "zones": ["battlefield"]}
+    ],
+    "derived": [
+      {"type": "resource_available", "params": {"resource": "untapped_creatures", "min_count": 3}},
+      {"type": "x_spell_lethal", "params": {"card": "Crater's Claws", "copy_multiplier": 2, "target": "any"}}
+    ]
+  }
+]

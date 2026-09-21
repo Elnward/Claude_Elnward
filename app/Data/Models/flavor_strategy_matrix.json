@@ -1,0 +1,2197 @@
+{
+  "version": "1.0",
+  "note": "v4.66.0 ('Kalibrierungs-Synthese Teil 1'): mechanische, verlustfreie Uebertragung der 90 Flavor-Strategie-Zellen (5 Monofarben x 6 Flavors + 10 Gilden x 6 Flavors) aus Docs/flavor_strategy_matrix_*_v4_4{7-9}0/5{0-9}0/6{0-2}0.md (v4.47.0-v4.62.0) plus der Ramp/Big-Mana-Legacy-Zelle aus dem urspruenglichen Gruen-Piloten (v4.47.0, nicht Teil der aktiven 6-Flavor-Taxonomie, aber weiterhin gueltig) in eine maschinenlesbare, vom Simulations-Code abfragbare Struktur. KEINE neue Recherche, KEINE neuen Zahlen - jeder Wert ist wortgleich aus dem jeweiligen Quelldokument uebernommen (Ausnahme einzeln vermerkt, siehe 'notes'). WICHTIG, aus den Quelldokumenten selbst durchgaengig uebernommen: jede Zelle beruht auf GENAU EINER echten EDHREC-Bracket-3-Decklist ('sample_size_decks': 1) und ist in JEDEM Quelldokument ausdruecklich als 'Kandidat, keine Gewichtsaenderung' markiert. Diese Datei aendert daher bewusst NICHTS an Data/Models/opponent_state_weights.json (color_modifiers/strategy_curves bleiben exakt wie durch die echte 10-plus-10-plus-10-Decks-Kalibrierung v4.39.0-v4.43.0 belegt) - eine stille Uebernahme von N=1-Stichproben in die projektweiten Default-Gewichte waere genau die Art von spekulativer, nicht breit belegter Aenderung, die dieses Projekt laut principles-and-workflow.md ('evidence-based iteration', 'no speculation-driven fixes') ablehnt. Stattdessen: App/opponent_model/state_equation.py bekommt einen NEUEN, rein OPT-IN Mechanismus (OpponentProfile.flavor, siehe dortiger Docstring 'v4.66.0'), der - nur wenn ein Aufrufer ihn explizit setzt - die hier hinterlegten Zellenwerte fuer GENAU DIESEN einen simulierten Gegner statt curve*color_modifier verwendet; ohne 'flavor' ist das Verhalten byte-identisch zu vorher. Zwei projektweit dokumentierte Modellgrenzen bleiben ausdruecklich UNGELOEST (disclosed, nicht verschwiegen - siehe 'documented_model_limitations' unten): (1) 'thematischer Kern ueberschneidet sich mit Basisdimension' (in >10 Einzelzellen dokumentiert, das haeufigste Modelllimit des Projekts), (2) das Voltron-Board-Praesenz-Muster (in 6 von 10 Gilden plus mehreren Monofarben bestaetigt). Beide erfordern eine neue Engine-Dimension bzw. eine strukturelle Erweiterung von state_equation.py, nicht nur eine Datenuebertragung - als eigener, spaeterer Schritt offen ausgewiesen, siehe Docs/README.md v4.66.0.",
+  "cells": {
+    "W/tokens_go_wide": {
+      "color_identity": "W",
+      "flavor_slug": "tokens_go_wide",
+      "commander": "Myrel, Shield of Argive",
+      "strategy": "horde",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_weiss_v4_48_0.md",
+      "state_function": {
+        "board_presence_growth": 1.3,
+        "interaction_growth": 0.045,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.015,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.0,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.29,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": null
+    },
+    "W/voltron": {
+      "color_identity": "W",
+      "flavor_slug": "voltron",
+      "commander": "Light-Paws, Emperor's Voice",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_weiss_v4_48_0.md",
+      "state_function": {
+        "board_presence_growth": 0.55,
+        "interaction_growth": 0.04,
+        "wipe_growth": 0.01,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.006,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.36,
+        "dead_turn_chance_base": 0.12
+      },
+      "notes": "voltron_board_presence"
+    },
+    "W/angels_flying": {
+      "color_identity": "W",
+      "flavor_slug": "angels_flying",
+      "commander": "Giada, Font of Hope",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_weiss_v4_48_0.md",
+      "state_function": {
+        "board_presence_growth": 0.58,
+        "interaction_growth": 0.05,
+        "wipe_growth": 0.045,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.06,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.018,
+        "mana_growth": 0.145,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": null
+    },
+    "W/lifegain_counters": {
+      "color_identity": "W",
+      "flavor_slug": "lifegain_counters",
+      "commander": "Heliod, Sun-Crowned",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_weiss_v4_48_0.md",
+      "state_function": {
+        "board_presence_growth": 0.55,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.05,
+        "combo_growth": 0.08,
+        "passive_value_growth": 0.06,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.025,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "W/blink_etb": {
+      "color_identity": "W",
+      "flavor_slug": "blink_etb",
+      "commander": "Preston, the Vanisher",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_weiss_v4_48_0.md",
+      "state_function": {
+        "board_presence_growth": 0.62,
+        "interaction_growth": 0.055,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.06,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.25,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "reclassified_from_value_control"
+    },
+    "W/taxes_hatebears": {
+      "color_identity": "W",
+      "flavor_slug": "taxes_hatebears",
+      "commander": "Thalia, Guardian of Thraben",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_weiss_v4_48_0.md",
+      "state_function": {
+        "board_presence_growth": 0.58,
+        "interaction_growth": 0.08,
+        "wipe_growth": 0.05,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.07,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.15,
+        "mana_growth": 0.09,
+        "variance_amplitude": 0.22,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "U/spellslinger_drakes": {
+      "color_identity": "U",
+      "flavor_slug": "spellslinger_drakes",
+      "commander": "Talrand, Sky Summoner",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_blau_v4_49_0.md",
+      "state_function": {
+        "board_presence_growth": 0.38,
+        "interaction_growth": 0.26,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.04,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.03,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.2,
+        "dead_turn_chance_base": 0.05
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "U/artifacts_combo_control": {
+      "color_identity": "U",
+      "flavor_slug": "artifacts_combo_control",
+      "commander": "Urza, Lord High Artificer",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_blau_v4_49_0.md",
+      "state_function": {
+        "board_presence_growth": 0.32,
+        "interaction_growth": 0.16,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.11,
+        "passive_value_growth": 0.065,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.125,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": null
+    },
+    "U/mill": {
+      "color_identity": "U",
+      "flavor_slug": "mill",
+      "commander": "Bruvac the Grandiloquent",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_blau_v4_49_0.md",
+      "state_function": {
+        "board_presence_growth": 0.3,
+        "interaction_growth": 0.15,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.03,
+        "mana_growth": 0.1,
+        "variance_amplitude": 0.32,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "U/draw_matters": {
+      "color_identity": "U",
+      "flavor_slug": "draw_matters",
+      "commander": "Minn, Wily Illusionist",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_blau_v4_49_0.md",
+      "state_function": {
+        "board_presence_growth": 0.52,
+        "interaction_growth": 0.13,
+        "wipe_growth": 0.01,
+        "combo_growth": 0.065,
+        "passive_value_growth": 0.07,
+        "sac_drain_growth": 0.01,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.24,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": null
+    },
+    "U/merfolk": {
+      "color_identity": "U",
+      "flavor_slug": "merfolk",
+      "commander": "Svyelun of Sea and Sky",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_blau_v4_49_0.md",
+      "state_function": {
+        "board_presence_growth": 0.75,
+        "interaction_growth": 0.09,
+        "wipe_growth": 0.01,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.015,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.28,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": null
+    },
+    "U/clones_theft": {
+      "color_identity": "U",
+      "flavor_slug": "clones_theft",
+      "commander": "Orvar, the All-Form",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_blau_v4_49_0.md",
+      "state_function": {
+        "board_presence_growth": 0.4,
+        "interaction_growth": 0.09,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.09,
+        "passive_value_growth": 0.035,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.018,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.32,
+        "dead_turn_chance_base": 0.1
+      },
+      "notes": "reclassified_from_control_midrange"
+    },
+    "B/aristocrats_sacrifice": {
+      "color_identity": "B",
+      "flavor_slug": "aristocrats_sacrifice",
+      "commander": "Yawgmoth, Thran Physician",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_schwarz_v4_50_0.md",
+      "state_function": {
+        "board_presence_growth": 0.55,
+        "interaction_growth": 0.07,
+        "wipe_growth": 0.035,
+        "combo_growth": 0.075,
+        "passive_value_growth": 0.035,
+        "sac_drain_growth": 0.1,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.24,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "B/reanimator": {
+      "color_identity": "B",
+      "flavor_slug": "reanimator",
+      "commander": "Chainer, Nightmare Adept",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_schwarz_v4_50_0.md",
+      "state_function": {
+        "board_presence_growth": 0.52,
+        "interaction_growth": 0.07,
+        "wipe_growth": 0.045,
+        "combo_growth": 0.075,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.075,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "B/lifedrain_devotion": {
+      "color_identity": "B",
+      "flavor_slug": "lifedrain_devotion",
+      "commander": "Vito, Thorn of the Dusk Rose",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_schwarz_v4_50_0.md",
+      "state_function": {
+        "board_presence_growth": 0.48,
+        "interaction_growth": 0.075,
+        "wipe_growth": 0.035,
+        "combo_growth": 0.09,
+        "passive_value_growth": 0.065,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.26,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "B/discard": {
+      "color_identity": "B",
+      "flavor_slug": "discard",
+      "commander": "Tinybones, Trinket Thief",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_schwarz_v4_50_0.md",
+      "state_function": {
+        "board_presence_growth": 0.32,
+        "interaction_growth": 0.13,
+        "wipe_growth": 0.05,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.08,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.26,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "B/zombies": {
+      "color_identity": "B",
+      "flavor_slug": "zombies",
+      "commander": "Gisa and Geralf",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_schwarz_v4_50_0.md",
+      "state_function": {
+        "board_presence_growth": 0.5,
+        "interaction_growth": 0.07,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.065,
+        "passive_value_growth": 0.035,
+        "sac_drain_growth": 0.055,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": null
+    },
+    "B/rats": {
+      "color_identity": "B",
+      "flavor_slug": "rats",
+      "commander": "Marrow-Gnawer",
+      "strategy": "horde",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_schwarz_v4_50_0.md",
+      "state_function": {
+        "board_presence_growth": 1.15,
+        "interaction_growth": 0.05,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.035,
+        "passive_value_growth": 0.025,
+        "sac_drain_growth": 0.045,
+        "disruption_growth": 0.007,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.28,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "reclassified_from_aggro_combo"
+    },
+    "R/goblins_go_wide": {
+      "color_identity": "R",
+      "flavor_slug": "goblins_go_wide",
+      "commander": "Krenko, Mob Boss",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rot_v4_51_0.md",
+      "state_function": {
+        "board_presence_growth": 0.72,
+        "interaction_growth": 0.04,
+        "wipe_growth": 0.01,
+        "combo_growth": 0.015,
+        "passive_value_growth": 0.005,
+        "sac_drain_growth": 0.03,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.15,
+        "variance_amplitude": 0.32,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": null
+    },
+    "R/burn_group_slug": {
+      "color_identity": "R",
+      "flavor_slug": "burn_group_slug",
+      "commander": "Ojer Axonil, Deepest Might",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rot_v4_51_0.md",
+      "state_function": {
+        "board_presence_growth": 0.33,
+        "interaction_growth": 0.13,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.09,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.04,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.24,
+        "dead_turn_chance_base": 0.075
+      },
+      "notes": "reclassified_from_burn;thematic_core_overlap"
+    },
+    "R/artifacts_reanimation": {
+      "color_identity": "R",
+      "flavor_slug": "artifacts_reanimation",
+      "commander": "Daretti, Ingenious Iconoclast",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rot_v4_51_0.md",
+      "state_function": {
+        "board_presence_growth": 0.37,
+        "interaction_growth": 0.11,
+        "wipe_growth": 0.1,
+        "combo_growth": 0.085,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.0,
+        "mana_growth": 0.19,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "reclassified_from_reanimator"
+    },
+    "R/storm_spellslinger": {
+      "color_identity": "R",
+      "flavor_slug": "storm_spellslinger",
+      "commander": "Zada, Hedron Grinder",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rot_v4_51_0.md",
+      "state_function": {
+        "board_presence_growth": 0.6,
+        "interaction_growth": 0.02,
+        "wipe_growth": 0.01,
+        "combo_growth": 0.11,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.16,
+        "variance_amplitude": 0.38,
+        "dead_turn_chance_base": 0.13
+      },
+      "notes": "not_classified_as_goldfish_see_note"
+    },
+    "R/dragons_tribal": {
+      "color_identity": "R",
+      "flavor_slug": "dragons_tribal",
+      "commander": "Lathliss, Dragon Queen",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rot_v4_51_0.md",
+      "state_function": {
+        "board_presence_growth": 0.58,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.025,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.26,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "R/equipment_voltron": {
+      "color_identity": "R",
+      "flavor_slug": "equipment_voltron",
+      "commander": "Valduk, Keeper of the Flame",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rot_v4_51_0.md",
+      "state_function": {
+        "board_presence_growth": 0.45,
+        "interaction_growth": 0.03,
+        "wipe_growth": 0.01,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.025,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.1,
+        "variance_amplitude": 0.34,
+        "dead_turn_chance_base": 0.12
+      },
+      "notes": "voltron_board_presence"
+    },
+    "G/landfall": {
+      "color_identity": "G",
+      "flavor_slug": "landfall",
+      "commander": "Ashaya, Soul of the Wild",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruen_v4_52_0.md (+ Docs/green_flavor_strategy_matrix_pilot_v4_47_0.md)",
+      "state_function": {
+        "board_presence_growth": 0.55,
+        "interaction_growth": 0.02,
+        "wipe_growth": 0.0,
+        "combo_growth": 0.05,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.0,
+        "mana_growth": 0.23,
+        "variance_amplitude": 0.22,
+        "dead_turn_chance_base": 0.05
+      },
+      "notes": null
+    },
+    "G/elfball": {
+      "color_identity": "G",
+      "flavor_slug": "elfball",
+      "commander": "Marwyn, the Nurturer",
+      "strategy": "horde",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruen_v4_52_0.md (+ Docs/green_flavor_strategy_matrix_pilot_v4_47_0.md)",
+      "state_function": {
+        "board_presence_growth": 1.35,
+        "interaction_growth": 0.045,
+        "wipe_growth": 0.0,
+        "combo_growth": 0.04,
+        "passive_value_growth": 0.015,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.0,
+        "mana_growth": 0.2,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": null
+    },
+    "G/stompy_power_matters": {
+      "color_identity": "G",
+      "flavor_slug": "stompy_power_matters",
+      "commander": "Ghalta, Primal Hunger",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruen_v4_52_0.md (+ Docs/green_flavor_strategy_matrix_pilot_v4_47_0.md)",
+      "state_function": {
+        "board_presence_growth": 0.8,
+        "interaction_growth": 0.045,
+        "wipe_growth": 0.0,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.0,
+        "mana_growth": 0.19,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "G/counters_go_tall": {
+      "color_identity": "G",
+      "flavor_slug": "counters_go_tall",
+      "commander": "Vorinclex, Monstrous Raider",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruen_v4_52_0.md (+ Docs/green_flavor_strategy_matrix_pilot_v4_47_0.md)",
+      "state_function": {
+        "board_presence_growth": 0.5,
+        "interaction_growth": 0.02,
+        "wipe_growth": 0.0,
+        "combo_growth": 0.06,
+        "passive_value_growth": 0.035,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.0,
+        "mana_growth": 0.21,
+        "variance_amplitude": 0.26,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": null
+    },
+    "G/vanilla_creatures_anthems": {
+      "color_identity": "G",
+      "flavor_slug": "vanilla_creatures_anthems",
+      "commander": "Ruxa, Patient Professor",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruen_v4_52_0.md (+ Docs/green_flavor_strategy_matrix_pilot_v4_47_0.md)",
+      "state_function": {
+        "board_presence_growth": 0.52,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.0,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.23,
+        "variance_amplitude": 0.25,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "reclassified_from_tokens_go_wide"
+    },
+    "G/creature_toolbox_flash": {
+      "color_identity": "G",
+      "flavor_slug": "creature_toolbox_flash",
+      "commander": "Yeva, Nature's Herald",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruen_v4_52_0.md (+ Docs/green_flavor_strategy_matrix_pilot_v4_47_0.md)",
+      "state_function": {
+        "board_presence_growth": 0.85,
+        "interaction_growth": 0.05,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.08,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.28,
+        "variance_amplitude": 0.22,
+        "dead_turn_chance_base": 0.05
+      },
+      "notes": null
+    },
+    "WU/draw_go": {
+      "color_identity": "WU",
+      "flavor_slug": "draw_go",
+      "commander": "Ojutai, Soul of Winter",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_azorius_v4_53_0.md",
+      "state_function": {
+        "board_presence_growth": 0.28,
+        "interaction_growth": 0.23,
+        "wipe_growth": 0.06,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.05,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.055,
+        "mana_growth": 0.1,
+        "variance_amplitude": 0.24,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": null
+    },
+    "WU/blink_etb": {
+      "color_identity": "WU",
+      "flavor_slug": "blink_etb",
+      "commander": "Brago, King Eternal",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_azorius_v4_53_0.md",
+      "state_function": {
+        "board_presence_growth": 0.55,
+        "interaction_growth": 0.11,
+        "wipe_growth": 0.045,
+        "combo_growth": 0.075,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.02,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.26,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "WU/artifacts_vehicles": {
+      "color_identity": "WU",
+      "flavor_slug": "artifacts_vehicles",
+      "commander": "Shorikai, Genesis Engine",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_azorius_v4_53_0.md",
+      "state_function": {
+        "board_presence_growth": 0.3,
+        "interaction_growth": 0.16,
+        "wipe_growth": 0.1,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.15,
+        "variance_amplitude": 0.25,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "reclassified_from_synergy_midrange"
+    },
+    "WU/spirits_flying": {
+      "color_identity": "WU",
+      "flavor_slug": "spirits_flying",
+      "commander": "Millicent, Restless Revenant",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_azorius_v4_53_0.md",
+      "state_function": {
+        "board_presence_growth": 0.7,
+        "interaction_growth": 0.14,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.025,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.28,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": null
+    },
+    "WU/auras_voltron": {
+      "color_identity": "WU",
+      "flavor_slug": "auras_voltron",
+      "commander": "Bruna, the Fading Light",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_azorius_v4_53_0.md",
+      "state_function": {
+        "board_presence_growth": 0.42,
+        "interaction_growth": 0.08,
+        "wipe_growth": 0.04,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.025,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.36,
+        "dead_turn_chance_base": 0.12
+      },
+      "notes": "voltron_board_presence"
+    },
+    "WU/taxes_pillowfort": {
+      "color_identity": "WU",
+      "flavor_slug": "taxes_pillowfort",
+      "commander": "Grand Arbiter Augustin IV",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_azorius_v4_53_0.md",
+      "state_function": {
+        "board_presence_growth": 0.33,
+        "interaction_growth": 0.2,
+        "wipe_growth": 0.06,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.08,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.1,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.22,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": null
+    },
+    "UB/mill": {
+      "color_identity": "UB",
+      "flavor_slug": "mill",
+      "commander": "Phenax, God of Deception",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_dimir_v4_54_0.md",
+      "state_function": {
+        "board_presence_growth": 0.36,
+        "interaction_growth": 0.14,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.11,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.015,
+        "mana_growth": 0.09,
+        "variance_amplitude": 0.24,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UB/zombies": {
+      "color_identity": "UB",
+      "flavor_slug": "zombies",
+      "commander": "Wilhelt, the Rotcleaver",
+      "strategy": "horde",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_dimir_v4_54_0.md",
+      "state_function": {
+        "board_presence_growth": 1.1,
+        "interaction_growth": 0.05,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.08,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.09,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.29,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": "reclassified_from_typal_aristocrats"
+    },
+    "UB/rogues_ninjas": {
+      "color_identity": "UB",
+      "flavor_slug": "rogues_ninjas",
+      "commander": "Anowon, the Ruin Sage",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_dimir_v4_54_0.md",
+      "state_function": {
+        "board_presence_growth": 0.72,
+        "interaction_growth": 0.13,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.025,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.01,
+        "disruption_growth": 0.015,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.28,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": null
+    },
+    "UB/self_mill_reanimator": {
+      "color_identity": "UB",
+      "flavor_slug": "self_mill_reanimator",
+      "commander": "Araumi of the Dead Tide",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_dimir_v4_54_0.md",
+      "state_function": {
+        "board_presence_growth": 0.52,
+        "interaction_growth": 0.1,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.09,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.31,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UB/theft_copy": {
+      "color_identity": "UB",
+      "flavor_slug": "theft_copy",
+      "commander": "Xanathar, Guild Kingpin",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_dimir_v4_54_0.md",
+      "state_function": {
+        "board_presence_growth": 0.31,
+        "interaction_growth": 0.18,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.1,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.075,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.25,
+        "dead_turn_chance_base": 0.075
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UB/flash": {
+      "color_identity": "UB",
+      "flavor_slug": "flash",
+      "commander": "Nymris, Oona's Trickster",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_dimir_v4_54_0.md",
+      "state_function": {
+        "board_presence_growth": 0.33,
+        "interaction_growth": 0.26,
+        "wipe_growth": 0.05,
+        "combo_growth": 0.04,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.03,
+        "mana_growth": 0.09,
+        "variance_amplitude": 0.22,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": null
+    },
+    "BR/sacrifice_aristocrats": {
+      "color_identity": "BR",
+      "flavor_slug": "sacrifice_aristocrats",
+      "commander": "Judith, the Scourge Diva",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rakdos_v4_55_0.md",
+      "state_function": {
+        "board_presence_growth": 0.62,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.1,
+        "passive_value_growth": 0.025,
+        "sac_drain_growth": 0.15,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.09,
+        "variance_amplitude": 0.32,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "BR/madness_discard": {
+      "color_identity": "BR",
+      "flavor_slug": "madness_discard",
+      "commander": "Anje Falkenrath",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rakdos_v4_55_0.md",
+      "state_function": {
+        "board_presence_growth": 0.5,
+        "interaction_growth": 0.07,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.01,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.33,
+        "dead_turn_chance_base": 0.1
+      },
+      "notes": null
+    },
+    "BR/treasure_exile_cast": {
+      "color_identity": "BR",
+      "flavor_slug": "treasure_exile_cast",
+      "commander": "Prosper, Tome-Bound",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rakdos_v4_55_0.md",
+      "state_function": {
+        "board_presence_growth": 0.45,
+        "interaction_growth": 0.1,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.04,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.06,
+        "disruption_growth": 0.015,
+        "mana_growth": 0.22,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "BR/group_slug_burn": {
+      "color_identity": "BR",
+      "flavor_slug": "group_slug_burn",
+      "commander": "Mogis, God of Slaughter",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rakdos_v4_55_0.md",
+      "state_function": {
+        "board_presence_growth": 0.33,
+        "interaction_growth": 0.14,
+        "wipe_growth": 0.09,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.08,
+        "sac_drain_growth": 0.05,
+        "disruption_growth": 0.02,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.22,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "BR/demons_big_mana": {
+      "color_identity": "BR",
+      "flavor_slug": "demons_big_mana",
+      "commander": "Rakdos, Lord of Riots",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rakdos_v4_55_0.md",
+      "state_function": {
+        "board_presence_growth": 0.75,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.025,
+        "passive_value_growth": 0.015,
+        "sac_drain_growth": 0.025,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.21,
+        "variance_amplitude": 0.34,
+        "dead_turn_chance_base": 0.12
+      },
+      "notes": null
+    },
+    "BR/vampires": {
+      "color_identity": "BR",
+      "flavor_slug": "vampires",
+      "commander": "Olivia Voldaren",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_rakdos_v4_55_0.md",
+      "state_function": {
+        "board_presence_growth": 0.48,
+        "interaction_growth": 0.11,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.11,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.1,
+        "disruption_growth": 0.015,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.29,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "RG/power_matters": {
+      "color_identity": "RG",
+      "flavor_slug": "power_matters",
+      "commander": "Xenagos, God of Revels",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruul_v4_56_0.md",
+      "state_function": {
+        "board_presence_growth": 0.66,
+        "interaction_growth": 0.035,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.05,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.24,
+        "variance_amplitude": 0.32,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "RG/lands_landfall": {
+      "color_identity": "RG",
+      "flavor_slug": "lands_landfall",
+      "commander": "Omnath, Locus of Rage",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruul_v4_56_0.md",
+      "state_function": {
+        "board_presence_growth": 0.42,
+        "interaction_growth": 0.04,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.06,
+        "sac_drain_growth": 0.03,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.3,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "RG/dragons": {
+      "color_identity": "RG",
+      "flavor_slug": "dragons",
+      "commander": "Atarka, World Render",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruul_v4_56_0.md",
+      "state_function": {
+        "board_presence_growth": 0.58,
+        "interaction_growth": 0.02,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.19,
+        "variance_amplitude": 0.33,
+        "dead_turn_chance_base": 0.11
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "RG/counters_modified": {
+      "color_identity": "RG",
+      "flavor_slug": "counters_modified",
+      "commander": "Halana and Alena, Partners",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruul_v4_56_0.md",
+      "state_function": {
+        "board_presence_growth": 0.65,
+        "interaction_growth": 0.035,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.18,
+        "variance_amplitude": 0.29,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "RG/auras_equipment": {
+      "color_identity": "RG",
+      "flavor_slug": "auras_equipment",
+      "commander": "Stangg, Echo Warrior",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruul_v4_56_0.md",
+      "state_function": {
+        "board_presence_growth": 0.28,
+        "interaction_growth": 0.03,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.18,
+        "variance_amplitude": 0.35,
+        "dead_turn_chance_base": 0.13
+      },
+      "notes": "voltron_board_presence;thematic_core_overlap"
+    },
+    "RG/werewolves": {
+      "color_identity": "RG",
+      "flavor_slug": "werewolves",
+      "commander": "Tovolar, Dire Overlord",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_gruul_v4_56_0.md",
+      "state_function": {
+        "board_presence_growth": 0.64,
+        "interaction_growth": 0.045,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.015,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.15,
+        "variance_amplitude": 0.31,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "WG/tokens": {
+      "color_identity": "WG",
+      "flavor_slug": "tokens",
+      "commander": "Rhys the Redeemed",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_selesnya_v4_57_0.md",
+      "state_function": {
+        "board_presence_growth": 0.44,
+        "interaction_growth": 0.065,
+        "wipe_growth": 0.04,
+        "combo_growth": 0.025,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.01,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.19,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "WG/counters": {
+      "color_identity": "WG",
+      "flavor_slug": "counters",
+      "commander": "Hamza, Guardian of Arashin",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_selesnya_v4_57_0.md",
+      "state_function": {
+        "board_presence_growth": 0.62,
+        "interaction_growth": 0.065,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.025,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.01,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.26,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": null
+    },
+    "WG/enchantress_auras": {
+      "color_identity": "WG",
+      "flavor_slug": "enchantress_auras",
+      "commander": "Sythis, Harvest's Hand",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_selesnya_v4_57_0.md",
+      "state_function": {
+        "board_presence_growth": 0.33,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.05,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.11,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.02,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.24,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": "reclassified_from_engine_voltron;thematic_core_overlap"
+    },
+    "WG/lifegain": {
+      "color_identity": "WG",
+      "flavor_slug": "lifegain",
+      "commander": "Lathiel, the Bounteous Dawn",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_selesnya_v4_57_0.md",
+      "state_function": {
+        "board_presence_growth": 0.52,
+        "interaction_growth": 0.065,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.025,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.01,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "WG/humans": {
+      "color_identity": "WG",
+      "flavor_slug": "humans",
+      "commander": "Katilda, Dawnhart Martyr",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_selesnya_v4_57_0.md",
+      "state_function": {
+        "board_presence_growth": 0.72,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.015,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.1,
+        "variance_amplitude": 0.29,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": null
+    },
+    "WG/hatebears": {
+      "color_identity": "WG",
+      "flavor_slug": "hatebears",
+      "commander": "Yasharn, Implacable Earth",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_selesnya_v4_57_0.md",
+      "state_function": {
+        "board_presence_growth": 0.42,
+        "interaction_growth": 0.15,
+        "wipe_growth": 0.08,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.07,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.05,
+        "mana_growth": 0.17,
+        "variance_amplitude": 0.22,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "reclassified_from_stax_midrange;thematic_core_overlap"
+    },
+    "WB/sacrifice": {
+      "color_identity": "WB",
+      "flavor_slug": "sacrifice",
+      "commander": "Teysa Karlov",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_orzhov_v4_58_0.md",
+      "state_function": {
+        "board_presence_growth": 0.58,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.045,
+        "combo_growth": 0.11,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.19,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.1,
+        "variance_amplitude": 0.33,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "WB/lifegain_drain": {
+      "color_identity": "WB",
+      "flavor_slug": "lifegain_drain",
+      "commander": "Karlov of the Ghost Council",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_orzhov_v4_58_0.md",
+      "state_function": {
+        "board_presence_growth": 0.48,
+        "interaction_growth": 0.1,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.1,
+        "passive_value_growth": 0.05,
+        "sac_drain_growth": 0.07,
+        "disruption_growth": 0.015,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.29,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "WB/tokens": {
+      "color_identity": "WB",
+      "flavor_slug": "tokens",
+      "commander": "Thalisse, Reverent Medium",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_orzhov_v4_58_0.md",
+      "state_function": {
+        "board_presence_growth": 0.4,
+        "interaction_growth": 0.08,
+        "wipe_growth": 0.045,
+        "combo_growth": 0.03,
+        "passive_value_growth": 0.035,
+        "sac_drain_growth": 0.13,
+        "disruption_growth": 0.015,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.29,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "WB/reanimator_recursion": {
+      "color_identity": "WB",
+      "flavor_slug": "reanimator_recursion",
+      "commander": "Liesa, Forgotten Archangel",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_orzhov_v4_58_0.md",
+      "state_function": {
+        "board_presence_growth": 0.42,
+        "interaction_growth": 0.13,
+        "wipe_growth": 0.1,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.05,
+        "sac_drain_growth": 0.16,
+        "disruption_growth": 0.02,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.24,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": null
+    },
+    "WB/auras_curses": {
+      "color_identity": "WB",
+      "flavor_slug": "auras_curses",
+      "commander": "Eriette of the Charmed Apple",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_orzhov_v4_58_0.md",
+      "state_function": {
+        "board_presence_growth": 0.24,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.05,
+        "combo_growth": 0.02,
+        "passive_value_growth": 0.08,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.02,
+        "mana_growth": 0.09,
+        "variance_amplitude": 0.22,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "WB/taxes_pillowfort": {
+      "color_identity": "WB",
+      "flavor_slug": "taxes_pillowfort",
+      "commander": "Kambal, Consul of Allocation",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_orzhov_v4_58_0.md",
+      "state_function": {
+        "board_presence_growth": 0.36,
+        "interaction_growth": 0.14,
+        "wipe_growth": 0.08,
+        "combo_growth": 0.1,
+        "passive_value_growth": 0.08,
+        "sac_drain_growth": 0.06,
+        "disruption_growth": 0.07,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.25,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": null
+    },
+    "UR/spellslinger_magecraft": {
+      "color_identity": "UR",
+      "flavor_slug": "spellslinger_magecraft",
+      "commander": "Mizzix of the Izmagnus",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_izzet_v4_59_0.md",
+      "state_function": {
+        "board_presence_growth": 0.16,
+        "interaction_growth": 0.09,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.09,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.34,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UR/artifacts_thopters": {
+      "color_identity": "UR",
+      "flavor_slug": "artifacts_thopters",
+      "commander": "Jhoira of the Ghitu",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_izzet_v4_59_0.md",
+      "state_function": {
+        "board_presence_growth": 0.36,
+        "interaction_growth": 0.07,
+        "wipe_growth": 0.025,
+        "combo_growth": 0.05,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.19,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UR/wheels_draw_punisher": {
+      "color_identity": "UR",
+      "flavor_slug": "wheels_draw_punisher",
+      "commander": "The Locust God",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_izzet_v4_59_0.md",
+      "state_function": {
+        "board_presence_growth": 0.27,
+        "interaction_growth": 0.15,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.05,
+        "passive_value_growth": 0.09,
+        "sac_drain_growth": 0.04,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UR/spell_copy": {
+      "color_identity": "UR",
+      "flavor_slug": "spell_copy",
+      "commander": "Melek, Izzet Paragon",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_izzet_v4_59_0.md",
+      "state_function": {
+        "board_presence_growth": 0.2,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.08,
+        "passive_value_growth": 0.01,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.09,
+        "variance_amplitude": 0.32,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UR/dragons_big_spells": {
+      "color_identity": "UR",
+      "flavor_slug": "dragons_big_spells",
+      "commander": "Lozhan, Dragons' Legacy",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_izzet_v4_59_0.md",
+      "state_function": {
+        "board_presence_growth": 0.48,
+        "interaction_growth": 0.09,
+        "wipe_growth": 0.025,
+        "combo_growth": 0.04,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.17,
+        "variance_amplitude": 0.29,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap;sac_drain_disruption_supplied_from_density_table_not_explicit_in_source_cell"
+    },
+    "UR/coin_flips_chaos": {
+      "color_identity": "UR",
+      "flavor_slug": "coin_flips_chaos",
+      "commander": "Yusri, Fortune's Flame",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_izzet_v4_59_0.md",
+      "state_function": {
+        "board_presence_growth": 0.31,
+        "interaction_growth": 0.11,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.08,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.35,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "BG/graveyard_reanimator": {
+      "color_identity": "BG",
+      "flavor_slug": "graveyard_reanimator",
+      "commander": "Meren of Clan Nel Toth",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_golgari_v4_60_0.md",
+      "state_function": {
+        "board_presence_growth": 0.55,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.07,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.14,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.15,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "BG/sacrifice": {
+      "color_identity": "BG",
+      "flavor_slug": "sacrifice",
+      "commander": "Mazirek, Kraul Death Priest",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_golgari_v4_60_0.md",
+      "state_function": {
+        "board_presence_growth": 0.46,
+        "interaction_growth": 0.07,
+        "wipe_growth": 0.025,
+        "combo_growth": 0.08,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.17,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "BG/lands_in_graveyard": {
+      "color_identity": "BG",
+      "flavor_slug": "lands_in_graveyard",
+      "commander": "The Gitrog Monster",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_golgari_v4_60_0.md",
+      "state_function": {
+        "board_presence_growth": 0.38,
+        "interaction_growth": 0.1,
+        "wipe_growth": 0.05,
+        "combo_growth": 0.08,
+        "passive_value_growth": 0.02,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.02,
+        "mana_growth": 0.19,
+        "variance_amplitude": 0.24,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "BG/counters": {
+      "color_identity": "BG",
+      "flavor_slug": "counters",
+      "commander": "Skullbriar, the Walking Grave",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_golgari_v4_60_0.md",
+      "state_function": {
+        "board_presence_growth": 0.3,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.14,
+        "passive_value_growth": 0.015,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.12,
+        "variance_amplitude": 0.38,
+        "dead_turn_chance_base": 0.12
+      },
+      "notes": "voltron_board_presence;thematic_core_overlap"
+    },
+    "BG/elves": {
+      "color_identity": "BG",
+      "flavor_slug": "elves",
+      "commander": "Lathril, Blade of the Elves",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_golgari_v4_60_0.md",
+      "state_function": {
+        "board_presence_growth": 0.52,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.16,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.17,
+        "variance_amplitude": 0.34,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "BG/fungus_saprolings": {
+      "color_identity": "BG",
+      "flavor_slug": "fungus_saprolings",
+      "commander": "Slimefoot, the Stowaway",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_golgari_v4_60_0.md",
+      "state_function": {
+        "board_presence_growth": 0.38,
+        "interaction_growth": 0.07,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.04,
+        "passive_value_growth": 0.035,
+        "sac_drain_growth": 0.1,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.18,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "WR/equipment": {
+      "color_identity": "WR",
+      "flavor_slug": "equipment",
+      "commander": "Wyleth, Soul of Steel",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_boros_v4_61_0.md",
+      "state_function": {
+        "board_presence_growth": 0.24,
+        "interaction_growth": 0.08,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.04,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.11,
+        "variance_amplitude": 0.37,
+        "dead_turn_chance_base": 0.12
+      },
+      "notes": "voltron_board_presence"
+    },
+    "WR/tokens": {
+      "color_identity": "WR",
+      "flavor_slug": "tokens",
+      "commander": "Neyali, Suns' Vanguard",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_boros_v4_61_0.md",
+      "state_function": {
+        "board_presence_growth": 0.42,
+        "interaction_growth": 0.06,
+        "wipe_growth": 0.04,
+        "combo_growth": 0.09,
+        "passive_value_growth": 0.05,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.33,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "WR/extra_combats": {
+      "color_identity": "WR",
+      "flavor_slug": "extra_combats",
+      "commander": "Aurelia, the Warleader",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_boros_v4_61_0.md",
+      "state_function": {
+        "board_presence_growth": 0.5,
+        "interaction_growth": 0.08,
+        "wipe_growth": 0.04,
+        "combo_growth": 0.04,
+        "passive_value_growth": 0.03,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.015,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.31,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "WR/artifacts_recycling": {
+      "color_identity": "WR",
+      "flavor_slug": "artifacts_recycling",
+      "commander": "Osgir, the Reconstructor",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_boros_v4_61_0.md",
+      "state_function": {
+        "board_presence_growth": 0.38,
+        "interaction_growth": 0.07,
+        "wipe_growth": 0.04,
+        "combo_growth": 0.07,
+        "passive_value_growth": 0.035,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.15,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "WR/burn_damage_lifegain": {
+      "color_identity": "WR",
+      "flavor_slug": "burn_damage_lifegain",
+      "commander": "Firesong and Sunspeaker",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_boros_v4_61_0.md",
+      "state_function": {
+        "board_presence_growth": 0.24,
+        "interaction_growth": 0.15,
+        "wipe_growth": 0.14,
+        "combo_growth": 0.1,
+        "passive_value_growth": 0.05,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.02,
+        "mana_growth": 0.09,
+        "variance_amplitude": 0.32,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "WR/humans_soldiers": {
+      "color_identity": "WR",
+      "flavor_slug": "humans_soldiers",
+      "commander": "Adriana, Captain of the Guard",
+      "strategy": "aggro",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_boros_v4_61_0.md",
+      "state_function": {
+        "board_presence_growth": 0.48,
+        "interaction_growth": 0.08,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.04,
+        "passive_value_growth": 0.035,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.005,
+        "mana_growth": 0.13,
+        "variance_amplitude": 0.3,
+        "dead_turn_chance_base": 0.09
+      },
+      "notes": "small_sample_18_decks"
+    },
+    "UG/counters": {
+      "color_identity": "UG",
+      "flavor_slug": "counters",
+      "commander": "Ezuri, Claw of Progress",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_simic_v4_62_0.md",
+      "state_function": {
+        "board_presence_growth": 0.56,
+        "interaction_growth": 0.08,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.08,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.22,
+        "variance_amplitude": 0.28,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UG/lands_landfall": {
+      "color_identity": "UG",
+      "flavor_slug": "lands_landfall",
+      "commander": "Aesi, Tyrant of Gyre Strait",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_simic_v4_62_0.md",
+      "state_function": {
+        "board_presence_growth": 0.46,
+        "interaction_growth": 0.08,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.05,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.28,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UG/sea_monsters": {
+      "color_identity": "UG",
+      "flavor_slug": "sea_monsters",
+      "commander": "Arixmethes, Slumbering Isle",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_simic_v4_62_0.md",
+      "state_function": {
+        "board_presence_growth": 0.44,
+        "interaction_growth": 0.12,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.05,
+        "passive_value_growth": 0.05,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.2,
+        "variance_amplitude": 0.28,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UG/tokens_copies": {
+      "color_identity": "UG",
+      "flavor_slug": "tokens_copies",
+      "commander": "Adrix and Nev, Twincasters",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_simic_v4_62_0.md",
+      "state_function": {
+        "board_presence_growth": 0.38,
+        "interaction_growth": 0.07,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.15,
+        "passive_value_growth": 0.04,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.2,
+        "variance_amplitude": 0.32,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": null
+    },
+    "UG/merfolk": {
+      "color_identity": "UG",
+      "flavor_slug": "merfolk",
+      "commander": "Kumena, Tyrant of Orazca",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_simic_v4_62_0.md",
+      "state_function": {
+        "board_presence_growth": 0.5,
+        "interaction_growth": 0.08,
+        "wipe_growth": 0.03,
+        "combo_growth": 0.05,
+        "passive_value_growth": 0.045,
+        "sac_drain_growth": 0.02,
+        "disruption_growth": 0.01,
+        "mana_growth": 0.14,
+        "variance_amplitude": 0.27,
+        "dead_turn_chance_base": 0.08
+      },
+      "notes": "thematic_core_overlap"
+    },
+    "UG/mana_engines": {
+      "color_identity": "UG",
+      "flavor_slug": "mana_engines",
+      "commander": "Kinnan, Bonder Prodigy",
+      "strategy": "control",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/flavor_strategy_matrix_simic_v4_62_0.md",
+      "state_function": {
+        "board_presence_growth": 0.42,
+        "interaction_growth": 0.18,
+        "wipe_growth": 0.02,
+        "combo_growth": 0.11,
+        "passive_value_growth": 0.07,
+        "sac_drain_growth": 0.01,
+        "disruption_growth": 0.02,
+        "mana_growth": 0.24,
+        "variance_amplitude": 0.29,
+        "dead_turn_chance_base": 0.07
+      },
+      "notes": "thematic_core_overlap"
+    }
+  },
+  "legacy_cells": {
+    "G/ramp_big_mana": {
+      "color_identity": "G",
+      "flavor_slug": "ramp_big_mana",
+      "commander": "Azusa, Lost but Seeking",
+      "strategy": "midrange",
+      "sample_size_decks": 1,
+      "evidence_tier": "A_real_decklist_N1_candidate",
+      "source_doc": "Docs/green_flavor_strategy_matrix_pilot_v4_47_0.md",
+      "state_function": {
+        "board_presence_growth": 0.5,
+        "interaction_growth": 0.02,
+        "wipe_growth": 0.0,
+        "combo_growth": 0.05,
+        "passive_value_growth": 0.05,
+        "sac_drain_growth": 0.0,
+        "disruption_growth": 0.0,
+        "mana_growth": 0.2,
+        "variance_amplitude": 0.24,
+        "dead_turn_chance_base": 0.06
+      },
+      "notes": null,
+      "taxonomy_status": "legacy_pilot_not_in_active_6flavor_taxonomy"
+    }
+  },
+  "confirmed_combos": [
+    {
+      "n": 1,
+      "cell": "W/lifegain_counters",
+      "commander": "Heliod, Sun-Crowned",
+      "pieces": [
+        "Walking Ballista",
+        "Triskelion"
+      ],
+      "pattern": "heliod_lifegain_loop"
+    },
+    {
+      "n": 2,
+      "cell": "U/artifacts_combo_control",
+      "commander": "Urza, Lord High Artificer",
+      "pieces": [
+        "Isochron Scepter",
+        "Dramatic Reversal",
+        "Basalt Monolith"
+      ],
+      "pattern": "dramatic_reversal_mana_loop"
+    },
+    {
+      "n": 3,
+      "cell": "U/clones_theft",
+      "commander": "Orvar, the All-Form",
+      "pieces": [
+        "Peregrine Drake",
+        "Ghostly Flicker"
+      ],
+      "pattern": "dramatic_reversal_mana_loop"
+    },
+    {
+      "n": 4,
+      "cell": "B/lifedrain_devotion",
+      "commander": "Vito, Thorn of the Dusk Rose",
+      "pieces": [
+        "Sanguine Bond",
+        "Exquisite Blood"
+      ],
+      "pattern": "exquisite_blood_sanguine_bond"
+    },
+    {
+      "n": 5,
+      "cell": "R/artifacts_reanimation",
+      "commander": "Daretti, Ingenious Iconoclast",
+      "pieces": [
+        "Rings of Brighthearth",
+        "Basalt Monolith"
+      ],
+      "pattern": "dramatic_reversal_mana_loop"
+    },
+    {
+      "n": 6,
+      "cell": "G/creature_toolbox_flash",
+      "commander": "Yeva, Nature's Herald",
+      "pieces": [
+        "Wirewood Symbiote",
+        "Priest of Titania"
+      ],
+      "pattern": "elfball_mana_combo"
+    },
+    {
+      "n": 7,
+      "cell": "WU/blink_etb",
+      "commander": "Brago, King Eternal",
+      "pieces": [
+        "Peregrine Drake",
+        "Deadeye Navigator"
+      ],
+      "pattern": "dramatic_reversal_mana_loop"
+    },
+    {
+      "n": 8,
+      "cell": "UB/zombies",
+      "commander": "Wilhelt, the Rotcleaver",
+      "pieces": [
+        "Rooftop Storm",
+        "Gravecrawler",
+        "free sacrifice outlet"
+      ],
+      "pattern": "rooftop_storm_gravecrawler"
+    },
+    {
+      "n": 9,
+      "cell": "BR/sacrifice_aristocrats",
+      "commander": "Judith, the Scourge Diva",
+      "pieces": [
+        "Yawgmoth, Thran Physician",
+        "0-cost recursive creature",
+        "Ashnod's Altar"
+      ],
+      "pattern": "yawgmoth_sac_loop"
+    },
+    {
+      "n": 10,
+      "cell": "BR/vampires",
+      "commander": "Olivia Voldaren",
+      "pieces": [
+        "Exquisite Blood",
+        "Sanguine Bond"
+      ],
+      "pattern": "exquisite_blood_sanguine_bond"
+    },
+    {
+      "n": 11,
+      "cell": "WB/sacrifice",
+      "commander": "Teysa Karlov",
+      "pieces": [
+        "Yawgmoth, Thran Physician",
+        "0-cost recursive creature",
+        "Ashnod's + Phyrexian Altar"
+      ],
+      "pattern": "yawgmoth_sac_loop"
+    },
+    {
+      "n": 12,
+      "cell": "WB/lifegain_drain",
+      "commander": "Karlov of the Ghost Council",
+      "pieces": [
+        "Exquisite Blood",
+        "Sanguine Bond"
+      ],
+      "pattern": "exquisite_blood_sanguine_bond"
+    },
+    {
+      "n": 13,
+      "cell": "WB/taxes_pillowfort",
+      "commander": "Kambal, Consul of Allocation",
+      "pieces": [
+        "Exquisite Blood",
+        "Sanguine Bond"
+      ],
+      "pattern": "exquisite_blood_sanguine_bond"
+    },
+    {
+      "n": 14,
+      "cell": "BG/elves",
+      "commander": "Lathril, Blade of the Elves",
+      "pieces": [
+        "Priest of Titania",
+        "Staff of Domination"
+      ],
+      "pattern": "elfball_mana_combo"
+    },
+    {
+      "n": 15,
+      "cell": "WR/burn_damage_lifegain",
+      "commander": "Firesong and Sunspeaker",
+      "pieces": [
+        "Boros Reckoner",
+        "Stuffy Doll"
+      ],
+      "pattern": "damage_echo_infinite"
+    },
+    {
+      "n": 16,
+      "cell": "UG/tokens_copies",
+      "commander": "Adrix and Nev, Twincasters",
+      "pieces": [
+        "Biovisionary",
+        "Rite of Replication (kicked)"
+      ],
+      "pattern": "biovisionary_alt_win"
+    },
+    {
+      "n": 17,
+      "cell": "UG/mana_engines",
+      "commander": "Kinnan, Bonder Prodigy",
+      "pieces": [
+        "Basalt Monolith",
+        "Dramatic Reversal"
+      ],
+      "pattern": "dramatic_reversal_mana_loop"
+    }
+  ],
+  "documented_model_limitations": {
+    "thematic_core_overlap": {
+      "description": "Viele Flavors haben einen dichten, thematisch zentralen Kartenkern (z.B. Mill-Kern, Storm-Paket, Wheel-Kern, Counter-Verdoppler-Kern, Auren/Curses-Kern), der sich nicht sauber einer der 10 bestehenden Zustandsfunktions-Dimensionen zuordnen laesst - hilfsweise auf das naechstliegende Feld (meist combo_growth, mana_growth oder passive_value_growth) gemappt. Das haeufigste einzelne Modelllimit des Projekts (> 10 dokumentierte Einzelfaelle). Ein dediziertes 'thematische Kern-Dichte'-Feld bleibt eine offene, strukturelle Erweiterung fuer eine kuenftige Engine-Version.",
+      "affected_cell_count": 21
+    },
+    "voltron_board_presence": {
+      "description": "board_presence_growth bildet Voltron-/Concentration-Decks (Sieg ueber wenige, stark ausgeruestete/verzauberte Kreaturen statt Board-Breite) strukturell schlecht ab - reale Board-Praesenz-Werte liegen deutlich unter dem, was die tatsaechliche aggressive Wirkung des Decks nahelegt. Bestaetigt in 6 von 10 Gilden (Azorius/Bruna, Gruul/Stangg, Golgari/Skullbriar, Boros/Wyleth) sowie mehreren Monofarben (Weiss/Preston/Light-Paws, Rot/Valduk). Eine mogliche kuenftige Erweiterung (nicht umgesetzt): ein eigenes 'Konzentrations-Signal' pro Flavor.",
+      "affected_cell_count": 7
+    }
+  }
+}

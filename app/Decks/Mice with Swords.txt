@@ -1,0 +1,80 @@
+// COMMANDER
+1 Mabel, Heir to Cragflame (BLB) 336
+
+1 Abrade (TDC) 203
+1 Akiri, Fearless Voyager (CMM) 335
+1 Arcane Signet (LTC) 273
+1 Astor, Bearer of Blades (DMU) 293
+1 Austere Command (MSC) 121
+1 Axgard Armory (KHM) 250
+1 Blacksmith's Talent (BLB) 125
+1 Bloodforged Battle-Axe (PIP) 226
+1 Boreas Charger (VOC) 79
+1 Boros Signet (CLU) 220
+1 Brambleguard Captain (BLB) 127
+1 Bruenor Battlehammer (AFR) 219
+1 Captain America's Shield (MSH) 244
+1 Cass, Hand of Vengeance (PIP) 97
+1 Celestial Armor (FDN) 5
+1 Chainsaw (DSK) 314
+1 Claim Jumper (OTJ) 8
+1 Clifftop Retreat (SOC) 366
+1 Colossus Hammer (AFC) 202
+1 Combat Celebrant (LTC) 212
+1 Command Tower (SOC) 129
+1 Desert Were-Worm (HOB) 92
+1 Dwarven Mauler (HOB) 95
+1 Dáin's Company (HOB) 152
+1 Emberheart Challenger (BLB) 315
+1 Enduring Innocence (DSK) 6
+1 Evolving Wilds (PTKDF) 248
+1 Exotic Orchard (ECC) 148
+1 Fire Diamond (CLB) 313
+1 Firion, Wild Rose Warrior (FIN) 137
+1 Forge Anew (LTR) 17
+1 Furycalm Snarl (MSC) 247
+1 Generous Gift (MSC) 133
+1 Glóin the Mighty (HOB) 99
+1 HULK SMASH! (MSH) 332
+1 Harsh Annotation (SOS) 18
+1 Heartfire Hero (BLB) 138
+1 Kediss, Emberclaw Familiar (CMR) 188
+1 Lorehold Charm (SOS) 200
+1 Loyal Warhound (AFR) 23
+1 Manifold Mouse (BLB) 143
+1 Marble Diamond (CLB) 320
+1 Masterwork of Ingenuity (PIP) 234
+1 Mentor of the Meek (INR) 34
+1 Merry, Esquire of Rohan (LTR) 215
+10 Mountain (SOS) 278
+1 Nettle Guard (BLB) 23
+1 Open the Armory (CMR) 34
+1 Path of Ancestry (SOC) 393
+1 Path to Exile (SOC) 159
+14 Plains (SOS) 272
+1 Puresteel Paladin (PIP) 170
+1 Raging Battle Mouse (WOE) 143
+1 Raph & Leo, Sibling Rivals (TMT) 166
+1 Reyav, Master Smith (MUL) 57
+1 Rockface Village (BLB) 259
+1 Secluded Courtyard (FDN) 267
+1 Skullclamp (MSC) 210
+1 Sol Ring (M3C) 305
+1 Split Up (DSK) 32
+1 Sram, Senior Edificer (SOC) 176
+1 Starfall Invocation (BLB) 34
+1 Steelburr Champion (BLC) 12
+1 Sundown Pass (SOS) 264
+1 Sunhome, Fortress of the Legion (OTC) 324
+1 Super-Adaptoid (MSH) 250
+1 Swiftfoot Boots (TDC) 328
+1 Sword of the Squeak (BLC) 40
+1 Swordsman's Steel (MSC) 752
+1 Talisman of Conviction (MSC) 217
+1 Terramorphic Expanse (TDC) 408
+1 Trailblazer's Boots (FIC) 370
+1 Valley Questcaller (BLB) 299
+1 Weapons Vendor (FIN) 40
+1 Whiskervale Forerunner (BLB) 40
+1 White Widow, Free Agent (MSH) 42
+1 Wyleth, Soul of Steel (CMR) 362 *F*

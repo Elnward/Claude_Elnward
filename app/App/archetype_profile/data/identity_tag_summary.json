@@ -1,0 +1,6497 @@
+{
+ "Cascade": {
+  "n_decks": 5,
+  "n_card_copies": 124,
+  "cmc_stats": {
+   "n": 122,
+   "min": 0.0,
+   "p25": 3.0,
+   "median": 5.0,
+   "mean": 4.844262295081967,
+   "p75": 6.0,
+   "max": 12.0,
+   "std": 2.4056643941129714
+  },
+  "cmc_histogram": {
+   "0-1": 0.02459016393442623,
+   "1-2": 0.03278688524590164,
+   "2-3": 0.12295081967213115,
+   "3-4": 0.16393442622950818,
+   "4-5": 0.10655737704918032,
+   "5-6": 0.10655737704918032,
+   "6-7": 0.23770491803278687,
+   "7-8": 0.09016393442622951,
+   "8-10": 0.07377049180327869,
+   "10-25": 0.040983606557377046
+  },
+  "type_shares": {
+   "Creature": 0.6371,
+   "Artifact": 0.1452,
+   "Enchantment": 0.1048,
+   "Sorcery": 0.0806,
+   "Instant": 0.0323
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.403,
+   "unclassified": 0.2164,
+   "counters_matter": 0.0672,
+   "cost_reduction": 0.0597,
+   "voltron_aura_equipment": 0.0522,
+   "graveyard_recursion": 0.0448,
+   "token_creation": 0.0299,
+   "attack_trigger_payoff": 0.0224,
+   "extra_combat": 0.0224,
+   "tribal_synergy_lord": 0.0149,
+   "wheel_effect": 0.0149,
+   "mill": 0.0149,
+   "theft_effect": 0.0075,
+   "lifegain": 0.0075,
+   "discard_disruption": 0.0075
+  },
+  "identities_represented": [
+   "colorless",
+   "five-color",
+   "glint-eye",
+   "ink-treader",
+   "mono-red"
+  ]
+ },
+ "Artifacts": {
+  "n_decks": 59,
+  "n_card_copies": 1483,
+  "cmc_stats": {
+   "n": 1468,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.5749318801089918,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 2.0684402720038637
+  },
+  "cmc_histogram": {
+   "0-1": 0.010899182561307902,
+   "1-2": 0.0885558583106267,
+   "2-3": 0.24182561307901906,
+   "3-4": 0.25340599455040874,
+   "4-5": 0.15871934604904633,
+   "5-6": 0.07833787465940055,
+   "6-7": 0.0776566757493188,
+   "7-8": 0.042915531335149866,
+   "8-10": 0.029291553133514985,
+   "10-25": 0.018392370572207085
+  },
+  "type_shares": {
+   "Creature": 0.5098,
+   "Artifact": 0.2549,
+   "Enchantment": 0.1065,
+   "Sorcery": 0.0661,
+   "Instant": 0.0553,
+   "Planeswalker": 0.0074
+  },
+  "effect_shares": {
+   "unclassified": 0.2139,
+   "vanilla_or_unclassified_body": 0.1527,
+   "counters_matter": 0.1119,
+   "token_creation": 0.0897,
+   "cost_reduction": 0.0758,
+   "voltron_aura_equipment": 0.0728,
+   "graveyard_recursion": 0.0577,
+   "lifegain": 0.0443,
+   "attack_trigger_payoff": 0.0373,
+   "mill": 0.0321,
+   "life_drain_direct": 0.0297,
+   "aristocrats_sac_death_trigger": 0.0181,
+   "blink_flicker": 0.0134,
+   "token_or_counter_doubler": 0.0076,
+   "extra_combat": 0.007
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "boros",
+   "colorless",
+   "dimir",
+   "dune-brood",
+   "esper",
+   "glint-eye",
+   "golgari",
+   "grixis",
+   "gruul",
+   "ink-treader",
+   "izzet",
+   "jeskai",
+   "mardu",
+   "mono-black",
+   "mono-blue",
+   "mono-red",
+   "mono-white",
+   "naya",
+   "orzhov",
+   "rakdos",
+   "simic",
+   "temur",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Tribal": {
+  "n_decks": 94,
+  "n_card_copies": 2563,
+  "cmc_stats": {
+   "n": 2516,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.6176470588235294,
+   "p75": 5.0,
+   "max": 15.0,
+   "std": 1.8561306992584934
+  },
+  "cmc_histogram": {
+   "0-1": 0.001987281399046105,
+   "1-2": 0.071939586645469,
+   "2-3": 0.22615262321144675,
+   "3-4": 0.2587440381558029,
+   "4-5": 0.17647058823529413,
+   "5-6": 0.12917329093799682,
+   "6-7": 0.06041335453100159,
+   "7-8": 0.037758346581876,
+   "8-10": 0.02821939586645469,
+   "10-25": 0.009141494435612083
+  },
+  "type_shares": {
+   "Creature": 0.641,
+   "Enchantment": 0.1284,
+   "Artifact": 0.096,
+   "Sorcery": 0.073,
+   "Instant": 0.0577,
+   "Planeswalker": 0.0035,
+   "Battle": 0.0004
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2459,
+   "token_creation": 0.1623,
+   "unclassified": 0.1109,
+   "counters_matter": 0.1096,
+   "cost_reduction": 0.0573,
+   "lifegain": 0.0454,
+   "graveyard_recursion": 0.0349,
+   "tribal_synergy_lord": 0.0326,
+   "attack_trigger_payoff": 0.0309,
+   "voltron_aura_equipment": 0.029,
+   "mill": 0.0263,
+   "life_drain_direct": 0.0263,
+   "aristocrats_sac_death_trigger": 0.0247,
+   "token_or_counter_doubler": 0.0125,
+   "landfall": 0.0118
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "bant",
+   "boros",
+   "colorless",
+   "dimir",
+   "esper",
+   "five-color",
+   "golgari",
+   "grixis",
+   "gruul",
+   "ink-treader",
+   "izzet",
+   "jeskai",
+   "jund",
+   "mardu",
+   "mono-black",
+   "mono-blue",
+   "mono-green",
+   "mono-red",
+   "mono-white",
+   "naya",
+   "orzhov",
+   "rakdos",
+   "selesnya",
+   "simic",
+   "sultai",
+   "temur",
+   "witch-maw"
+  ]
+ },
+ "Ramp": {
+  "n_decks": 68,
+  "n_card_copies": 1655,
+  "cmc_stats": {
+   "n": 1640,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.9365853658536585,
+   "p75": 5.0,
+   "max": 15.0,
+   "std": 2.108838091549754
+  },
+  "cmc_histogram": {
+   "0-1": 0.007317073170731708,
+   "1-2": 0.0774390243902439,
+   "2-3": 0.16585365853658537,
+   "3-4": 0.26158536585365855,
+   "4-5": 0.15121951219512195,
+   "5-6": 0.12317073170731707,
+   "6-7": 0.1024390243902439,
+   "7-8": 0.04695121951219512,
+   "8-10": 0.04451219512195122,
+   "10-25": 0.01951219512195122
+  },
+  "type_shares": {
+   "Creature": 0.5885,
+   "Enchantment": 0.1486,
+   "Artifact": 0.1142,
+   "Sorcery": 0.0894,
+   "Instant": 0.0532,
+   "Planeswalker": 0.006
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2277,
+   "unclassified": 0.1873,
+   "counters_matter": 0.1403,
+   "token_creation": 0.1166,
+   "landfall": 0.0717,
+   "cost_reduction": 0.05,
+   "graveyard_recursion": 0.0308,
+   "voltron_aura_equipment": 0.0293,
+   "lifegain": 0.0268,
+   "attack_trigger_payoff": 0.0207,
+   "mill": 0.0177,
+   "token_or_counter_doubler": 0.0156,
+   "tribal_synergy_lord": 0.0126,
+   "land_destruction": 0.0106,
+   "life_drain_direct": 0.0096
+  },
+  "identities_represented": [
+   "abzan",
+   "bant",
+   "colorless",
+   "five-color",
+   "glint-eye",
+   "golgari",
+   "gruul",
+   "ink-treader",
+   "izzet",
+   "jund",
+   "mono-green",
+   "naya",
+   "selesnya",
+   "simic",
+   "sultai",
+   "temur"
+  ]
+ },
+ "Annihilator": {
+  "n_decks": 1,
+  "n_card_copies": 21,
+  "cmc_stats": {
+   "n": 21,
+   "min": 2.0,
+   "p25": 3.0,
+   "median": 6.0,
+   "mean": 5.857142857142857,
+   "p75": 7.249999999999999,
+   "max": 12.0,
+   "std": 2.765186883991995
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.09523809523809523,
+   "3-4": 0.19047619047619047,
+   "4-5": 0.09523809523809523,
+   "5-6": 0.047619047619047616,
+   "6-7": 0.19047619047619047,
+   "7-8": 0.14285714285714285,
+   "8-10": 0.09523809523809523,
+   "10-25": 0.14285714285714285
+  },
+  "type_shares": {
+   "Creature": 0.5714,
+   "Artifact": 0.2857,
+   "Sorcery": 0.0476,
+   "Instant": 0.0476,
+   "Enchantment": 0.0476
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.3043,
+   "unclassified": 0.2174,
+   "cost_reduction": 0.1304,
+   "tribal_synergy_lord": 0.087,
+   "counters_matter": 0.087,
+   "graveyard_recursion": 0.0435,
+   "theft_effect": 0.0435,
+   "lifegain": 0.0435,
+   "voltron_aura_equipment": 0.0435
+  },
+  "identities_represented": [
+   "colorless"
+  ]
+ },
+ "Aggro": {
+  "n_decks": 104,
+  "n_card_copies": 2747,
+  "cmc_stats": {
+   "n": 2701,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.3998519067012216,
+   "p75": 4.0,
+   "max": 15.0,
+   "std": 1.8815497661984601
+  },
+  "cmc_histogram": {
+   "0-1": 0.0037023324694557573,
+   "1-2": 0.10625694187338022,
+   "2-3": 0.2517586079229915,
+   "3-4": 0.25731210662717513,
+   "4-5": 0.1506849315068493,
+   "5-6": 0.10884857460199926,
+   "6-7": 0.05442428730099963,
+   "7-8": 0.029618659755646058,
+   "8-10": 0.028878193261754906,
+   "10-25": 0.008515364679748241
+  },
+  "type_shares": {
+   "Creature": 0.6007,
+   "Enchantment": 0.1489,
+   "Artifact": 0.1081,
+   "Instant": 0.0706,
+   "Sorcery": 0.0681,
+   "Planeswalker": 0.0036
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2531,
+   "unclassified": 0.1527,
+   "counters_matter": 0.1195,
+   "token_creation": 0.1195,
+   "voltron_aura_equipment": 0.0701,
+   "cost_reduction": 0.0501,
+   "lifegain": 0.0432,
+   "attack_trigger_payoff": 0.0419,
+   "graveyard_recursion": 0.0263,
+   "life_drain_direct": 0.0197,
+   "aristocrats_sac_death_trigger": 0.0194,
+   "extra_combat": 0.0147,
+   "landfall": 0.0135,
+   "tribal_synergy_lord": 0.0122,
+   "token_or_counter_doubler": 0.0119
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "bant",
+   "boros",
+   "colorless",
+   "dimir",
+   "dune-brood",
+   "esper",
+   "five-color",
+   "glint-eye",
+   "golgari",
+   "grixis",
+   "gruul",
+   "ink-treader",
+   "izzet",
+   "jeskai",
+   "jund",
+   "mardu",
+   "mono-black",
+   "mono-green",
+   "mono-red",
+   "mono-white",
+   "naya",
+   "orzhov",
+   "rakdos",
+   "selesnya",
+   "simic",
+   "sultai",
+   "temur",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Midrange": {
+  "n_decks": 41,
+  "n_card_copies": 1050,
+  "cmc_stats": {
+   "n": 1037,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.7348119575699132,
+   "p75": 5.0,
+   "max": 12.0,
+   "std": 1.8930093414353635
+  },
+  "cmc_histogram": {
+   "0-1": 0.0009643201542912247,
+   "1-2": 0.09450337512054002,
+   "2-3": 0.18997107039537126,
+   "3-4": 0.21793635486981677,
+   "4-5": 0.19672131147540983,
+   "5-6": 0.133076181292189,
+   "6-7": 0.08389585342333655,
+   "7-8": 0.041465766634522665,
+   "8-10": 0.033751205400192864,
+   "10-25": 0.007714561234329798
+  },
+  "type_shares": {
+   "Creature": 0.6095,
+   "Enchantment": 0.1286,
+   "Sorcery": 0.099,
+   "Artifact": 0.08,
+   "Instant": 0.0743,
+   "Planeswalker": 0.0067,
+   "Battle": 0.0019
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.245,
+   "unclassified": 0.1692,
+   "counters_matter": 0.1425,
+   "token_creation": 0.0967,
+   "lifegain": 0.0525,
+   "graveyard_recursion": 0.0467,
+   "cost_reduction": 0.035,
+   "aristocrats_sac_death_trigger": 0.0325,
+   "voltron_aura_equipment": 0.0317,
+   "attack_trigger_payoff": 0.0267,
+   "mill": 0.0233,
+   "life_drain_direct": 0.0167,
+   "blink_flicker": 0.0158,
+   "token_or_counter_doubler": 0.0108,
+   "tribal_synergy_lord": 0.01
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "bant",
+   "colorless",
+   "dune-brood",
+   "esper",
+   "five-color",
+   "glint-eye",
+   "golgari",
+   "ink-treader",
+   "jund",
+   "naya",
+   "rakdos",
+   "selesnya",
+   "simic",
+   "sultai",
+   "temur",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Combo": {
+  "n_decks": 101,
+  "n_card_copies": 2451,
+  "cmc_stats": {
+   "n": 2432,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.153782894736842,
+   "p75": 4.0,
+   "max": 11.0,
+   "std": 1.6856697186085194
+  },
+  "cmc_histogram": {
+   "0-1": 0.006167763157894737,
+   "1-2": 0.12582236842105263,
+   "2-3": 0.27837171052631576,
+   "3-4": 0.24424342105263158,
+   "4-5": 0.15830592105263158,
+   "5-6": 0.0912828947368421,
+   "6-7": 0.057154605263157895,
+   "7-8": 0.019325657894736843,
+   "8-10": 0.014391447368421052,
+   "10-25": 0.004934210526315789
+  },
+  "type_shares": {
+   "Creature": 0.5492,
+   "Artifact": 0.1363,
+   "Enchantment": 0.1314,
+   "Sorcery": 0.091,
+   "Instant": 0.0869,
+   "Planeswalker": 0.0053
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.1961,
+   "unclassified": 0.1731,
+   "token_creation": 0.1063,
+   "counters_matter": 0.0994,
+   "lifegain": 0.0743,
+   "life_drain_direct": 0.0465,
+   "cost_reduction": 0.0454,
+   "graveyard_recursion": 0.0444,
+   "aristocrats_sac_death_trigger": 0.042,
+   "voltron_aura_equipment": 0.0389,
+   "mill": 0.0313,
+   "blink_flicker": 0.0234,
+   "landfall": 0.0169,
+   "attack_trigger_payoff": 0.0151,
+   "discard_disruption": 0.0096
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "bant",
+   "boros",
+   "colorless",
+   "dimir",
+   "dune-brood",
+   "esper",
+   "five-color",
+   "glint-eye",
+   "golgari",
+   "grixis",
+   "gruul",
+   "ink-treader",
+   "izzet",
+   "jeskai",
+   "jund",
+   "mardu",
+   "mono-black",
+   "mono-blue",
+   "mono-green",
+   "mono-red",
+   "mono-white",
+   "naya",
+   "orzhov",
+   "rakdos",
+   "selesnya",
+   "simic",
+   "sultai",
+   "temur",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Historic": {
+  "n_decks": 20,
+  "n_card_copies": 437,
+  "cmc_stats": {
+   "n": 431,
+   "min": 0.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 4.0533642691415315,
+   "p75": 5.0,
+   "max": 12.0,
+   "std": 2.1083045506863765
+  },
+  "cmc_histogram": {
+   "0-1": 0.004640371229698376,
+   "1-2": 0.06728538283062645,
+   "2-3": 0.1531322505800464,
+   "3-4": 0.23201856148491878,
+   "4-5": 0.19489559164733178,
+   "5-6": 0.1554524361948956,
+   "6-7": 0.07888631090487239,
+   "7-8": 0.04408352668213457,
+   "8-10": 0.04640371229698376,
+   "10-25": 0.02320185614849188
+  },
+  "type_shares": {
+   "Creature": 0.595,
+   "Artifact": 0.1556,
+   "Enchantment": 0.1396,
+   "Sorcery": 0.0664,
+   "Instant": 0.0389,
+   "Planeswalker": 0.0046
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2393,
+   "unclassified": 0.1922,
+   "counters_matter": 0.135,
+   "token_creation": 0.0777,
+   "cost_reduction": 0.0736,
+   "graveyard_recursion": 0.0593,
+   "attack_trigger_payoff": 0.0532,
+   "voltron_aura_equipment": 0.0511,
+   "mill": 0.0307,
+   "lifegain": 0.0204,
+   "aristocrats_sac_death_trigger": 0.0204,
+   "extra_combat": 0.0164,
+   "blink_flicker": 0.0082,
+   "discard_disruption": 0.0082,
+   "tribal_synergy_lord": 0.0041
+  },
+  "identities_represented": [
+   "colorless",
+   "dune-brood",
+   "five-color",
+   "ink-treader",
+   "jeskai",
+   "simic",
+   "yore-tiller"
+  ]
+ },
+ "Affinity": {
+  "n_decks": 10,
+  "n_card_copies": 273,
+  "cmc_stats": {
+   "n": 271,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.7490774907749076,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 2.2978710420949433
+  },
+  "cmc_histogram": {
+   "0-1": 0.025830258302583026,
+   "1-2": 0.07011070110701106,
+   "2-3": 0.2177121771217712,
+   "3-4": 0.24723247232472326,
+   "4-5": 0.1918819188191882,
+   "5-6": 0.05166051660516605,
+   "6-7": 0.08487084870848709,
+   "7-8": 0.03690036900369004,
+   "8-10": 0.03690036900369004,
+   "10-25": 0.03690036900369004
+  },
+  "type_shares": {
+   "Creature": 0.5238,
+   "Artifact": 0.2857,
+   "Sorcery": 0.0696,
+   "Instant": 0.0549,
+   "Enchantment": 0.044,
+   "Planeswalker": 0.022
+  },
+  "effect_shares": {
+   "unclassified": 0.1968,
+   "token_creation": 0.1613,
+   "cost_reduction": 0.1581,
+   "vanilla_or_unclassified_body": 0.1452,
+   "voltron_aura_equipment": 0.0742,
+   "graveyard_recursion": 0.0581,
+   "counters_matter": 0.0452,
+   "lifegain": 0.0387,
+   "attack_trigger_payoff": 0.0323,
+   "mill": 0.029,
+   "life_drain_direct": 0.0194,
+   "aristocrats_sac_death_trigger": 0.0161,
+   "discard_disruption": 0.0065,
+   "extra_turn": 0.0065,
+   "wheel_effect": 0.0032
+  },
+  "identities_represented": [
+   "azorius",
+   "colorless",
+   "dimir",
+   "esper",
+   "golgari",
+   "ink-treader",
+   "mono-blue",
+   "simic",
+   "yore-tiller"
+  ]
+ },
+ "Tron": {
+  "n_decks": 2,
+  "n_card_copies": 52,
+  "cmc_stats": {
+   "n": 52,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 4.75,
+   "p75": 6.0,
+   "max": 12.0,
+   "std": 2.6302602971510693
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.057692307692307696,
+   "2-3": 0.1346153846153846,
+   "3-4": 0.25,
+   "4-5": 0.09615384615384616,
+   "5-6": 0.07692307692307693,
+   "6-7": 0.17307692307692307,
+   "7-8": 0.057692307692307696,
+   "8-10": 0.07692307692307693,
+   "10-25": 0.07692307692307693
+  },
+  "type_shares": {
+   "Creature": 0.5,
+   "Artifact": 0.2308,
+   "Sorcery": 0.1346,
+   "Enchantment": 0.0962,
+   "Instant": 0.0385
+  },
+  "effect_shares": {
+   "unclassified": 0.2881,
+   "vanilla_or_unclassified_body": 0.1864,
+   "token_creation": 0.1525,
+   "counters_matter": 0.0847,
+   "graveyard_recursion": 0.0508,
+   "cost_reduction": 0.0508,
+   "attack_trigger_payoff": 0.0508,
+   "landfall": 0.0508,
+   "voltron_aura_equipment": 0.0339,
+   "theft_effect": 0.0169,
+   "lifegain": 0.0169,
+   "tribal_synergy_lord": 0.0169
+  },
+  "identities_represented": [
+   "colorless",
+   "simic"
+  ]
+ },
+ "Big Mana": {
+  "n_decks": 7,
+  "n_card_copies": 154,
+  "cmc_stats": {
+   "n": 152,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 4.157894736842105,
+   "p75": 5.0,
+   "max": 12.0,
+   "std": 2.5932738482616067
+  },
+  "cmc_histogram": {
+   "0-1": 0.006578947368421052,
+   "1-2": 0.09210526315789473,
+   "2-3": 0.19078947368421054,
+   "3-4": 0.2236842105263158,
+   "4-5": 0.13157894736842105,
+   "5-6": 0.11842105263157894,
+   "6-7": 0.07894736842105263,
+   "7-8": 0.02631578947368421,
+   "8-10": 0.07894736842105263,
+   "10-25": 0.05263157894736842
+  },
+  "type_shares": {
+   "Creature": 0.5455,
+   "Enchantment": 0.1494,
+   "Artifact": 0.1234,
+   "Sorcery": 0.1039,
+   "Instant": 0.0649,
+   "Planeswalker": 0.013
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2812,
+   "unclassified": 0.2438,
+   "counters_matter": 0.2125,
+   "voltron_aura_equipment": 0.0625,
+   "token_creation": 0.0625,
+   "cost_reduction": 0.05,
+   "graveyard_recursion": 0.0312,
+   "spell_copy": 0.0188,
+   "lifegain": 0.0125,
+   "attack_trigger_payoff": 0.0125,
+   "theft_effect": 0.0062,
+   "token_or_counter_doubler": 0.0062
+  },
+  "identities_represented": [
+   "bant",
+   "colorless",
+   "gruul",
+   "mono-green",
+   "simic"
+  ]
+ },
+ "Tokens": {
+  "n_decks": 131,
+  "n_card_copies": 3513,
+  "cmc_stats": {
+   "n": 3465,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.45021645021645,
+   "p75": 4.0,
+   "max": 15.0,
+   "std": 1.6717379415916527
+  },
+  "cmc_histogram": {
+   "0-1": 0.003751803751803752,
+   "1-2": 0.08225108225108226,
+   "2-3": 0.22424242424242424,
+   "3-4": 0.2660894660894661,
+   "4-5": 0.1976911976911977,
+   "5-6": 0.11486291486291486,
+   "6-7": 0.05887445887445888,
+   "7-8": 0.028282828282828285,
+   "8-10": 0.019913419913419914,
+   "10-25": 0.00404040404040404
+  },
+  "type_shares": {
+   "Creature": 0.5736,
+   "Enchantment": 0.1531,
+   "Artifact": 0.1059,
+   "Sorcery": 0.0925,
+   "Instant": 0.068,
+   "Planeswalker": 0.0068
+  },
+  "effect_shares": {
+   "token_creation": 0.2113,
+   "vanilla_or_unclassified_body": 0.1576,
+   "unclassified": 0.138,
+   "counters_matter": 0.0984,
+   "lifegain": 0.0696,
+   "cost_reduction": 0.0403,
+   "attack_trigger_payoff": 0.0396,
+   "graveyard_recursion": 0.0387,
+   "life_drain_direct": 0.0387,
+   "aristocrats_sac_death_trigger": 0.0293,
+   "voltron_aura_equipment": 0.0272,
+   "token_or_counter_doubler": 0.0244,
+   "landfall": 0.0237,
+   "mill": 0.0166,
+   "blink_flicker": 0.0129
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "bant",
+   "boros",
+   "colorless",
+   "dimir",
+   "dune-brood",
+   "esper",
+   "five-color",
+   "golgari",
+   "grixis",
+   "gruul",
+   "ink-treader",
+   "izzet",
+   "jeskai",
+   "jund",
+   "mardu",
+   "mono-black",
+   "mono-blue",
+   "mono-green",
+   "mono-red",
+   "mono-white",
+   "naya",
+   "orzhov",
+   "rakdos",
+   "selesnya",
+   "simic",
+   "sultai",
+   "temur",
+   "yore-tiller"
+  ]
+ },
+ "Clones": {
+  "n_decks": 20,
+  "n_card_copies": 556,
+  "cmc_stats": {
+   "n": 552,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 3.8152173913043477,
+   "p75": 5.0,
+   "max": 15.0,
+   "std": 1.7647680051953885
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.07065217391304347,
+   "2-3": 0.15760869565217392,
+   "3-4": 0.22282608695652173,
+   "4-5": 0.27355072463768115,
+   "5-6": 0.11413043478260869,
+   "6-7": 0.09057971014492754,
+   "7-8": 0.03804347826086957,
+   "8-10": 0.02717391304347826,
+   "10-25": 0.005434782608695652
+  },
+  "type_shares": {
+   "Creature": 0.5486,
+   "Artifact": 0.1547,
+   "Sorcery": 0.1115,
+   "Enchantment": 0.0917,
+   "Instant": 0.0899,
+   "Planeswalker": 0.0036
+  },
+  "effect_shares": {
+   "unclassified": 0.2403,
+   "vanilla_or_unclassified_body": 0.2371,
+   "token_creation": 0.0984,
+   "counters_matter": 0.071,
+   "cost_reduction": 0.0581,
+   "voltron_aura_equipment": 0.0435,
+   "attack_trigger_payoff": 0.0419,
+   "blink_flicker": 0.0339,
+   "graveyard_recursion": 0.029,
+   "mill": 0.0274,
+   "landfall": 0.0226,
+   "tribal_synergy_lord": 0.0177,
+   "spell_copy": 0.0145,
+   "lifegain": 0.0129,
+   "token_or_counter_doubler": 0.0129
+  },
+  "identities_represented": [
+   "azorius",
+   "boros",
+   "colorless",
+   "glint-eye",
+   "grixis",
+   "gruul",
+   "ink-treader",
+   "jeskai",
+   "mono-blue",
+   "rakdos",
+   "simic",
+   "temur"
+  ]
+ },
+ "Mill": {
+  "n_decks": 19,
+  "n_card_copies": 565,
+  "cmc_stats": {
+   "n": 561,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.3244206773618536,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 1.9379664060413937
+  },
+  "cmc_histogram": {
+   "0-1": 0.0071301247771836,
+   "1-2": 0.1354723707664884,
+   "2-3": 0.24955436720142601,
+   "3-4": 0.22638146167557932,
+   "4-5": 0.17290552584670232,
+   "5-6": 0.08377896613190731,
+   "6-7": 0.0570409982174688,
+   "7-8": 0.026737967914438502,
+   "8-10": 0.030303030303030304,
+   "10-25": 0.0106951871657754
+  },
+  "type_shares": {
+   "Creature": 0.5487,
+   "Artifact": 0.1487,
+   "Enchantment": 0.1363,
+   "Sorcery": 0.0991,
+   "Instant": 0.0602,
+   "Planeswalker": 0.0053,
+   "Battle": 0.0018
+  },
+  "effect_shares": {
+   "mill": 0.2828,
+   "vanilla_or_unclassified_body": 0.1384,
+   "unclassified": 0.1046,
+   "graveyard_recursion": 0.0766,
+   "counters_matter": 0.0766,
+   "token_creation": 0.0619,
+   "cost_reduction": 0.0442,
+   "lifegain": 0.0383,
+   "voltron_aura_equipment": 0.0368,
+   "landfall": 0.0324,
+   "attack_trigger_payoff": 0.0236,
+   "aristocrats_sac_death_trigger": 0.0221,
+   "wheel_effect": 0.0118,
+   "life_drain_direct": 0.0118,
+   "tribal_synergy_lord": 0.0074
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "colorless",
+   "dimir",
+   "glint-eye",
+   "jund",
+   "mardu",
+   "mono-blue",
+   "mono-green",
+   "sultai"
+  ]
+ },
+ "Self-Mill": {
+  "n_decks": 6,
+  "n_card_copies": 176,
+  "cmc_stats": {
+   "n": 175,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.645714285714286,
+   "p75": 4.0,
+   "max": 11.0,
+   "std": 2.0785080991825238
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.12,
+   "2-3": 0.2,
+   "3-4": 0.22857142857142856,
+   "4-5": 0.2057142857142857,
+   "5-6": 0.08571428571428572,
+   "6-7": 0.06285714285714286,
+   "7-8": 0.02857142857142857,
+   "8-10": 0.05142857142857143,
+   "10-25": 0.017142857142857144
+  },
+  "type_shares": {
+   "Creature": 0.625,
+   "Artifact": 0.1307,
+   "Sorcery": 0.1193,
+   "Enchantment": 0.0909,
+   "Instant": 0.0284,
+   "Planeswalker": 0.0057
+  },
+  "effect_shares": {
+   "mill": 0.2318,
+   "counters_matter": 0.1364,
+   "graveyard_recursion": 0.1273,
+   "vanilla_or_unclassified_body": 0.1136,
+   "unclassified": 0.0955,
+   "token_creation": 0.0636,
+   "attack_trigger_payoff": 0.0455,
+   "lifegain": 0.0318,
+   "landfall": 0.0318,
+   "cost_reduction": 0.0273,
+   "aristocrats_sac_death_trigger": 0.0273,
+   "voltron_aura_equipment": 0.0227,
+   "discard_disruption": 0.0136,
+   "life_drain_direct": 0.0091,
+   "token_or_counter_doubler": 0.0091
+  },
+  "identities_represented": [
+   "boros",
+   "colorless",
+   "mardu",
+   "sultai"
+  ]
+ },
+ "+1/+1 Counters": {
+  "n_decks": 96,
+  "n_card_copies": 2654,
+  "cmc_stats": {
+   "n": 2625,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.292190476190476,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 1.6560296644182153
+  },
+  "cmc_histogram": {
+   "0-1": 0.0034285714285714284,
+   "1-2": 0.11885714285714286,
+   "2-3": 0.21333333333333335,
+   "3-4": 0.27695238095238095,
+   "4-5": 0.18285714285714286,
+   "5-6": 0.11695238095238095,
+   "6-7": 0.05142857142857143,
+   "7-8": 0.017523809523809525,
+   "8-10": 0.013333333333333334,
+   "10-25": 0.005333333333333333
+  },
+  "type_shares": {
+   "Creature": 0.5927,
+   "Enchantment": 0.1688,
+   "Artifact": 0.1036,
+   "Sorcery": 0.0682,
+   "Instant": 0.0618,
+   "Planeswalker": 0.0049
+  },
+  "effect_shares": {
+   "counters_matter": 0.2707,
+   "vanilla_or_unclassified_body": 0.1542,
+   "unclassified": 0.1214,
+   "token_creation": 0.1083,
+   "lifegain": 0.0603,
+   "voltron_aura_equipment": 0.0392,
+   "cost_reduction": 0.0388,
+   "attack_trigger_payoff": 0.0321,
+   "token_or_counter_doubler": 0.03,
+   "landfall": 0.0294,
+   "graveyard_recursion": 0.0257,
+   "aristocrats_sac_death_trigger": 0.0248,
+   "life_drain_direct": 0.0165,
+   "mill": 0.0113,
+   "tribal_synergy_lord": 0.011
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "bant",
+   "boros",
+   "colorless",
+   "dimir",
+   "dune-brood",
+   "esper",
+   "five-color",
+   "glint-eye",
+   "golgari",
+   "grixis",
+   "gruul",
+   "ink-treader",
+   "izzet",
+   "jeskai",
+   "jund",
+   "mardu",
+   "mono-green",
+   "mono-white",
+   "naya",
+   "orzhov",
+   "rakdos",
+   "selesnya",
+   "simic",
+   "sultai",
+   "temur",
+   "witch-maw"
+  ]
+ },
+ "Voltron": {
+  "n_decks": 31,
+  "n_card_copies": 778,
+  "cmc_stats": {
+   "n": 768,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.0768229166666665,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 1.8408230467578428
+  },
+  "cmc_histogram": {
+   "0-1": 0.00390625,
+   "1-2": 0.15104166666666666,
+   "2-3": 0.2747395833333333,
+   "3-4": 0.265625,
+   "4-5": 0.14192708333333334,
+   "5-6": 0.08984375,
+   "6-7": 0.036458333333333336,
+   "7-8": 0.009114583333333334,
+   "8-10": 0.010416666666666666,
+   "10-25": 0.016927083333333332
+  },
+  "type_shares": {
+   "Creature": 0.3869,
+   "Enchantment": 0.2314,
+   "Artifact": 0.2005,
+   "Instant": 0.108,
+   "Sorcery": 0.0707,
+   "Planeswalker": 0.0026
+  },
+  "effect_shares": {
+   "voltron_aura_equipment": 0.2457,
+   "unclassified": 0.2023,
+   "vanilla_or_unclassified_body": 0.1543,
+   "counters_matter": 0.1063,
+   "cost_reduction": 0.0583,
+   "token_creation": 0.0549,
+   "graveyard_recursion": 0.0446,
+   "mill": 0.0251,
+   "attack_trigger_payoff": 0.0194,
+   "extra_combat": 0.0194,
+   "landfall": 0.0149,
+   "lifegain": 0.0114,
+   "aristocrats_sac_death_trigger": 0.008,
+   "life_drain_direct": 0.008,
+   "token_or_counter_doubler": 0.0057
+  },
+  "identities_represented": [
+   "boros",
+   "colorless",
+   "dune-brood",
+   "esper",
+   "glint-eye",
+   "grixis",
+   "gruul",
+   "izzet",
+   "jeskai",
+   "mono-blue",
+   "mono-green",
+   "mono-red",
+   "mono-white",
+   "naya",
+   "orzhov",
+   "sultai",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Vehicles": {
+  "n_decks": 4,
+  "n_card_copies": 101,
+  "cmc_stats": {
+   "n": 100,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.52,
+   "p75": 4.0,
+   "max": 11.0,
+   "std": 1.8787229705307806
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.08,
+   "2-3": 0.25,
+   "3-4": 0.27,
+   "4-5": 0.17,
+   "5-6": 0.1,
+   "6-7": 0.04,
+   "7-8": 0.05,
+   "8-10": 0.03,
+   "10-25": 0.01
+  },
+  "type_shares": {
+   "Creature": 0.4653,
+   "Artifact": 0.3267,
+   "Enchantment": 0.0891,
+   "Instant": 0.0693,
+   "Sorcery": 0.0495
+  },
+  "effect_shares": {
+   "unclassified": 0.2936,
+   "vanilla_or_unclassified_body": 0.1651,
+   "counters_matter": 0.156,
+   "cost_reduction": 0.0826,
+   "attack_trigger_payoff": 0.055,
+   "graveyard_recursion": 0.055,
+   "token_creation": 0.0459,
+   "voltron_aura_equipment": 0.0367,
+   "mill": 0.0275,
+   "spell_copy": 0.0183,
+   "theft_effect": 0.0183,
+   "lifegain": 0.0092,
+   "aristocrats_sac_death_trigger": 0.0092,
+   "blink_flicker": 0.0092,
+   "tribal_synergy_lord": 0.0092
+  },
+  "identities_represented": [
+   "azorius",
+   "colorless",
+   "grixis",
+   "jeskai"
+  ]
+ },
+ "Modular": {
+  "n_decks": 2,
+  "n_card_copies": 67,
+  "cmc_stats": {
+   "n": 66,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.0,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.9148542155126762
+  },
+  "cmc_histogram": {
+   "0-1": 0.045454545454545456,
+   "1-2": 0.18181818181818182,
+   "2-3": 0.24242424242424243,
+   "3-4": 0.19696969696969696,
+   "4-5": 0.15151515151515152,
+   "5-6": 0.06060606060606061,
+   "6-7": 0.045454545454545456,
+   "7-8": 0.045454545454545456,
+   "8-10": 0.030303030303030304,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6418,
+   "Artifact": 0.194,
+   "Enchantment": 0.1194,
+   "Sorcery": 0.0299,
+   "Instant": 0.0149
+  },
+  "effect_shares": {
+   "counters_matter": 0.6883,
+   "unclassified": 0.1169,
+   "token_creation": 0.0649,
+   "attack_trigger_payoff": 0.026,
+   "cost_reduction": 0.026,
+   "aristocrats_sac_death_trigger": 0.026,
+   "voltron_aura_equipment": 0.013,
+   "lifegain": 0.013,
+   "vanilla_or_unclassified_body": 0.013,
+   "token_or_counter_doubler": 0.013
+  },
+  "identities_represented": [
+   "colorless",
+   "dune-brood"
+  ]
+ },
+ "X Spells": {
+  "n_decks": 11,
+  "n_card_copies": 304,
+  "cmc_stats": {
+   "n": 303,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.0858085808580857,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 1.8327502615235083
+  },
+  "cmc_histogram": {
+   "0-1": 0.013201320132013201,
+   "1-2": 0.132013201320132,
+   "2-3": 0.33003300330033003,
+   "3-4": 0.23102310231023102,
+   "4-5": 0.0924092409240924,
+   "5-6": 0.0891089108910891,
+   "6-7": 0.052805280528052806,
+   "7-8": 0.0231023102310231,
+   "8-10": 0.033003300330033,
+   "10-25": 0.0033003300330033004
+  },
+  "type_shares": {
+   "Creature": 0.4605,
+   "Sorcery": 0.2138,
+   "Enchantment": 0.1349,
+   "Artifact": 0.0987,
+   "Instant": 0.0921
+  },
+  "effect_shares": {
+   "counters_matter": 0.3305,
+   "unclassified": 0.2222,
+   "token_creation": 0.114,
+   "vanilla_or_unclassified_body": 0.0969,
+   "voltron_aura_equipment": 0.037,
+   "cost_reduction": 0.0313,
+   "lifegain": 0.0285,
+   "token_or_counter_doubler": 0.0285,
+   "attack_trigger_payoff": 0.0256,
+   "spell_copy": 0.0199,
+   "landfall": 0.0171,
+   "life_drain_direct": 0.0171,
+   "discard_disruption": 0.0142,
+   "wheel_effect": 0.0057,
+   "graveyard_recursion": 0.0028
+  },
+  "identities_represented": [
+   "colorless",
+   "glint-eye",
+   "golgari",
+   "gruul",
+   "mono-green",
+   "rakdos",
+   "simic",
+   "sultai",
+   "temur"
+  ]
+ },
+ "Lifegain": {
+  "n_decks": 35,
+  "n_card_copies": 993,
+  "cmc_stats": {
+   "n": 979,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.269662921348315,
+   "p75": 4.0,
+   "max": 11.0,
+   "std": 1.6423932401918955
+  },
+  "cmc_histogram": {
+   "0-1": 0.0010214504596527069,
+   "1-2": 0.13687436159346272,
+   "2-3": 0.22880490296220635,
+   "3-4": 0.22880490296220635,
+   "4-5": 0.18181818181818182,
+   "5-6": 0.12972420837589377,
+   "6-7": 0.05515832482124617,
+   "7-8": 0.028600612870275793,
+   "8-10": 0.006128702757916241,
+   "10-25": 0.0030643513789581204
+  },
+  "type_shares": {
+   "Creature": 0.5932,
+   "Enchantment": 0.1863,
+   "Artifact": 0.0916,
+   "Sorcery": 0.0705,
+   "Instant": 0.0483,
+   "Planeswalker": 0.0101
+  },
+  "effect_shares": {
+   "lifegain": 0.2154,
+   "vanilla_or_unclassified_body": 0.1595,
+   "token_creation": 0.119,
+   "unclassified": 0.1045,
+   "counters_matter": 0.1028,
+   "life_drain_direct": 0.0567,
+   "aristocrats_sac_death_trigger": 0.047,
+   "cost_reduction": 0.0445,
+   "voltron_aura_equipment": 0.0445,
+   "graveyard_recursion": 0.0348,
+   "attack_trigger_payoff": 0.0186,
+   "blink_flicker": 0.0146,
+   "mill": 0.0113,
+   "landfall": 0.0057,
+   "token_or_counter_doubler": 0.0057
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "boros",
+   "dune-brood",
+   "esper",
+   "golgari",
+   "mono-black",
+   "mono-white",
+   "orzhov",
+   "rakdos",
+   "selesnya",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Flying": {
+  "n_decks": 14,
+  "n_card_copies": 362,
+  "cmc_stats": {
+   "n": 358,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.8128491620111733,
+   "p75": 5.0,
+   "max": 15.0,
+   "std": 1.9707787743041838
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0782122905027933,
+   "2-3": 0.18435754189944134,
+   "3-4": 0.2737430167597765,
+   "4-5": 0.15083798882681565,
+   "5-6": 0.13687150837988826,
+   "6-7": 0.05865921787709497,
+   "7-8": 0.06983240223463687,
+   "8-10": 0.0446927374301676,
+   "10-25": 0.002793296089385475
+  },
+  "type_shares": {
+   "Creature": 0.6823,
+   "Enchantment": 0.1326,
+   "Artifact": 0.0801,
+   "Instant": 0.0525,
+   "Sorcery": 0.0497,
+   "Planeswalker": 0.0028
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.3182,
+   "token_creation": 0.1555,
+   "cost_reduction": 0.122,
+   "unclassified": 0.0885,
+   "counters_matter": 0.0766,
+   "tribal_synergy_lord": 0.0478,
+   "lifegain": 0.0335,
+   "landfall": 0.0239,
+   "attack_trigger_payoff": 0.0239,
+   "graveyard_recursion": 0.0215,
+   "voltron_aura_equipment": 0.0215,
+   "aristocrats_sac_death_trigger": 0.0191,
+   "token_or_counter_doubler": 0.0096,
+   "extra_turn": 0.0072,
+   "life_drain_direct": 0.0072
+  },
+  "identities_represented": [
+   "azorius",
+   "bant",
+   "dimir",
+   "esper",
+   "five-color",
+   "mardu",
+   "mono-blue",
+   "mono-white",
+   "selesnya",
+   "temur",
+   "witch-maw"
+  ]
+ },
+ "Auras": {
+  "n_decks": 9,
+  "n_card_copies": 251,
+  "cmc_stats": {
+   "n": 249,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 2.642570281124498,
+   "p75": 3.0,
+   "max": 7.0,
+   "std": 1.3159337928135273
+  },
+  "cmc_histogram": {
+   "0-1": 0.01606425702811245,
+   "1-2": 0.1927710843373494,
+   "2-3": 0.27309236947791166,
+   "3-4": 0.2891566265060241,
+   "4-5": 0.13654618473895583,
+   "5-6": 0.07630522088353414,
+   "6-7": 0.004016064257028112,
+   "7-8": 0.012048192771084338,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Enchantment": 0.506,
+   "Creature": 0.2988,
+   "Artifact": 0.0996,
+   "Sorcery": 0.0518,
+   "Instant": 0.0438
+  },
+  "effect_shares": {
+   "voltron_aura_equipment": 0.4604,
+   "unclassified": 0.1259,
+   "cost_reduction": 0.0971,
+   "vanilla_or_unclassified_body": 0.0935,
+   "counters_matter": 0.0504,
+   "token_creation": 0.0468,
+   "graveyard_recursion": 0.0432,
+   "lifegain": 0.0252,
+   "life_drain_direct": 0.0216,
+   "blink_flicker": 0.0144,
+   "attack_trigger_payoff": 0.0144,
+   "aristocrats_sac_death_trigger": 0.0036,
+   "extra_combat": 0.0036
+  },
+  "identities_represented": [
+   "boros",
+   "esper",
+   "mono-white",
+   "orzhov",
+   "selesnya",
+   "sultai"
+  ]
+ },
+ "Enchantress": {
+  "n_decks": 21,
+  "n_card_copies": 526,
+  "cmc_stats": {
+   "n": 519,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.1753371868978806,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 1.6014470311047102
+  },
+  "cmc_histogram": {
+   "0-1": 0.017341040462427744,
+   "1-2": 0.10597302504816955,
+   "2-3": 0.27360308285163776,
+   "3-4": 0.2138728323699422,
+   "4-5": 0.1791907514450867,
+   "5-6": 0.14450867052023122,
+   "6-7": 0.03468208092485549,
+   "7-8": 0.02119460500963391,
+   "8-10": 0.005780346820809248,
+   "10-25": 0.0038535645472061657
+  },
+  "type_shares": {
+   "Enchantment": 0.4525,
+   "Creature": 0.3916,
+   "Sorcery": 0.0608,
+   "Artifact": 0.057,
+   "Instant": 0.0361,
+   "Planeswalker": 0.0019
+  },
+  "effect_shares": {
+   "unclassified": 0.2198,
+   "voltron_aura_equipment": 0.1704,
+   "vanilla_or_unclassified_body": 0.1329,
+   "token_creation": 0.0903,
+   "cost_reduction": 0.0869,
+   "counters_matter": 0.0801,
+   "graveyard_recursion": 0.0511,
+   "lifegain": 0.0358,
+   "blink_flicker": 0.029,
+   "attack_trigger_payoff": 0.0221,
+   "life_drain_direct": 0.0221,
+   "mill": 0.017,
+   "token_or_counter_doubler": 0.0102,
+   "discard_disruption": 0.0102,
+   "tribal_synergy_lord": 0.0068
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "bant",
+   "esper",
+   "five-color",
+   "gruul",
+   "ink-treader",
+   "mono-white",
+   "orzhov",
+   "selesnya",
+   "witch-maw"
+  ]
+ },
+ "Toolbox": {
+  "n_decks": 4,
+  "n_card_copies": 109,
+  "cmc_stats": {
+   "n": 108,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 4.0,
+   "mean": 3.6203703703703702,
+   "p75": 5.0,
+   "max": 8.0,
+   "std": 1.681696633322875
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.1388888888888889,
+   "2-3": 0.1574074074074074,
+   "3-4": 0.12962962962962962,
+   "4-5": 0.2777777777777778,
+   "5-6": 0.1574074074074074,
+   "6-7": 0.10185185185185185,
+   "7-8": 0.027777777777777776,
+   "8-10": 0.009259259259259259,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.4862,
+   "Enchantment": 0.3394,
+   "Sorcery": 0.0826,
+   "Artifact": 0.0642,
+   "Instant": 0.0275
+  },
+  "effect_shares": {
+   "voltron_aura_equipment": 0.2377,
+   "vanilla_or_unclassified_body": 0.1967,
+   "unclassified": 0.123,
+   "graveyard_recursion": 0.0902,
+   "token_creation": 0.0656,
+   "counters_matter": 0.0574,
+   "mill": 0.041,
+   "lifegain": 0.041,
+   "cost_reduction": 0.0246,
+   "life_drain_direct": 0.0246,
+   "discard_disruption": 0.0246,
+   "aristocrats_sac_death_trigger": 0.0246,
+   "attack_trigger_payoff": 0.0164,
+   "spell_copy": 0.0082,
+   "landfall": 0.0082
+  },
+  "identities_represented": [
+   "dune-brood",
+   "grixis",
+   "jund",
+   "mono-white"
+  ]
+ },
+ "Equipment": {
+  "n_decks": 18,
+  "n_card_copies": 466,
+  "cmc_stats": {
+   "n": 456,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 2.914473684210526,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 1.639469636164077
+  },
+  "cmc_histogram": {
+   "0-1": 0.0021929824561403508,
+   "1-2": 0.1600877192982456,
+   "2-3": 0.27850877192982454,
+   "3-4": 0.29385964912280704,
+   "4-5": 0.13596491228070176,
+   "5-6": 0.07894736842105263,
+   "6-7": 0.03070175438596491,
+   "7-8": 0.008771929824561403,
+   "8-10": 0.0,
+   "10-25": 0.010964912280701754
+  },
+  "type_shares": {
+   "Creature": 0.3863,
+   "Artifact": 0.2833,
+   "Enchantment": 0.1888,
+   "Instant": 0.0837,
+   "Sorcery": 0.0494,
+   "Planeswalker": 0.0086
+  },
+  "effect_shares": {
+   "voltron_aura_equipment": 0.3165,
+   "vanilla_or_unclassified_body": 0.161,
+   "unclassified": 0.1573,
+   "counters_matter": 0.0712,
+   "token_creation": 0.0674,
+   "cost_reduction": 0.0562,
+   "graveyard_recursion": 0.0375,
+   "extra_combat": 0.0318,
+   "attack_trigger_payoff": 0.03,
+   "mill": 0.0281,
+   "lifegain": 0.0131,
+   "aristocrats_sac_death_trigger": 0.0075,
+   "landfall": 0.0075,
+   "life_drain_direct": 0.0075,
+   "wheel_effect": 0.0019
+  },
+  "identities_represented": [
+   "boros",
+   "dune-brood",
+   "esper",
+   "grixis",
+   "gruul",
+   "jeskai",
+   "mardu",
+   "mono-blue",
+   "mono-red",
+   "mono-white",
+   "naya",
+   "selesnya",
+   "sultai",
+   "yore-tiller"
+  ]
+ },
+ "Stax": {
+  "n_decks": 9,
+  "n_card_copies": 252,
+  "cmc_stats": {
+   "n": 250,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.02,
+   "p75": 4.0,
+   "max": 9.0,
+   "std": 1.6011246047700347
+  },
+  "cmc_histogram": {
+   "0-1": 0.016,
+   "1-2": 0.112,
+   "2-3": 0.312,
+   "3-4": 0.268,
+   "4-5": 0.124,
+   "5-6": 0.08,
+   "6-7": 0.044,
+   "7-8": 0.036,
+   "8-10": 0.008,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6389,
+   "Enchantment": 0.2183,
+   "Artifact": 0.0595,
+   "Sorcery": 0.0357,
+   "Instant": 0.0357,
+   "Planeswalker": 0.0119
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.3636,
+   "unclassified": 0.1329,
+   "token_creation": 0.0979,
+   "counters_matter": 0.0699,
+   "lifegain": 0.0699,
+   "landfall": 0.0455,
+   "cost_reduction": 0.035,
+   "life_drain_direct": 0.035,
+   "voltron_aura_equipment": 0.035,
+   "blink_flicker": 0.035,
+   "graveyard_recursion": 0.021,
+   "attack_trigger_payoff": 0.0175,
+   "aristocrats_sac_death_trigger": 0.007,
+   "mill": 0.007,
+   "token_or_counter_doubler": 0.0035
+  },
+  "identities_represented": [
+   "abzan",
+   "azorius",
+   "boros",
+   "esper",
+   "mono-white",
+   "orzhov",
+   "selesnya"
+  ]
+ },
+ "Counters Matter": {
+  "n_decks": 9,
+  "n_card_copies": 264,
+  "cmc_stats": {
+   "n": 261,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.3984674329501914,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 1.5016713383181954
+  },
+  "cmc_histogram": {
+   "0-1": 0.0038314176245210726,
+   "1-2": 0.08045977011494253,
+   "2-3": 0.20306513409961685,
+   "3-4": 0.26436781609195403,
+   "4-5": 0.23754789272030652,
+   "5-6": 0.13409961685823754,
+   "6-7": 0.06130268199233716,
+   "7-8": 0.007662835249042145,
+   "8-10": 0.0038314176245210726,
+   "10-25": 0.0038314176245210726
+  },
+  "type_shares": {
+   "Creature": 0.5682,
+   "Enchantment": 0.1439,
+   "Artifact": 0.125,
+   "Sorcery": 0.0947,
+   "Instant": 0.0682
+  },
+  "effect_shares": {
+   "counters_matter": 0.2775,
+   "vanilla_or_unclassified_body": 0.1127,
+   "unclassified": 0.1012,
+   "token_creation": 0.078,
+   "blink_flicker": 0.0665,
+   "aristocrats_sac_death_trigger": 0.052,
+   "voltron_aura_equipment": 0.0434,
+   "mill": 0.0376,
+   "lifegain": 0.0347,
+   "attack_trigger_payoff": 0.0347,
+   "landfall": 0.0318,
+   "graveyard_recursion": 0.0289,
+   "cost_reduction": 0.0289,
+   "extra_combat": 0.0173,
+   "life_drain_direct": 0.0173
+  },
+  "identities_represented": [
+   "bant",
+   "five-color",
+   "golgari",
+   "jeskai",
+   "jund",
+   "mono-white",
+   "naya",
+   "sultai"
+  ]
+ },
+ "Blink": {
+  "n_decks": 27,
+  "n_card_copies": 698,
+  "cmc_stats": {
+   "n": 690,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.5565217391304347,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 1.583563973517667
+  },
+  "cmc_histogram": {
+   "0-1": 0.002898550724637681,
+   "1-2": 0.06231884057971015,
+   "2-3": 0.20869565217391303,
+   "3-4": 0.24202898550724639,
+   "4-5": 0.2579710144927536,
+   "5-6": 0.1072463768115942,
+   "6-7": 0.07681159420289856,
+   "7-8": 0.02318840579710145,
+   "8-10": 0.017391304347826087,
+   "10-25": 0.0014492753623188406
+  },
+  "type_shares": {
+   "Creature": 0.5888,
+   "Enchantment": 0.1146,
+   "Instant": 0.1089,
+   "Artifact": 0.0946,
+   "Sorcery": 0.0874,
+   "Planeswalker": 0.0057
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2184,
+   "blink_flicker": 0.1939,
+   "unclassified": 0.1583,
+   "token_creation": 0.081,
+   "counters_matter": 0.0699,
+   "graveyard_recursion": 0.0466,
+   "cost_reduction": 0.0405,
+   "lifegain": 0.038,
+   "attack_trigger_payoff": 0.0258,
+   "life_drain_direct": 0.0233,
+   "voltron_aura_equipment": 0.0209,
+   "mill": 0.0172,
+   "tribal_synergy_lord": 0.0147,
+   "discard_disruption": 0.0147,
+   "landfall": 0.0098
+  },
+  "identities_represented": [
+   "azorius",
+   "bant",
+   "dune-brood",
+   "grixis",
+   "gruul",
+   "ink-treader",
+   "mardu",
+   "mono-blue",
+   "mono-red",
+   "mono-white",
+   "naya",
+   "orzhov",
+   "sultai",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "ETB": {
+  "n_decks": 7,
+  "n_card_copies": 172,
+  "cmc_stats": {
+   "n": 168,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 4.089285714285714,
+   "p75": 5.0,
+   "max": 9.0,
+   "std": 1.530757504445092
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.023809523809523808,
+   "2-3": 0.11904761904761904,
+   "3-4": 0.23214285714285715,
+   "4-5": 0.2619047619047619,
+   "5-6": 0.18452380952380953,
+   "6-7": 0.125,
+   "7-8": 0.023809523809523808,
+   "8-10": 0.02976190476190476,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6512,
+   "Enchantment": 0.1453,
+   "Artifact": 0.0988,
+   "Instant": 0.0523,
+   "Sorcery": 0.0465,
+   "Planeswalker": 0.0058
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.3198,
+   "unclassified": 0.1472,
+   "token_creation": 0.1269,
+   "blink_flicker": 0.1218,
+   "counters_matter": 0.0609,
+   "landfall": 0.0457,
+   "cost_reduction": 0.0305,
+   "lifegain": 0.0203,
+   "voltron_aura_equipment": 0.0203,
+   "tribal_synergy_lord": 0.0203,
+   "attack_trigger_payoff": 0.0152,
+   "graveyard_recursion": 0.0152,
+   "token_or_counter_doubler": 0.0152,
+   "aristocrats_sac_death_trigger": 0.0152,
+   "wheel_effect": 0.0102
+  },
+  "identities_represented": [
+   "azorius",
+   "boros",
+   "five-color",
+   "jeskai",
+   "mono-red",
+   "mono-white",
+   "sultai"
+  ]
+ },
+ "Control": {
+  "n_decks": 61,
+  "n_card_copies": 1416,
+  "cmc_stats": {
+   "n": 1398,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.2303290414878396,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 1.6430009461912078
+  },
+  "cmc_histogram": {
+   "0-1": 0.002861230329041488,
+   "1-2": 0.12303290414878398,
+   "2-3": 0.24821173104434907,
+   "3-4": 0.24248927038626608,
+   "4-5": 0.19742489270386265,
+   "5-6": 0.09370529327610873,
+   "6-7": 0.04721030042918455,
+   "7-8": 0.030042918454935622,
+   "8-10": 0.011444921316165951,
+   "10-25": 0.00357653791130186
+  },
+  "type_shares": {
+   "Creature": 0.4838,
+   "Enchantment": 0.1716,
+   "Instant": 0.1292,
+   "Sorcery": 0.1172,
+   "Artifact": 0.0897,
+   "Planeswalker": 0.0085
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2051,
+   "unclassified": 0.1839,
+   "token_creation": 0.1019,
+   "lifegain": 0.0594,
+   "voltron_aura_equipment": 0.0575,
+   "counters_matter": 0.0519,
+   "graveyard_recursion": 0.0488,
+   "mill": 0.0475,
+   "cost_reduction": 0.0457,
+   "discard_disruption": 0.0444,
+   "blink_flicker": 0.0388,
+   "life_drain_direct": 0.035,
+   "aristocrats_sac_death_trigger": 0.0213,
+   "attack_trigger_payoff": 0.015,
+   "landfall": 0.0088
+  },
+  "identities_represented": [
+   "azorius",
+   "bant",
+   "dimir",
+   "esper",
+   "five-color",
+   "glint-eye",
+   "grixis",
+   "izzet",
+   "jeskai",
+   "jund",
+   "mardu",
+   "mono-black",
+   "mono-blue",
+   "mono-white",
+   "orzhov",
+   "rakdos",
+   "simic",
+   "sultai",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Weenies": {
+  "n_decks": 1,
+  "n_card_copies": 26,
+  "cmc_stats": {
+   "n": 26,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.1538461538461537,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.5365372581106291
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.11538461538461539,
+   "2-3": 0.23076923076923078,
+   "3-4": 0.3076923076923077,
+   "4-5": 0.23076923076923078,
+   "5-6": 0.038461538461538464,
+   "6-7": 0.038461538461538464,
+   "7-8": 0.0,
+   "8-10": 0.038461538461538464,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6154,
+   "Artifact": 0.1538,
+   "Sorcery": 0.0769,
+   "Enchantment": 0.0769,
+   "Instant": 0.0769
+  },
+  "effect_shares": {
+   "token_creation": 0.2414,
+   "vanilla_or_unclassified_body": 0.2069,
+   "unclassified": 0.1724,
+   "blink_flicker": 0.1724,
+   "lifegain": 0.1034,
+   "cost_reduction": 0.069,
+   "attack_trigger_payoff": 0.0345
+  },
+  "identities_represented": [
+   "mono-white"
+  ]
+ },
+ "Devotion": {
+  "n_decks": 4,
+  "n_card_copies": 111,
+  "cmc_stats": {
+   "n": 111,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.2882882882882885,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.678627642968121
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.12612612612612611,
+   "2-3": 0.2972972972972973,
+   "3-4": 0.14414414414414414,
+   "4-5": 0.1891891891891892,
+   "5-6": 0.13513513513513514,
+   "6-7": 0.06306306306306306,
+   "7-8": 0.036036036036036036,
+   "8-10": 0.009009009009009009,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5225,
+   "Enchantment": 0.1712,
+   "Artifact": 0.1351,
+   "Sorcery": 0.0901,
+   "Instant": 0.0721,
+   "Planeswalker": 0.009
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.1844,
+   "lifegain": 0.1773,
+   "unclassified": 0.1418,
+   "token_creation": 0.1064,
+   "life_drain_direct": 0.0922,
+   "counters_matter": 0.078,
+   "cost_reduction": 0.078,
+   "aristocrats_sac_death_trigger": 0.0496,
+   "graveyard_recursion": 0.0426,
+   "voltron_aura_equipment": 0.0213,
+   "attack_trigger_payoff": 0.0142,
+   "discard_disruption": 0.0142
+  },
+  "identities_represented": [
+   "mono-black",
+   "mono-red",
+   "mono-white"
+  ]
+ },
+ "Keywords": {
+  "n_decks": 2,
+  "n_card_copies": 48,
+  "cmc_stats": {
+   "n": 46,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.347826086956522,
+   "p75": 4.0,
+   "max": 9.0,
+   "std": 2.1081352908522883
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.1956521739130435,
+   "2-3": 0.1956521739130435,
+   "3-4": 0.2608695652173913,
+   "4-5": 0.13043478260869565,
+   "5-6": 0.06521739130434782,
+   "6-7": 0.043478260869565216,
+   "7-8": 0.043478260869565216,
+   "8-10": 0.06521739130434782,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.625,
+   "Artifact": 0.1875,
+   "Enchantment": 0.1042,
+   "Sorcery": 0.0833
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4,
+   "voltron_aura_equipment": 0.16,
+   "token_creation": 0.1,
+   "unclassified": 0.1,
+   "graveyard_recursion": 0.08,
+   "counters_matter": 0.06,
+   "cost_reduction": 0.06,
+   "lifegain": 0.02,
+   "mill": 0.02
+  },
+  "identities_represented": [
+   "mono-white",
+   "sultai"
+  ]
+ },
+ "Self-Damage": {
+  "n_decks": 5,
+  "n_card_copies": 141,
+  "cmc_stats": {
+   "n": 139,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.194244604316547,
+   "p75": 4.75,
+   "max": 10.0,
+   "std": 1.896144129245919
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.17266187050359713,
+   "2-3": 0.28776978417266186,
+   "3-4": 0.19424460431654678,
+   "4-5": 0.09352517985611511,
+   "5-6": 0.1366906474820144,
+   "6-7": 0.050359712230215826,
+   "7-8": 0.04316546762589928,
+   "8-10": 0.014388489208633094,
+   "10-25": 0.007194244604316547
+  },
+  "type_shares": {
+   "Creature": 0.4965,
+   "Sorcery": 0.1418,
+   "Enchantment": 0.1277,
+   "Artifact": 0.1206,
+   "Instant": 0.1135
+  },
+  "effect_shares": {
+   "unclassified": 0.2244,
+   "vanilla_or_unclassified_body": 0.1859,
+   "lifegain": 0.1603,
+   "counters_matter": 0.0962,
+   "token_creation": 0.0769,
+   "life_drain_direct": 0.0449,
+   "graveyard_recursion": 0.0449,
+   "aristocrats_sac_death_trigger": 0.0256,
+   "voltron_aura_equipment": 0.0256,
+   "cost_reduction": 0.0256,
+   "discard_disruption": 0.0256,
+   "attack_trigger_payoff": 0.0192,
+   "extra_turn": 0.0192,
+   "spell_copy": 0.0128,
+   "token_or_counter_doubler": 0.0064
+  },
+  "identities_represented": [
+   "abzan",
+   "mono-black",
+   "mono-white",
+   "rakdos",
+   "yore-tiller"
+  ]
+ },
+ "Spellslinger": {
+  "n_decks": 36,
+  "n_card_copies": 662,
+  "cmc_stats": {
+   "n": 660,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.356060606060606,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 1.9560805576054523
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.12575757575757576,
+   "2-3": 0.296969696969697,
+   "3-4": 0.2,
+   "4-5": 0.16363636363636364,
+   "5-6": 0.06515151515151515,
+   "6-7": 0.06060606060606061,
+   "7-8": 0.04090909090909091,
+   "8-10": 0.03636363636363636,
+   "10-25": 0.010606060606060607
+  },
+  "type_shares": {
+   "Creature": 0.3927,
+   "Sorcery": 0.2296,
+   "Instant": 0.1858,
+   "Enchantment": 0.1118,
+   "Artifact": 0.0755,
+   "Planeswalker": 0.0045
+  },
+  "effect_shares": {
+   "unclassified": 0.2996,
+   "token_creation": 0.1609,
+   "vanilla_or_unclassified_body": 0.1359,
+   "cost_reduction": 0.0804,
+   "counters_matter": 0.0791,
+   "voltron_aura_equipment": 0.043,
+   "lifegain": 0.0402,
+   "spell_copy": 0.0361,
+   "graveyard_recursion": 0.0277,
+   "life_drain_direct": 0.0222,
+   "attack_trigger_payoff": 0.0139,
+   "aristocrats_sac_death_trigger": 0.0125,
+   "wheel_effect": 0.0111,
+   "blink_flicker": 0.0097,
+   "discard_disruption": 0.0097
+  },
+  "identities_represented": [
+   "bant",
+   "boros",
+   "dimir",
+   "esper",
+   "glint-eye",
+   "golgari",
+   "grixis",
+   "ink-treader",
+   "izzet",
+   "jeskai",
+   "mono-blue",
+   "mono-red",
+   "orzhov",
+   "rakdos",
+   "simic",
+   "temur",
+   "yore-tiller"
+  ]
+ },
+ "Extra Turns": {
+  "n_decks": 2,
+  "n_card_copies": 42,
+  "cmc_stats": {
+   "n": 42,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 4.261904761904762,
+   "p75": 5.0,
+   "max": 10.0,
+   "std": 2.268411693228838
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.023809523809523808,
+   "2-3": 0.21428571428571427,
+   "3-4": 0.19047619047619047,
+   "4-5": 0.2857142857142857,
+   "5-6": 0.047619047619047616,
+   "6-7": 0.047619047619047616,
+   "7-8": 0.07142857142857142,
+   "8-10": 0.07142857142857142,
+   "10-25": 0.047619047619047616
+  },
+  "type_shares": {
+   "Creature": 0.381,
+   "Sorcery": 0.3095,
+   "Instant": 0.1429,
+   "Artifact": 0.119,
+   "Enchantment": 0.0476
+  },
+  "effect_shares": {
+   "unclassified": 0.3333,
+   "vanilla_or_unclassified_body": 0.1429,
+   "extra_turn": 0.0952,
+   "cost_reduction": 0.0714,
+   "token_creation": 0.0714,
+   "blink_flicker": 0.0476,
+   "attack_trigger_payoff": 0.0476,
+   "graveyard_recursion": 0.0238,
+   "spell_copy": 0.0238,
+   "lifegain": 0.0238,
+   "counters_matter": 0.0238,
+   "voltron_aura_equipment": 0.0238,
+   "aristocrats_sac_death_trigger": 0.0238,
+   "life_drain_direct": 0.0238,
+   "extra_combat": 0.0238
+  },
+  "identities_represented": [
+   "mono-blue",
+   "yore-tiller"
+  ]
+ },
+ "Counterspells": {
+  "n_decks": 3,
+  "n_card_copies": 52,
+  "cmc_stats": {
+   "n": 49,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 4.0,
+   "mean": 3.510204081632653,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 1.6428254528569883
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.061224489795918366,
+   "2-3": 0.2653061224489796,
+   "3-4": 0.14285714285714285,
+   "4-5": 0.3469387755102041,
+   "5-6": 0.10204081632653061,
+   "6-7": 0.04081632653061224,
+   "7-8": 0.02040816326530612,
+   "8-10": 0.0,
+   "10-25": 0.02040816326530612
+  },
+  "type_shares": {
+   "Creature": 0.4038,
+   "Instant": 0.25,
+   "Sorcery": 0.1731,
+   "Artifact": 0.1154,
+   "Enchantment": 0.0577
+  },
+  "effect_shares": {
+   "unclassified": 0.3774,
+   "token_creation": 0.1887,
+   "cost_reduction": 0.1698,
+   "graveyard_recursion": 0.0566,
+   "blink_flicker": 0.0377,
+   "attack_trigger_payoff": 0.0377,
+   "vanilla_or_unclassified_body": 0.0377,
+   "voltron_aura_equipment": 0.0377,
+   "spell_copy": 0.0189,
+   "mill": 0.0189,
+   "wheel_effect": 0.0189
+  },
+  "identities_represented": [
+   "mono-blue"
+  ]
+ },
+ "Card Draw": {
+  "n_decks": 15,
+  "n_card_copies": 298,
+  "cmc_stats": {
+   "n": 297,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.410774410774411,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 1.9121140678235597
+  },
+  "cmc_histogram": {
+   "0-1": 0.006734006734006734,
+   "1-2": 0.10774410774410774,
+   "2-3": 0.24242424242424243,
+   "3-4": 0.24579124579124578,
+   "4-5": 0.19528619528619529,
+   "5-6": 0.06734006734006734,
+   "6-7": 0.05723905723905724,
+   "7-8": 0.04713804713804714,
+   "8-10": 0.013468013468013467,
+   "10-25": 0.016835016835016835
+  },
+  "type_shares": {
+   "Creature": 0.4899,
+   "Enchantment": 0.151,
+   "Sorcery": 0.1477,
+   "Artifact": 0.1242,
+   "Instant": 0.0839,
+   "Planeswalker": 0.0034
+  },
+  "effect_shares": {
+   "unclassified": 0.2783,
+   "vanilla_or_unclassified_body": 0.2324,
+   "counters_matter": 0.1193,
+   "token_creation": 0.0642,
+   "voltron_aura_equipment": 0.052,
+   "wheel_effect": 0.0489,
+   "lifegain": 0.0459,
+   "blink_flicker": 0.0336,
+   "cost_reduction": 0.0306,
+   "life_drain_direct": 0.0183,
+   "aristocrats_sac_death_trigger": 0.0183,
+   "attack_trigger_payoff": 0.0153,
+   "graveyard_recursion": 0.0153,
+   "discard_disruption": 0.0092,
+   "token_or_counter_doubler": 0.0092
+  },
+  "identities_represented": [
+   "azorius",
+   "bant",
+   "five-color",
+   "glint-eye",
+   "grixis",
+   "ink-treader",
+   "izzet",
+   "mono-black",
+   "mono-blue",
+   "temur",
+   "witch-maw"
+  ]
+ },
+ "Wheels": {
+  "n_decks": 8,
+  "n_card_copies": 174,
+  "cmc_stats": {
+   "n": 174,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.235632183908046,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 1.6388583783388826
+  },
+  "cmc_histogram": {
+   "0-1": 0.005747126436781609,
+   "1-2": 0.1206896551724138,
+   "2-3": 0.22413793103448276,
+   "3-4": 0.26436781609195403,
+   "4-5": 0.22988505747126436,
+   "5-6": 0.05747126436781609,
+   "6-7": 0.040229885057471264,
+   "7-8": 0.04597701149425287,
+   "8-10": 0.005747126436781609,
+   "10-25": 0.005747126436781609
+  },
+  "type_shares": {
+   "Creature": 0.3563,
+   "Sorcery": 0.2586,
+   "Artifact": 0.1437,
+   "Enchantment": 0.1379,
+   "Instant": 0.1034
+  },
+  "effect_shares": {
+   "unclassified": 0.3591,
+   "vanilla_or_unclassified_body": 0.2044,
+   "wheel_effect": 0.1381,
+   "lifegain": 0.0497,
+   "discard_disruption": 0.0442,
+   "voltron_aura_equipment": 0.0387,
+   "cost_reduction": 0.0387,
+   "counters_matter": 0.0276,
+   "life_drain_direct": 0.0276,
+   "token_creation": 0.0221,
+   "attack_trigger_payoff": 0.0166,
+   "theft_effect": 0.011,
+   "graveyard_recursion": 0.011,
+   "token_or_counter_doubler": 0.0055,
+   "spell_copy": 0.0055
+  },
+  "identities_represented": [
+   "glint-eye",
+   "grixis",
+   "izzet",
+   "mono-black",
+   "mono-blue",
+   "mono-red",
+   "temur"
+  ]
+ },
+ "Graveyard": {
+  "n_decks": 15,
+  "n_card_copies": 405,
+  "cmc_stats": {
+   "n": 400,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.525,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 1.869324744393012
+  },
+  "cmc_histogram": {
+   "0-1": 0.0075,
+   "1-2": 0.085,
+   "2-3": 0.225,
+   "3-4": 0.2575,
+   "4-5": 0.185,
+   "5-6": 0.1025,
+   "6-7": 0.08,
+   "7-8": 0.02,
+   "8-10": 0.025,
+   "10-25": 0.0125
+  },
+  "type_shares": {
+   "Creature": 0.6198,
+   "Enchantment": 0.1309,
+   "Artifact": 0.1136,
+   "Sorcery": 0.0914,
+   "Instant": 0.0272,
+   "Planeswalker": 0.0148,
+   "Battle": 0.0025
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.1949,
+   "unclassified": 0.1356,
+   "mill": 0.1335,
+   "graveyard_recursion": 0.1208,
+   "counters_matter": 0.0805,
+   "token_creation": 0.0593,
+   "cost_reduction": 0.0508,
+   "voltron_aura_equipment": 0.0403,
+   "discard_disruption": 0.036,
+   "lifegain": 0.036,
+   "aristocrats_sac_death_trigger": 0.0254,
+   "landfall": 0.0254,
+   "attack_trigger_payoff": 0.0233,
+   "life_drain_direct": 0.0191,
+   "tribal_synergy_lord": 0.0042
+  },
+  "identities_represented": [
+   "abzan",
+   "boros",
+   "dimir",
+   "golgari",
+   "grixis",
+   "jund",
+   "mardu",
+   "mono-blue",
+   "sultai",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Aristocrats": {
+  "n_decks": 48,
+  "n_card_copies": 1365,
+  "cmc_stats": {
+   "n": 1351,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.1791265729089564,
+   "p75": 4.0,
+   "max": 15.0,
+   "std": 1.60002113451901
+  },
+  "cmc_histogram": {
+   "0-1": 0.0007401924500370096,
+   "1-2": 0.0925240562546262,
+   "2-3": 0.2975573649148779,
+   "3-4": 0.2679496669133975,
+   "4-5": 0.15840118430792005,
+   "5-6": 0.11176905995558846,
+   "6-7": 0.03997039230199852,
+   "7-8": 0.015544041450777202,
+   "8-10": 0.011102886750555145,
+   "10-25": 0.0044411547002220575
+  },
+  "type_shares": {
+   "Creature": 0.6015,
+   "Enchantment": 0.1516,
+   "Sorcery": 0.1121,
+   "Artifact": 0.0821,
+   "Instant": 0.0498,
+   "Planeswalker": 0.0029
+  },
+  "effect_shares": {
+   "token_creation": 0.1658,
+   "lifegain": 0.1228,
+   "vanilla_or_unclassified_body": 0.1172,
+   "aristocrats_sac_death_trigger": 0.1136,
+   "life_drain_direct": 0.1105,
+   "unclassified": 0.0875,
+   "counters_matter": 0.085,
+   "graveyard_recursion": 0.0553,
+   "attack_trigger_payoff": 0.0256,
+   "discard_disruption": 0.023,
+   "voltron_aura_equipment": 0.0225,
+   "cost_reduction": 0.021,
+   "mill": 0.0102,
+   "landfall": 0.0102,
+   "token_or_counter_doubler": 0.0097
+  },
+  "identities_represented": [
+   "abzan",
+   "dimir",
+   "dune-brood",
+   "esper",
+   "glint-eye",
+   "golgari",
+   "grixis",
+   "jund",
+   "mardu",
+   "mono-black",
+   "orzhov",
+   "rakdos",
+   "yore-tiller"
+  ]
+ },
+ "Reanimator": {
+  "n_decks": 48,
+  "n_card_copies": 1396,
+  "cmc_stats": {
+   "n": 1380,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.544202898550725,
+   "p75": 5.0,
+   "max": 12.0,
+   "std": 1.8851639730296645
+  },
+  "cmc_histogram": {
+   "0-1": 0.0007246376811594203,
+   "1-2": 0.11521739130434783,
+   "2-3": 0.213768115942029,
+   "3-4": 0.2318840579710145,
+   "4-5": 0.1746376811594203,
+   "5-6": 0.11594202898550725,
+   "6-7": 0.07318840579710145,
+   "7-8": 0.036231884057971016,
+   "8-10": 0.034057971014492754,
+   "10-25": 0.004347826086956522
+  },
+  "type_shares": {
+   "Creature": 0.5716,
+   "Sorcery": 0.1511,
+   "Enchantment": 0.1504,
+   "Artifact": 0.0838,
+   "Instant": 0.0365,
+   "Planeswalker": 0.0057,
+   "Battle": 0.0007
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.1826,
+   "unclassified": 0.1374,
+   "graveyard_recursion": 0.1248,
+   "mill": 0.0922,
+   "counters_matter": 0.085,
+   "lifegain": 0.0603,
+   "token_creation": 0.0567,
+   "aristocrats_sac_death_trigger": 0.0458,
+   "discard_disruption": 0.044,
+   "voltron_aura_equipment": 0.0434,
+   "life_drain_direct": 0.0428,
+   "cost_reduction": 0.0319,
+   "attack_trigger_payoff": 0.0151,
+   "landfall": 0.0139,
+   "tribal_synergy_lord": 0.006
+  },
+  "identities_represented": [
+   "abzan",
+   "boros",
+   "dimir",
+   "dune-brood",
+   "esper",
+   "five-color",
+   "glint-eye",
+   "golgari",
+   "grixis",
+   "jund",
+   "mardu",
+   "mono-black",
+   "orzhov",
+   "sultai",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Discard": {
+  "n_decks": 16,
+  "n_card_copies": 388,
+  "cmc_stats": {
+   "n": 382,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.400523560209424,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 1.8977252125714117
+  },
+  "cmc_histogram": {
+   "0-1": 0.010471204188481676,
+   "1-2": 0.0968586387434555,
+   "2-3": 0.2670157068062827,
+   "3-4": 0.23298429319371727,
+   "4-5": 0.17277486910994763,
+   "5-6": 0.10209424083769633,
+   "6-7": 0.034031413612565446,
+   "7-8": 0.03664921465968586,
+   "8-10": 0.03926701570680628,
+   "10-25": 0.007853403141361256
+  },
+  "type_shares": {
+   "Creature": 0.4639,
+   "Sorcery": 0.201,
+   "Enchantment": 0.1598,
+   "Artifact": 0.0979,
+   "Instant": 0.067,
+   "Planeswalker": 0.0103
+  },
+  "effect_shares": {
+   "unclassified": 0.2169,
+   "vanilla_or_unclassified_body": 0.1941,
+   "discard_disruption": 0.1804,
+   "graveyard_recursion": 0.089,
+   "token_creation": 0.0502,
+   "lifegain": 0.0365,
+   "counters_matter": 0.0342,
+   "aristocrats_sac_death_trigger": 0.032,
+   "cost_reduction": 0.0297,
+   "voltron_aura_equipment": 0.0274,
+   "life_drain_direct": 0.0251,
+   "wheel_effect": 0.0251,
+   "attack_trigger_payoff": 0.0228,
+   "mill": 0.0114,
+   "landfall": 0.0091
+  },
+  "identities_represented": [
+   "boros",
+   "esper",
+   "grixis",
+   "izzet",
+   "mono-black",
+   "mono-red",
+   "sultai",
+   "temur",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Theft": {
+  "n_decks": 9,
+  "n_card_copies": 257,
+  "cmc_stats": {
+   "n": 255,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.2666666666666666,
+   "p75": 4.0,
+   "max": 9.0,
+   "std": 1.6159337331912345
+  },
+  "cmc_histogram": {
+   "0-1": 0.00392156862745098,
+   "1-2": 0.11764705882352941,
+   "2-3": 0.24705882352941178,
+   "3-4": 0.21568627450980393,
+   "4-5": 0.21568627450980393,
+   "5-6": 0.12549019607843137,
+   "6-7": 0.023529411764705882,
+   "7-8": 0.03529411764705882,
+   "8-10": 0.01568627450980392,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.4825,
+   "Enchantment": 0.1712,
+   "Sorcery": 0.1595,
+   "Artifact": 0.1051,
+   "Instant": 0.07,
+   "Planeswalker": 0.0117
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.1993,
+   "unclassified": 0.1821,
+   "discard_disruption": 0.1375,
+   "counters_matter": 0.079,
+   "voltron_aura_equipment": 0.0756,
+   "mill": 0.0515,
+   "token_creation": 0.0515,
+   "graveyard_recursion": 0.0412,
+   "cost_reduction": 0.0378,
+   "theft_effect": 0.0344,
+   "life_drain_direct": 0.0309,
+   "aristocrats_sac_death_trigger": 0.0241,
+   "lifegain": 0.0137,
+   "tribal_synergy_lord": 0.0103,
+   "spell_copy": 0.0103
+  },
+  "identities_represented": [
+   "dimir",
+   "grixis",
+   "mono-black",
+   "sultai"
+  ]
+ },
+ "Group Slug": {
+  "n_decks": 24,
+  "n_card_copies": 630,
+  "cmc_stats": {
+   "n": 626,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.4424920127795526,
+   "p75": 4.0,
+   "max": 15.0,
+   "std": 1.6996662482286087
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.08306709265175719,
+   "2-3": 0.24440894568690097,
+   "3-4": 0.24920127795527156,
+   "4-5": 0.1900958466453674,
+   "5-6": 0.12779552715654952,
+   "6-7": 0.05750798722044728,
+   "7-8": 0.027156549520766772,
+   "8-10": 0.01597444089456869,
+   "10-25": 0.004792332268370607
+  },
+  "type_shares": {
+   "Creature": 0.4476,
+   "Enchantment": 0.1968,
+   "Sorcery": 0.1317,
+   "Artifact": 0.1238,
+   "Instant": 0.0984,
+   "Planeswalker": 0.0016
+  },
+  "effect_shares": {
+   "unclassified": 0.2907,
+   "vanilla_or_unclassified_body": 0.2335,
+   "voltron_aura_equipment": 0.0675,
+   "lifegain": 0.0631,
+   "token_creation": 0.0573,
+   "discard_disruption": 0.0499,
+   "life_drain_direct": 0.0411,
+   "cost_reduction": 0.0382,
+   "counters_matter": 0.0382,
+   "aristocrats_sac_death_trigger": 0.0308,
+   "graveyard_recursion": 0.0235,
+   "wheel_effect": 0.0235,
+   "attack_trigger_payoff": 0.0206,
+   "extra_combat": 0.0073,
+   "mill": 0.0029
+  },
+  "identities_represented": [
+   "boros",
+   "dimir",
+   "dune-brood",
+   "glint-eye",
+   "golgari",
+   "grixis",
+   "izzet",
+   "jund",
+   "mono-black",
+   "mono-red",
+   "orzhov",
+   "rakdos",
+   "yore-tiller"
+  ]
+ },
+ "Burn": {
+  "n_decks": 56,
+  "n_card_copies": 1260,
+  "cmc_stats": {
+   "n": 1251,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.49480415667466,
+   "p75": 4.0,
+   "max": 15.0,
+   "std": 1.861021832168248
+  },
+  "cmc_histogram": {
+   "0-1": 0.0015987210231814548,
+   "1-2": 0.08952837729816147,
+   "2-3": 0.24380495603517185,
+   "3-4": 0.23980815347721823,
+   "4-5": 0.1982414068745004,
+   "5-6": 0.09512390087929656,
+   "6-7": 0.06794564348521183,
+   "7-8": 0.0319744204636291,
+   "8-10": 0.020783373301358914,
+   "10-25": 0.011191047162270184
+  },
+  "type_shares": {
+   "Creature": 0.481,
+   "Enchantment": 0.1532,
+   "Sorcery": 0.1365,
+   "Instant": 0.1254,
+   "Artifact": 0.1024,
+   "Planeswalker": 0.0016
+  },
+  "effect_shares": {
+   "unclassified": 0.2594,
+   "vanilla_or_unclassified_body": 0.2295,
+   "token_creation": 0.1062,
+   "counters_matter": 0.0542,
+   "cost_reduction": 0.0535,
+   "voltron_aura_equipment": 0.0527,
+   "life_drain_direct": 0.0385,
+   "lifegain": 0.0342,
+   "attack_trigger_payoff": 0.0299,
+   "wheel_effect": 0.0192,
+   "graveyard_recursion": 0.0192,
+   "aristocrats_sac_death_trigger": 0.0178,
+   "blink_flicker": 0.0164,
+   "extra_combat": 0.0135,
+   "discard_disruption": 0.0135
+  },
+  "identities_represented": [
+   "boros",
+   "dimir",
+   "dune-brood",
+   "esper",
+   "five-color",
+   "glint-eye",
+   "grixis",
+   "gruul",
+   "ink-treader",
+   "izzet",
+   "jeskai",
+   "jund",
+   "mardu",
+   "mono-red",
+   "naya",
+   "rakdos",
+   "temur",
+   "yore-tiller"
+  ]
+ },
+ "Treasure": {
+  "n_decks": 7,
+  "n_card_copies": 147,
+  "cmc_stats": {
+   "n": 146,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.212328767123288,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.5711827152781728
+  },
+  "cmc_histogram": {
+   "0-1": 0.00684931506849315,
+   "1-2": 0.0684931506849315,
+   "2-3": 0.3356164383561644,
+   "3-4": 0.21232876712328766,
+   "4-5": 0.21232876712328766,
+   "5-6": 0.06164383561643835,
+   "6-7": 0.0547945205479452,
+   "7-8": 0.03424657534246575,
+   "8-10": 0.0136986301369863,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5034,
+   "Artifact": 0.1633,
+   "Sorcery": 0.1497,
+   "Enchantment": 0.1224,
+   "Instant": 0.0544,
+   "Planeswalker": 0.0068
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2744,
+   "unclassified": 0.2256,
+   "counters_matter": 0.1037,
+   "token_creation": 0.0976,
+   "voltron_aura_equipment": 0.061,
+   "life_drain_direct": 0.0488,
+   "attack_trigger_payoff": 0.0305,
+   "tribal_synergy_lord": 0.0244,
+   "graveyard_recursion": 0.0244,
+   "cost_reduction": 0.0183,
+   "lifegain": 0.0183,
+   "token_or_counter_doubler": 0.0183,
+   "theft_effect": 0.0122,
+   "landfall": 0.0061,
+   "aristocrats_sac_death_trigger": 0.0061
+  },
+  "identities_represented": [
+   "grixis",
+   "gruul",
+   "jeskai",
+   "mardu",
+   "mono-red",
+   "rakdos"
+  ]
+ },
+ "Storm": {
+  "n_decks": 13,
+  "n_card_copies": 218,
+  "cmc_stats": {
+   "n": 218,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 2.0,
+   "mean": 2.6513761467889907,
+   "p75": 3.0,
+   "max": 10.0,
+   "std": 1.5555532175538171
+  },
+  "cmc_histogram": {
+   "0-1": 0.027522935779816515,
+   "1-2": 0.1651376146788991,
+   "2-3": 0.38073394495412843,
+   "3-4": 0.20642201834862386,
+   "4-5": 0.11467889908256881,
+   "5-6": 0.01834862385321101,
+   "6-7": 0.06880733944954129,
+   "7-8": 0.013761467889908258,
+   "8-10": 0.0,
+   "10-25": 0.0045871559633027525
+  },
+  "type_shares": {
+   "Creature": 0.3945,
+   "Instant": 0.2385,
+   "Sorcery": 0.1789,
+   "Enchantment": 0.1193,
+   "Artifact": 0.0642,
+   "Planeswalker": 0.0046
+  },
+  "effect_shares": {
+   "unclassified": 0.3376,
+   "vanilla_or_unclassified_body": 0.1624,
+   "token_creation": 0.1453,
+   "cost_reduction": 0.1111,
+   "spell_copy": 0.0556,
+   "storm": 0.0385,
+   "voltron_aura_equipment": 0.0385,
+   "wheel_effect": 0.0256,
+   "counters_matter": 0.0171,
+   "mill": 0.0171,
+   "graveyard_recursion": 0.0085,
+   "blink_flicker": 0.0085,
+   "landfall": 0.0085,
+   "land_destruction": 0.0085,
+   "attack_trigger_payoff": 0.0043
+  },
+  "identities_represented": [
+   "grixis",
+   "ink-treader",
+   "izzet",
+   "jeskai",
+   "mono-red",
+   "temur"
+  ]
+ },
+ "Pingers": {
+  "n_decks": 3,
+  "n_card_copies": 42,
+  "cmc_stats": {
+   "n": 42,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 2.500000000000001,
+   "mean": 2.8333333333333335,
+   "p75": 4.0,
+   "max": 6.0,
+   "std": 1.3786927325527074
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.14285714285714285,
+   "2-3": 0.35714285714285715,
+   "3-4": 0.21428571428571427,
+   "4-5": 0.16666666666666666,
+   "5-6": 0.047619047619047616,
+   "6-7": 0.07142857142857142,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.2619,
+   "Enchantment": 0.2619,
+   "Instant": 0.2381,
+   "Artifact": 0.1905,
+   "Sorcery": 0.0476
+  },
+  "effect_shares": {
+   "unclassified": 0.4,
+   "voltron_aura_equipment": 0.1778,
+   "vanilla_or_unclassified_body": 0.1111,
+   "cost_reduction": 0.0667,
+   "counters_matter": 0.0667,
+   "aristocrats_sac_death_trigger": 0.0444,
+   "lifegain": 0.0444,
+   "life_drain_direct": 0.0222,
+   "discard_disruption": 0.0222,
+   "attack_trigger_payoff": 0.0222,
+   "token_creation": 0.0222
+  },
+  "identities_represented": [
+   "izzet",
+   "mono-red",
+   "rakdos"
+  ]
+ },
+ "Warp": {
+  "n_decks": 1,
+  "n_card_copies": 28,
+  "cmc_stats": {
+   "n": 27,
+   "min": 2.0,
+   "p25": 4.0,
+   "median": 6.0,
+   "mean": 5.444444444444445,
+   "p75": 7.0,
+   "max": 9.0,
+   "std": 2.282515398241571
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.18518518518518517,
+   "3-4": 0.037037037037037035,
+   "4-5": 0.14814814814814814,
+   "5-6": 0.1111111111111111,
+   "6-7": 0.1111111111111111,
+   "7-8": 0.2222222222222222,
+   "8-10": 0.18518518518518517,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6071,
+   "Artifact": 0.2143,
+   "Enchantment": 0.1071,
+   "Instant": 0.0714
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4828,
+   "unclassified": 0.2414,
+   "cost_reduction": 0.069,
+   "attack_trigger_payoff": 0.0345,
+   "wheel_effect": 0.0345,
+   "voltron_aura_equipment": 0.0345,
+   "graveyard_recursion": 0.0345,
+   "counters_matter": 0.0345,
+   "extra_combat": 0.0345
+  },
+  "identities_represented": [
+   "mono-red"
+  ]
+ },
+ "Forced Combat": {
+  "n_decks": 10,
+  "n_card_copies": 279,
+  "cmc_stats": {
+   "n": 273,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.4835164835164836,
+   "p75": 4.0,
+   "max": 9.0,
+   "std": 1.6309459537154345
+  },
+  "cmc_histogram": {
+   "0-1": 0.003663003663003663,
+   "1-2": 0.06593406593406594,
+   "2-3": 0.23443223443223443,
+   "3-4": 0.24175824175824176,
+   "4-5": 0.2564102564102564,
+   "5-6": 0.08424908424908426,
+   "6-7": 0.05128205128205128,
+   "7-8": 0.03663003663003663,
+   "8-10": 0.02564102564102564,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.4946,
+   "Enchantment": 0.1828,
+   "Sorcery": 0.1326,
+   "Instant": 0.1075,
+   "Artifact": 0.0824
+  },
+  "effect_shares": {
+   "unclassified": 0.231,
+   "vanilla_or_unclassified_body": 0.1994,
+   "voltron_aura_equipment": 0.1234,
+   "token_creation": 0.1044,
+   "counters_matter": 0.0475,
+   "lifegain": 0.0443,
+   "cost_reduction": 0.0411,
+   "aristocrats_sac_death_trigger": 0.0411,
+   "attack_trigger_payoff": 0.038,
+   "life_drain_direct": 0.038,
+   "graveyard_recursion": 0.0348,
+   "extra_combat": 0.0158,
+   "discard_disruption": 0.0095,
+   "token_or_counter_doubler": 0.0063,
+   "landfall": 0.0063
+  },
+  "identities_represented": [
+   "dimir",
+   "dune-brood",
+   "glint-eye",
+   "golgari",
+   "mardu",
+   "mono-red",
+   "orzhov",
+   "yore-tiller"
+  ]
+ },
+ "Extra Combats": {
+  "n_decks": 9,
+  "n_card_copies": 226,
+  "cmc_stats": {
+   "n": 212,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.542452830188679,
+   "p75": 4.5,
+   "max": 12.0,
+   "std": 1.5760859157459484
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.05660377358490566,
+   "2-3": 0.2169811320754717,
+   "3-4": 0.2783018867924528,
+   "4-5": 0.19811320754716982,
+   "5-6": 0.1320754716981132,
+   "6-7": 0.08962264150943396,
+   "7-8": 0.018867924528301886,
+   "8-10": 0.0047169811320754715,
+   "10-25": 0.0047169811320754715
+  },
+  "type_shares": {
+   "Creature": 0.5398,
+   "Enchantment": 0.1681,
+   "Artifact": 0.1372,
+   "Instant": 0.0796,
+   "Sorcery": 0.0752
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2159,
+   "extra_combat": 0.1439,
+   "unclassified": 0.1439,
+   "voltron_aura_equipment": 0.1136,
+   "token_creation": 0.1098,
+   "attack_trigger_payoff": 0.0795,
+   "counters_matter": 0.072,
+   "cost_reduction": 0.0492,
+   "graveyard_recursion": 0.0265,
+   "tribal_synergy_lord": 0.0152,
+   "landfall": 0.0076,
+   "lifegain": 0.0076,
+   "aristocrats_sac_death_trigger": 0.0076,
+   "infect_poison": 0.0038,
+   "spell_copy": 0.0038
+  },
+  "identities_represented": [
+   "boros",
+   "dune-brood",
+   "gruul",
+   "jeskai",
+   "mardu",
+   "mono-red",
+   "naya",
+   "temur"
+  ]
+ },
+ "Chaos": {
+  "n_decks": 6,
+  "n_card_copies": 162,
+  "cmc_stats": {
+   "n": 161,
+   "min": 0.0,
+   "p25": 2.7500000000000036,
+   "median": 3.0,
+   "mean": 3.5714285714285716,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 1.6483166105529203
+  },
+  "cmc_histogram": {
+   "0-1": 0.018633540372670808,
+   "1-2": 0.055900621118012424,
+   "2-3": 0.17391304347826086,
+   "3-4": 0.2732919254658385,
+   "4-5": 0.2546583850931677,
+   "5-6": 0.09316770186335403,
+   "6-7": 0.08695652173913043,
+   "7-8": 0.018633540372670808,
+   "8-10": 0.018633540372670808,
+   "10-25": 0.006211180124223602
+  },
+  "type_shares": {
+   "Creature": 0.3889,
+   "Enchantment": 0.1975,
+   "Sorcery": 0.179,
+   "Artifact": 0.1358,
+   "Instant": 0.0926,
+   "Planeswalker": 0.0062
+  },
+  "effect_shares": {
+   "unclassified": 0.3526,
+   "vanilla_or_unclassified_body": 0.2543,
+   "token_creation": 0.0809,
+   "voltron_aura_equipment": 0.0636,
+   "lifegain": 0.0462,
+   "counters_matter": 0.0405,
+   "attack_trigger_payoff": 0.0289,
+   "wheel_effect": 0.0231,
+   "cost_reduction": 0.0173,
+   "aristocrats_sac_death_trigger": 0.0173,
+   "life_drain_direct": 0.0173,
+   "graveyard_recursion": 0.0173,
+   "blink_flicker": 0.0058,
+   "spell_copy": 0.0058,
+   "extra_combat": 0.0058
+  },
+  "identities_represented": [
+   "glint-eye",
+   "izzet",
+   "jeskai",
+   "mardu",
+   "mono-red",
+   "rakdos"
+  ]
+ },
+ "Infect": {
+  "n_decks": 8,
+  "n_card_copies": 248,
+  "cmc_stats": {
+   "n": 248,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.0161290322580645,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.4198129759149558
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.11290322580645161,
+   "2-3": 0.29435483870967744,
+   "3-4": 0.2903225806451613,
+   "4-5": 0.16532258064516128,
+   "5-6": 0.07258064516129033,
+   "6-7": 0.036290322580645164,
+   "7-8": 0.024193548387096774,
+   "8-10": 0.004032258064516129,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.629,
+   "Instant": 0.1089,
+   "Enchantment": 0.0968,
+   "Sorcery": 0.0927,
+   "Artifact": 0.0645,
+   "Planeswalker": 0.0081
+  },
+  "effect_shares": {
+   "infect_poison": 0.2852,
+   "counters_matter": 0.2689,
+   "vanilla_or_unclassified_body": 0.0951,
+   "unclassified": 0.0656,
+   "token_creation": 0.0492,
+   "graveyard_recursion": 0.0459,
+   "voltron_aura_equipment": 0.0361,
+   "cost_reduction": 0.0262,
+   "lifegain": 0.0262,
+   "aristocrats_sac_death_trigger": 0.0197,
+   "life_drain_direct": 0.0164,
+   "landfall": 0.0131,
+   "storm": 0.0098,
+   "discard_disruption": 0.0098,
+   "mill": 0.0098
+  },
+  "identities_represented": [
+   "dimir",
+   "golgari",
+   "jeskai",
+   "mono-green",
+   "orzhov",
+   "witch-maw"
+  ]
+ },
+ "Deathtouch": {
+  "n_decks": 2,
+  "n_card_copies": 71,
+  "cmc_stats": {
+   "n": 71,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 2.0,
+   "mean": 2.7746478873239435,
+   "p75": 4.0,
+   "max": 7.0,
+   "std": 1.637562454231783
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.23943661971830985,
+   "2-3": 0.30985915492957744,
+   "3-4": 0.18309859154929578,
+   "4-5": 0.08450704225352113,
+   "5-6": 0.11267605633802817,
+   "6-7": 0.028169014084507043,
+   "7-8": 0.04225352112676056,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6056,
+   "Instant": 0.1268,
+   "Sorcery": 0.0986,
+   "Artifact": 0.0845,
+   "Enchantment": 0.0845
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2439,
+   "token_creation": 0.1463,
+   "counters_matter": 0.122,
+   "unclassified": 0.1098,
+   "infect_poison": 0.0976,
+   "cost_reduction": 0.0488,
+   "lifegain": 0.0488,
+   "graveyard_recursion": 0.0488,
+   "voltron_aura_equipment": 0.0366,
+   "landfall": 0.0244,
+   "tribal_synergy_lord": 0.0244,
+   "aristocrats_sac_death_trigger": 0.0122,
+   "token_or_counter_doubler": 0.0122,
+   "mill": 0.0122,
+   "life_drain_direct": 0.0122
+  },
+  "identities_represented": [
+   "golgari",
+   "mono-green"
+  ]
+ },
+ "Proliferate": {
+  "n_decks": 5,
+  "n_card_copies": 158,
+  "cmc_stats": {
+   "n": 158,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 2.9240506329113924,
+   "p75": 4.0,
+   "max": 7.0,
+   "std": 1.4211080709555635
+  },
+  "cmc_histogram": {
+   "0-1": 0.006329113924050633,
+   "1-2": 0.12658227848101267,
+   "2-3": 0.310126582278481,
+   "3-4": 0.2721518987341772,
+   "4-5": 0.13924050632911392,
+   "5-6": 0.0949367088607595,
+   "6-7": 0.02531645569620253,
+   "7-8": 0.02531645569620253,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5633,
+   "Artifact": 0.1392,
+   "Enchantment": 0.1266,
+   "Instant": 0.0949,
+   "Sorcery": 0.0633,
+   "Planeswalker": 0.0127
+  },
+  "effect_shares": {
+   "counters_matter": 0.3867,
+   "unclassified": 0.1326,
+   "vanilla_or_unclassified_body": 0.116,
+   "infect_poison": 0.116,
+   "cost_reduction": 0.0608,
+   "token_creation": 0.0331,
+   "voltron_aura_equipment": 0.0276,
+   "attack_trigger_payoff": 0.0276,
+   "graveyard_recursion": 0.0221,
+   "landfall": 0.0166,
+   "lifegain": 0.0166,
+   "token_or_counter_doubler": 0.0166,
+   "mill": 0.011,
+   "aristocrats_sac_death_trigger": 0.0055,
+   "theft_effect": 0.0055
+  },
+  "identities_represented": [
+   "bant",
+   "jeskai",
+   "mono-green",
+   "witch-maw"
+  ]
+ },
+ "Lands Matter": {
+  "n_decks": 27,
+  "n_card_copies": 670,
+  "cmc_stats": {
+   "n": 661,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.590015128593041,
+   "p75": 5.0,
+   "max": 10.0,
+   "std": 1.711354843589967
+  },
+  "cmc_histogram": {
+   "0-1": 0.01361573373676248,
+   "1-2": 0.08925869894099848,
+   "2-3": 0.14977307110438728,
+   "3-4": 0.30559757942511345,
+   "4-5": 0.16338880484114976,
+   "5-6": 0.10741301059001512,
+   "6-7": 0.11800302571860817,
+   "7-8": 0.04084720121028744,
+   "8-10": 0.01059001512859304,
+   "10-25": 0.0015128593040847202
+  },
+  "type_shares": {
+   "Creature": 0.6104,
+   "Enchantment": 0.1478,
+   "Artifact": 0.1119,
+   "Sorcery": 0.094,
+   "Instant": 0.0254,
+   "Planeswalker": 0.0104
+  },
+  "effect_shares": {
+   "landfall": 0.1821,
+   "vanilla_or_unclassified_body": 0.1767,
+   "token_creation": 0.1433,
+   "unclassified": 0.1401,
+   "counters_matter": 0.1078,
+   "mill": 0.0539,
+   "graveyard_recursion": 0.0496,
+   "land_destruction": 0.0259,
+   "lifegain": 0.0237,
+   "voltron_aura_equipment": 0.0151,
+   "cost_reduction": 0.0151,
+   "blink_flicker": 0.0151,
+   "attack_trigger_payoff": 0.0119,
+   "aristocrats_sac_death_trigger": 0.0097,
+   "life_drain_direct": 0.0086
+  },
+  "identities_represented": [
+   "abzan",
+   "bant",
+   "five-color",
+   "gruul",
+   "ink-treader",
+   "jund",
+   "mono-green",
+   "naya",
+   "simic",
+   "sultai",
+   "temur",
+   "witch-maw"
+  ]
+ },
+ "Stompy": {
+  "n_decks": 4,
+  "n_card_copies": 107,
+  "cmc_stats": {
+   "n": 107,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 5.0,
+   "mean": 4.663551401869159,
+   "p75": 6.0,
+   "max": 12.0,
+   "std": 2.4146899541060445
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.07476635514018691,
+   "2-3": 0.09345794392523364,
+   "3-4": 0.205607476635514,
+   "4-5": 0.11214953271028037,
+   "5-6": 0.2336448598130841,
+   "6-7": 0.09345794392523364,
+   "7-8": 0.037383177570093455,
+   "8-10": 0.12149532710280374,
+   "10-25": 0.028037383177570093
+  },
+  "type_shares": {
+   "Creature": 0.5794,
+   "Artifact": 0.1215,
+   "Enchantment": 0.1215,
+   "Instant": 0.0935,
+   "Sorcery": 0.0654,
+   "Planeswalker": 0.0187
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.287,
+   "unclassified": 0.2348,
+   "counters_matter": 0.1652,
+   "cost_reduction": 0.087,
+   "token_creation": 0.0696,
+   "graveyard_recursion": 0.0261,
+   "aristocrats_sac_death_trigger": 0.0261,
+   "voltron_aura_equipment": 0.0261,
+   "token_or_counter_doubler": 0.0261,
+   "lifegain": 0.0174,
+   "tribal_synergy_lord": 0.0174,
+   "landfall": 0.0087,
+   "attack_trigger_payoff": 0.0087
+  },
+  "identities_represented": [
+   "gruul",
+   "mono-green",
+   "naya"
+  ]
+ },
+ "Good Stuff": {
+  "n_decks": 4,
+  "n_card_copies": 64,
+  "cmc_stats": {
+   "n": 63,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 4.0,
+   "mean": 4.492063492063492,
+   "p75": 6.75,
+   "max": 12.0,
+   "std": 2.4936300808451404
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.07936507936507936,
+   "2-3": 0.19047619047619047,
+   "3-4": 0.19047619047619047,
+   "4-5": 0.06349206349206349,
+   "5-6": 0.14285714285714285,
+   "6-7": 0.07936507936507936,
+   "7-8": 0.1111111111111111,
+   "8-10": 0.12698412698412698,
+   "10-25": 0.015873015873015872
+  },
+  "type_shares": {
+   "Creature": 0.5625,
+   "Artifact": 0.1406,
+   "Enchantment": 0.125,
+   "Sorcery": 0.0938,
+   "Instant": 0.0625,
+   "Planeswalker": 0.0156
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.3243,
+   "unclassified": 0.2162,
+   "token_creation": 0.1081,
+   "graveyard_recursion": 0.0541,
+   "voltron_aura_equipment": 0.0541,
+   "cost_reduction": 0.0405,
+   "lifegain": 0.0405,
+   "aristocrats_sac_death_trigger": 0.0405,
+   "life_drain_direct": 0.027,
+   "attack_trigger_payoff": 0.027,
+   "extra_combat": 0.027,
+   "counters_matter": 0.027,
+   "theft_effect": 0.0135
+  },
+  "identities_represented": [
+   "five-color",
+   "mono-green",
+   "yore-tiller"
+  ]
+ },
+ "Hydras": {
+  "n_decks": 3,
+  "n_card_copies": 90,
+  "cmc_stats": {
+   "n": 90,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 2.0,
+   "mean": 2.8444444444444446,
+   "p75": 4.0,
+   "max": 6.0,
+   "std": 1.4900492990435743
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.17777777777777778,
+   "2-3": 0.3333333333333333,
+   "3-4": 0.2222222222222222,
+   "4-5": 0.06666666666666667,
+   "5-6": 0.13333333333333333,
+   "6-7": 0.06666666666666667,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5,
+   "Enchantment": 0.2111,
+   "Sorcery": 0.1222,
+   "Artifact": 0.1111,
+   "Instant": 0.0556
+  },
+  "effect_shares": {
+   "counters_matter": 0.4775,
+   "unclassified": 0.1441,
+   "token_or_counter_doubler": 0.0721,
+   "cost_reduction": 0.0631,
+   "token_creation": 0.0631,
+   "voltron_aura_equipment": 0.045,
+   "spell_copy": 0.036,
+   "vanilla_or_unclassified_body": 0.027,
+   "attack_trigger_payoff": 0.027,
+   "landfall": 0.018,
+   "lifegain": 0.009,
+   "life_drain_direct": 0.009,
+   "discard_disruption": 0.009
+  },
+  "identities_represented": [
+   "mono-green",
+   "sultai",
+   "temur"
+  ]
+ },
+ "Landfall": {
+  "n_decks": 15,
+  "n_card_copies": 367,
+  "cmc_stats": {
+   "n": 364,
+   "min": 0.0,
+   "p25": 3.0,
+   "median": 3.0,
+   "mean": 3.6648351648351647,
+   "p75": 5.0,
+   "max": 8.0,
+   "std": 1.6534262546067107
+  },
+  "cmc_histogram": {
+   "0-1": 0.016483516483516484,
+   "1-2": 0.06593406593406594,
+   "2-3": 0.14285714285714285,
+   "3-4": 0.32142857142857145,
+   "4-5": 0.14560439560439561,
+   "5-6": 0.12637362637362637,
+   "6-7": 0.1401098901098901,
+   "7-8": 0.03571428571428571,
+   "8-10": 0.005494505494505495,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6431,
+   "Enchantment": 0.1417,
+   "Artifact": 0.1117,
+   "Sorcery": 0.0708,
+   "Instant": 0.0191,
+   "Planeswalker": 0.0136
+  },
+  "effect_shares": {
+   "landfall": 0.2137,
+   "vanilla_or_unclassified_body": 0.1737,
+   "token_creation": 0.1489,
+   "counters_matter": 0.124,
+   "unclassified": 0.1145,
+   "mill": 0.0324,
+   "land_destruction": 0.0286,
+   "lifegain": 0.0286,
+   "graveyard_recursion": 0.0229,
+   "blink_flicker": 0.021,
+   "cost_reduction": 0.0172,
+   "aristocrats_sac_death_trigger": 0.0134,
+   "attack_trigger_payoff": 0.0134,
+   "extra_combat": 0.0115,
+   "token_or_counter_doubler": 0.0095
+  },
+  "identities_represented": [
+   "bant",
+   "five-color",
+   "gruul",
+   "ink-treader",
+   "jund",
+   "mono-green",
+   "naya",
+   "simic",
+   "sultai",
+   "temur"
+  ]
+ },
+ "Pillow Fort": {
+  "n_decks": 15,
+  "n_card_copies": 384,
+  "cmc_stats": {
+   "n": 377,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.350132625994695,
+   "p75": 4.0,
+   "max": 11.0,
+   "std": 1.7705088460446285
+  },
+  "cmc_histogram": {
+   "0-1": 0.013262599469496022,
+   "1-2": 0.11671087533156499,
+   "2-3": 0.20689655172413793,
+   "3-4": 0.2519893899204244,
+   "4-5": 0.20689655172413793,
+   "5-6": 0.09283819628647215,
+   "6-7": 0.05305039787798409,
+   "7-8": 0.034482758620689655,
+   "8-10": 0.015915119363395226,
+   "10-25": 0.007957559681697613
+  },
+  "type_shares": {
+   "Enchantment": 0.3958,
+   "Creature": 0.3776,
+   "Sorcery": 0.0859,
+   "Instant": 0.0781,
+   "Artifact": 0.0547,
+   "Planeswalker": 0.0078
+  },
+  "effect_shares": {
+   "unclassified": 0.2995,
+   "vanilla_or_unclassified_body": 0.1863,
+   "lifegain": 0.1226,
+   "token_creation": 0.0778,
+   "voltron_aura_equipment": 0.0755,
+   "counters_matter": 0.0495,
+   "cost_reduction": 0.0448,
+   "life_drain_direct": 0.0354,
+   "graveyard_recursion": 0.0236,
+   "mill": 0.0212,
+   "discard_disruption": 0.0165,
+   "spell_copy": 0.0071,
+   "wheel_effect": 0.0071,
+   "blink_flicker": 0.0071,
+   "aristocrats_sac_death_trigger": 0.0071
+  },
+  "identities_represented": [
+   "azorius",
+   "bant",
+   "esper",
+   "five-color",
+   "ink-treader",
+   "jeskai",
+   "mardu",
+   "orzhov",
+   "selesnya",
+   "yore-tiller"
+  ]
+ },
+ "Hatebears": {
+  "n_decks": 5,
+  "n_card_copies": 137,
+  "cmc_stats": {
+   "n": 136,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 2.860294117647059,
+   "p75": 4.0,
+   "max": 7.0,
+   "std": 1.52031727589249
+  },
+  "cmc_histogram": {
+   "0-1": 0.022058823529411766,
+   "1-2": 0.125,
+   "2-3": 0.34558823529411764,
+   "3-4": 0.25,
+   "4-5": 0.08088235294117647,
+   "5-6": 0.11764705882352941,
+   "6-7": 0.029411764705882353,
+   "7-8": 0.029411764705882353,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.7299,
+   "Enchantment": 0.1825,
+   "Artifact": 0.0438,
+   "Instant": 0.0219,
+   "Sorcery": 0.0146,
+   "Planeswalker": 0.0073
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4966,
+   "lifegain": 0.1224,
+   "unclassified": 0.102,
+   "token_creation": 0.0612,
+   "life_drain_direct": 0.0476,
+   "counters_matter": 0.0408,
+   "cost_reduction": 0.0204,
+   "tribal_synergy_lord": 0.0204,
+   "aristocrats_sac_death_trigger": 0.0204,
+   "voltron_aura_equipment": 0.0204,
+   "attack_trigger_payoff": 0.0136,
+   "storm": 0.0068,
+   "landfall": 0.0068,
+   "discard_disruption": 0.0068,
+   "extra_combat": 0.0068
+  },
+  "identities_represented": [
+   "azorius",
+   "boros",
+   "orzhov",
+   "selesnya"
+  ]
+ },
+ "Tap / Untap": {
+  "n_decks": 1,
+  "n_card_copies": 26,
+  "cmc_stats": {
+   "n": 25,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.08,
+   "p75": 4.0,
+   "max": 5.0,
+   "std": 1.2302845199383758
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.16,
+   "2-3": 0.12,
+   "3-4": 0.32,
+   "4-5": 0.28,
+   "5-6": 0.12,
+   "6-7": 0.0,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.4615,
+   "Instant": 0.1923,
+   "Sorcery": 0.1538,
+   "Enchantment": 0.1538,
+   "Artifact": 0.0385
+  },
+  "effect_shares": {
+   "unclassified": 0.3704,
+   "vanilla_or_unclassified_body": 0.3333,
+   "counters_matter": 0.1111,
+   "attack_trigger_payoff": 0.0741,
+   "cost_reduction": 0.037,
+   "voltron_aura_equipment": 0.037,
+   "landfall": 0.037
+  },
+  "identities_represented": [
+   "azorius"
+  ]
+ },
+ "Snow": {
+  "n_decks": 1,
+  "n_card_copies": 28,
+  "cmc_stats": {
+   "n": 28,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.107142857142857,
+   "p75": 4.0,
+   "max": 5.0,
+   "std": 1.2345990012459718
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.14285714285714285,
+   "2-3": 0.14285714285714285,
+   "3-4": 0.32142857142857145,
+   "4-5": 0.25,
+   "5-6": 0.14285714285714285,
+   "6-7": 0.0,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.4643,
+   "Instant": 0.1786,
+   "Sorcery": 0.1429,
+   "Enchantment": 0.1071,
+   "Artifact": 0.1071
+  },
+  "effect_shares": {
+   "unclassified": 0.4138,
+   "vanilla_or_unclassified_body": 0.3448,
+   "counters_matter": 0.1034,
+   "attack_trigger_payoff": 0.069,
+   "cost_reduction": 0.0345,
+   "voltron_aura_equipment": 0.0345
+  },
+  "identities_represented": [
+   "azorius"
+  ]
+ },
+ "Group Hug": {
+  "n_decks": 12,
+  "n_card_copies": 272,
+  "cmc_stats": {
+   "n": 271,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.3542435424354244,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 1.5840447782516345
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.11070110701107011,
+   "2-3": 0.18081180811808117,
+   "3-4": 0.3247232472324723,
+   "4-5": 0.18081180811808117,
+   "5-6": 0.09225092250922509,
+   "6-7": 0.06642066420664207,
+   "7-8": 0.03690036900369004,
+   "8-10": 0.0036900369003690036,
+   "10-25": 0.0036900369003690036
+  },
+  "type_shares": {
+   "Creature": 0.4485,
+   "Enchantment": 0.2426,
+   "Sorcery": 0.136,
+   "Artifact": 0.0993,
+   "Instant": 0.0735
+  },
+  "effect_shares": {
+   "unclassified": 0.3759,
+   "vanilla_or_unclassified_body": 0.2621,
+   "counters_matter": 0.1172,
+   "lifegain": 0.0517,
+   "token_creation": 0.0379,
+   "wheel_effect": 0.0241,
+   "voltron_aura_equipment": 0.0241,
+   "graveyard_recursion": 0.0207,
+   "discard_disruption": 0.0172,
+   "token_or_counter_doubler": 0.0138,
+   "life_drain_direct": 0.0138,
+   "attack_trigger_payoff": 0.0138,
+   "theft_effect": 0.0069,
+   "mill": 0.0069,
+   "cost_reduction": 0.0034
+  },
+  "identities_represented": [
+   "azorius",
+   "bant",
+   "five-color",
+   "glint-eye",
+   "gruul",
+   "ink-treader",
+   "jeskai",
+   "jund",
+   "naya",
+   "selesnya",
+   "temur",
+   "yore-tiller"
+  ]
+ },
+ "Ninjutsu": {
+  "n_decks": 2,
+  "n_card_copies": 58,
+  "cmc_stats": {
+   "n": 57,
+   "min": 0.0,
+   "p25": 1.0,
+   "median": 2.0,
+   "mean": 3.3859649122807016,
+   "p75": 5.0,
+   "max": 15.0,
+   "std": 2.8943646757037778
+  },
+  "cmc_histogram": {
+   "0-1": 0.03508771929824561,
+   "1-2": 0.2807017543859649,
+   "2-3": 0.21052631578947367,
+   "3-4": 0.12280701754385964,
+   "4-5": 0.07017543859649122,
+   "5-6": 0.07017543859649122,
+   "6-7": 0.03508771929824561,
+   "7-8": 0.10526315789473684,
+   "8-10": 0.03508771929824561,
+   "10-25": 0.03508771929824561
+  },
+  "type_shares": {
+   "Creature": 0.7241,
+   "Enchantment": 0.0862,
+   "Sorcery": 0.0862,
+   "Instant": 0.069,
+   "Artifact": 0.0345
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.6102,
+   "unclassified": 0.1186,
+   "voltron_aura_equipment": 0.0508,
+   "tribal_synergy_lord": 0.0339,
+   "lifegain": 0.0339,
+   "graveyard_recursion": 0.0339,
+   "extra_turn": 0.0339,
+   "life_drain_direct": 0.0339,
+   "theft_effect": 0.0169,
+   "token_creation": 0.0169,
+   "counters_matter": 0.0169
+  },
+  "identities_represented": [
+   "dimir"
+  ]
+ },
+ "Tempo": {
+  "n_decks": 2,
+  "n_card_copies": 63,
+  "cmc_stats": {
+   "n": 62,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.370967741935484,
+   "p75": 4.0,
+   "max": 15.0,
+   "std": 2.4312075253292305
+  },
+  "cmc_histogram": {
+   "0-1": 0.016129032258064516,
+   "1-2": 0.1774193548387097,
+   "2-3": 0.22580645161290322,
+   "3-4": 0.16129032258064516,
+   "4-5": 0.22580645161290322,
+   "5-6": 0.08064516129032258,
+   "6-7": 0.03225806451612903,
+   "7-8": 0.04838709677419355,
+   "8-10": 0.0,
+   "10-25": 0.03225806451612903
+  },
+  "type_shares": {
+   "Creature": 0.6667,
+   "Instant": 0.1111,
+   "Sorcery": 0.1111,
+   "Enchantment": 0.0952,
+   "Artifact": 0.0159
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.3291,
+   "unclassified": 0.1266,
+   "counters_matter": 0.1266,
+   "blink_flicker": 0.1139,
+   "token_creation": 0.0633,
+   "aristocrats_sac_death_trigger": 0.038,
+   "voltron_aura_equipment": 0.0253,
+   "graveyard_recursion": 0.0253,
+   "extra_turn": 0.0253,
+   "attack_trigger_payoff": 0.0253,
+   "theft_effect": 0.0127,
+   "tribal_synergy_lord": 0.0127,
+   "lifegain": 0.0127,
+   "life_drain_direct": 0.0127,
+   "extra_combat": 0.0127
+  },
+  "identities_represented": [
+   "dimir",
+   "five-color"
+  ]
+ },
+ "Unblockable": {
+  "n_decks": 4,
+  "n_card_copies": 93,
+  "cmc_stats": {
+   "n": 93,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.2688172043010755,
+   "p75": 4.0,
+   "max": 12.0,
+   "std": 2.0952572400709184
+  },
+  "cmc_histogram": {
+   "0-1": 0.010752688172043012,
+   "1-2": 0.1827956989247312,
+   "2-3": 0.22580645161290322,
+   "3-4": 0.23655913978494625,
+   "4-5": 0.12903225806451613,
+   "5-6": 0.07526881720430108,
+   "6-7": 0.021505376344086023,
+   "7-8": 0.08602150537634409,
+   "8-10": 0.021505376344086023,
+   "10-25": 0.010752688172043012
+  },
+  "type_shares": {
+   "Creature": 0.6667,
+   "Artifact": 0.1613,
+   "Enchantment": 0.086,
+   "Instant": 0.0538,
+   "Sorcery": 0.0323
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4896,
+   "unclassified": 0.1771,
+   "voltron_aura_equipment": 0.1042,
+   "counters_matter": 0.0521,
+   "cost_reduction": 0.0417,
+   "lifegain": 0.0208,
+   "token_creation": 0.0208,
+   "life_drain_direct": 0.0208,
+   "graveyard_recursion": 0.0208,
+   "aristocrats_sac_death_trigger": 0.0208,
+   "extra_combat": 0.0104,
+   "theft_effect": 0.0104,
+   "attack_trigger_payoff": 0.0104
+  },
+  "identities_represented": [
+   "dimir",
+   "esper",
+   "sultai",
+   "witch-maw"
+  ]
+ },
+ "Donate": {
+  "n_decks": 2,
+  "n_card_copies": 63,
+  "cmc_stats": {
+   "n": 63,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 3.0,
+   "mean": 3.507936507936508,
+   "p75": 4.0,
+   "max": 7.0,
+   "std": 1.3436861863535434
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.06349206349206349,
+   "2-3": 0.14285714285714285,
+   "3-4": 0.30158730158730157,
+   "4-5": 0.3333333333333333,
+   "5-6": 0.06349206349206349,
+   "6-7": 0.06349206349206349,
+   "7-8": 0.031746031746031744,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5397,
+   "Enchantment": 0.1746,
+   "Sorcery": 0.127,
+   "Instant": 0.1111,
+   "Artifact": 0.0476
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4154,
+   "unclassified": 0.2923,
+   "lifegain": 0.0615,
+   "aristocrats_sac_death_trigger": 0.0462,
+   "voltron_aura_equipment": 0.0462,
+   "token_creation": 0.0462,
+   "cost_reduction": 0.0154,
+   "infect_poison": 0.0154,
+   "graveyard_recursion": 0.0154,
+   "discard_disruption": 0.0154,
+   "counters_matter": 0.0154,
+   "theft_effect": 0.0154
+  },
+  "identities_represented": [
+   "dimir",
+   "jeskai"
+  ]
+ },
+ "Exile": {
+  "n_decks": 3,
+  "n_card_copies": 87,
+  "cmc_stats": {
+   "n": 86,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.0697674418604652,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.4530697071454242
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.06976744186046512,
+   "2-3": 0.37209302325581395,
+   "3-4": 0.23255813953488372,
+   "4-5": 0.19767441860465115,
+   "5-6": 0.046511627906976744,
+   "6-7": 0.046511627906976744,
+   "7-8": 0.023255813953488372,
+   "8-10": 0.011627906976744186,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5402,
+   "Enchantment": 0.1494,
+   "Sorcery": 0.1379,
+   "Instant": 0.1034,
+   "Artifact": 0.069
+  },
+  "effect_shares": {
+   "unclassified": 0.3173,
+   "vanilla_or_unclassified_body": 0.1635,
+   "counters_matter": 0.125,
+   "blink_flicker": 0.0962,
+   "token_creation": 0.0865,
+   "lifegain": 0.0673,
+   "life_drain_direct": 0.0577,
+   "voltron_aura_equipment": 0.0192,
+   "attack_trigger_payoff": 0.0192,
+   "discard_disruption": 0.0192,
+   "landfall": 0.0096,
+   "aristocrats_sac_death_trigger": 0.0096,
+   "extra_combat": 0.0096
+  },
+  "identities_represented": [
+   "mardu",
+   "orzhov",
+   "rakdos"
+  ]
+ },
+ "Unnatural": {
+  "n_decks": 2,
+  "n_card_copies": 43,
+  "cmc_stats": {
+   "n": 43,
+   "min": 2.0,
+   "p25": 2.0,
+   "median": 4.0,
+   "mean": 3.953488372093023,
+   "p75": 5.0,
+   "max": 9.0,
+   "std": 1.6975151247343871
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.27906976744186046,
+   "3-4": 0.13953488372093023,
+   "4-5": 0.23255813953488372,
+   "5-6": 0.16279069767441862,
+   "6-7": 0.11627906976744186,
+   "7-8": 0.046511627906976744,
+   "8-10": 0.023255813953488372,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Enchantment": 0.4651,
+   "Creature": 0.3488,
+   "Artifact": 0.1395,
+   "Instant": 0.0233,
+   "Sorcery": 0.0233
+  },
+  "effect_shares": {
+   "unclassified": 0.28,
+   "vanilla_or_unclassified_body": 0.16,
+   "token_creation": 0.14,
+   "tribal_synergy_lord": 0.08,
+   "attack_trigger_payoff": 0.06,
+   "cost_reduction": 0.06,
+   "voltron_aura_equipment": 0.06,
+   "counters_matter": 0.06,
+   "aristocrats_sac_death_trigger": 0.02,
+   "lifegain": 0.02,
+   "landfall": 0.02,
+   "token_or_counter_doubler": 0.02,
+   "life_drain_direct": 0.02
+  },
+  "identities_represented": [
+   "esper",
+   "gruul"
+  ]
+ },
+ "Fight": {
+  "n_decks": 1,
+  "n_card_copies": 31,
+  "cmc_stats": {
+   "n": 31,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 2.0,
+   "mean": 2.5483870967741935,
+   "p75": 3.0,
+   "max": 5.0,
+   "std": 1.1869915801918773
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.22580645161290322,
+   "2-3": 0.2903225806451613,
+   "3-4": 0.25806451612903225,
+   "4-5": 0.16129032258064516,
+   "5-6": 0.06451612903225806,
+   "6-7": 0.0,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.3226,
+   "Instant": 0.2258,
+   "Enchantment": 0.2258,
+   "Artifact": 0.129,
+   "Sorcery": 0.0968
+  },
+  "effect_shares": {
+   "counters_matter": 0.3143,
+   "unclassified": 0.2571,
+   "voltron_aura_equipment": 0.2,
+   "vanilla_or_unclassified_body": 0.1143,
+   "cost_reduction": 0.0571,
+   "token_or_counter_doubler": 0.0286,
+   "attack_trigger_payoff": 0.0286
+  },
+  "identities_represented": [
+   "gruul"
+  ]
+ },
+ "Fling": {
+  "n_decks": 2,
+  "n_card_copies": 59,
+  "cmc_stats": {
+   "n": 59,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 3.0,
+   "mean": 3.7966101694915255,
+   "p75": 5.0,
+   "max": 12.0,
+   "std": 1.9114256017650861
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0847457627118644,
+   "2-3": 0.15254237288135594,
+   "3-4": 0.2711864406779661,
+   "4-5": 0.15254237288135594,
+   "5-6": 0.2033898305084746,
+   "6-7": 0.0847457627118644,
+   "7-8": 0.01694915254237288,
+   "8-10": 0.01694915254237288,
+   "10-25": 0.01694915254237288
+  },
+  "type_shares": {
+   "Creature": 0.4746,
+   "Enchantment": 0.1695,
+   "Instant": 0.1356,
+   "Sorcery": 0.1356,
+   "Artifact": 0.0847
+  },
+  "effect_shares": {
+   "unclassified": 0.2899,
+   "counters_matter": 0.2899,
+   "vanilla_or_unclassified_body": 0.1159,
+   "graveyard_recursion": 0.0725,
+   "cost_reduction": 0.058,
+   "token_or_counter_doubler": 0.0435,
+   "landfall": 0.0435,
+   "aristocrats_sac_death_trigger": 0.0435,
+   "attack_trigger_payoff": 0.0145,
+   "discard_disruption": 0.0145,
+   "voltron_aura_equipment": 0.0145
+  },
+  "identities_represented": [
+   "gruul",
+   "jund"
+  ]
+ },
+ "Populate": {
+  "n_decks": 3,
+  "n_card_copies": 88,
+  "cmc_stats": {
+   "n": 87,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.218390804597701,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.5493809468739876
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.08045977011494253,
+   "2-3": 0.3563218390804598,
+   "3-4": 0.16091954022988506,
+   "4-5": 0.19540229885057472,
+   "5-6": 0.12643678160919541,
+   "6-7": 0.04597701149425287,
+   "7-8": 0.022988505747126436,
+   "8-10": 0.011494252873563218,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6705,
+   "Enchantment": 0.1818,
+   "Instant": 0.0682,
+   "Artifact": 0.0455,
+   "Sorcery": 0.0341
+  },
+  "effect_shares": {
+   "token_creation": 0.4393,
+   "counters_matter": 0.1028,
+   "token_or_counter_doubler": 0.0935,
+   "vanilla_or_unclassified_body": 0.0841,
+   "lifegain": 0.0748,
+   "unclassified": 0.0748,
+   "attack_trigger_payoff": 0.0467,
+   "landfall": 0.0374,
+   "tribal_synergy_lord": 0.0187,
+   "aristocrats_sac_death_trigger": 0.0093,
+   "cost_reduction": 0.0093,
+   "blink_flicker": 0.0093
+  },
+  "identities_represented": [
+   "naya",
+   "selesnya"
+  ]
+ },
+ "Vanilla": {
+  "n_decks": 1,
+  "n_card_copies": 36,
+  "cmc_stats": {
+   "n": 34,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 4.0,
+   "mean": 4.0,
+   "p75": 5.0,
+   "max": 8.0,
+   "std": 1.970368732287556
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.058823529411764705,
+   "2-3": 0.2647058823529412,
+   "3-4": 0.14705882352941177,
+   "4-5": 0.08823529411764706,
+   "5-6": 0.20588235294117646,
+   "6-7": 0.11764705882352941,
+   "7-8": 0.058823529411764705,
+   "8-10": 0.058823529411764705,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.7222,
+   "Enchantment": 0.1389,
+   "Instant": 0.0556,
+   "Artifact": 0.0556,
+   "Planeswalker": 0.0278
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.6757,
+   "unclassified": 0.1892,
+   "token_creation": 0.0541,
+   "attack_trigger_payoff": 0.027,
+   "voltron_aura_equipment": 0.027,
+   "landfall": 0.027
+  },
+  "identities_represented": [
+   "selesnya"
+  ]
+ },
+ "Lifedrain": {
+  "n_decks": 2,
+  "n_card_copies": 49,
+  "cmc_stats": {
+   "n": 49,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.122448979591837,
+   "p75": 4.0,
+   "max": 6.0,
+   "std": 1.4375809196209242
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.16326530612244897,
+   "2-3": 0.1836734693877551,
+   "3-4": 0.2857142857142857,
+   "4-5": 0.14285714285714285,
+   "5-6": 0.1836734693877551,
+   "6-7": 0.04081632653061224,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6122,
+   "Enchantment": 0.2041,
+   "Artifact": 0.0816,
+   "Sorcery": 0.0816,
+   "Instant": 0.0204
+  },
+  "effect_shares": {
+   "lifegain": 0.3585,
+   "vanilla_or_unclassified_body": 0.2075,
+   "life_drain_direct": 0.1132,
+   "unclassified": 0.0755,
+   "cost_reduction": 0.0755,
+   "voltron_aura_equipment": 0.0566,
+   "aristocrats_sac_death_trigger": 0.0377,
+   "token_creation": 0.0377,
+   "discard_disruption": 0.0189,
+   "counters_matter": 0.0189
+  },
+  "identities_represented": [
+   "esper",
+   "orzhov"
+  ]
+ },
+ "Spell Copy": {
+  "n_decks": 4,
+  "n_card_copies": 100,
+  "cmc_stats": {
+   "n": 99,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 2.919191919191919,
+   "p75": 3.0,
+   "max": 10.0,
+   "std": 1.4680211904779428
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0707070707070707,
+   "2-3": 0.42424242424242425,
+   "3-4": 0.26262626262626265,
+   "4-5": 0.13131313131313133,
+   "5-6": 0.030303030303030304,
+   "6-7": 0.06060606060606061,
+   "7-8": 0.010101010101010102,
+   "8-10": 0.0,
+   "10-25": 0.010101010101010102
+  },
+  "type_shares": {
+   "Creature": 0.46,
+   "Instant": 0.22,
+   "Sorcery": 0.17,
+   "Enchantment": 0.09,
+   "Artifact": 0.06
+  },
+  "effect_shares": {
+   "token_creation": 0.2213,
+   "unclassified": 0.1639,
+   "vanilla_or_unclassified_body": 0.1311,
+   "cost_reduction": 0.0902,
+   "lifegain": 0.082,
+   "spell_copy": 0.082,
+   "life_drain_direct": 0.0656,
+   "aristocrats_sac_death_trigger": 0.0492,
+   "voltron_aura_equipment": 0.0246,
+   "graveyard_recursion": 0.0164,
+   "attack_trigger_payoff": 0.0164,
+   "storm": 0.0164,
+   "mill": 0.0082,
+   "discard_disruption": 0.0082,
+   "theft_effect": 0.0082
+  },
+  "identities_represented": [
+   "grixis",
+   "izzet",
+   "orzhov"
+  ]
+ },
+ "Cycling": {
+  "n_decks": 3,
+  "n_card_copies": 32,
+  "cmc_stats": {
+   "n": 32,
+   "min": 2.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.34375,
+   "p75": 4.5,
+   "max": 8.0,
+   "std": 1.5931371370663607
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.40625,
+   "3-4": 0.28125,
+   "4-5": 0.0625,
+   "5-6": 0.15625,
+   "6-7": 0.03125,
+   "7-8": 0.03125,
+   "8-10": 0.03125,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5,
+   "Sorcery": 0.1875,
+   "Instant": 0.1562,
+   "Artifact": 0.0938,
+   "Enchantment": 0.0625
+  },
+  "effect_shares": {
+   "unclassified": 0.3514,
+   "vanilla_or_unclassified_body": 0.1892,
+   "discard_disruption": 0.1351,
+   "wheel_effect": 0.0811,
+   "graveyard_recursion": 0.0811,
+   "infect_poison": 0.027,
+   "counters_matter": 0.027,
+   "attack_trigger_payoff": 0.027,
+   "token_creation": 0.027,
+   "lifegain": 0.027,
+   "life_drain_direct": 0.027
+  },
+  "identities_represented": [
+   "izzet",
+   "witch-maw",
+   "yore-tiller"
+  ]
+ },
+ "Coin Flip": {
+  "n_decks": 1,
+  "n_card_copies": 25,
+  "cmc_stats": {
+   "n": 25,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.04,
+   "p75": 4.0,
+   "max": 6.0,
+   "std": 1.215894732285653
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.08,
+   "2-3": 0.28,
+   "3-4": 0.32,
+   "4-5": 0.2,
+   "5-6": 0.08,
+   "6-7": 0.04,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.32,
+   "Instant": 0.24,
+   "Enchantment": 0.16,
+   "Sorcery": 0.16,
+   "Artifact": 0.12
+  },
+  "effect_shares": {
+   "unclassified": 0.4231,
+   "vanilla_or_unclassified_body": 0.1923,
+   "attack_trigger_payoff": 0.0769,
+   "voltron_aura_equipment": 0.0769,
+   "lifegain": 0.0385,
+   "token_creation": 0.0385,
+   "spell_copy": 0.0385,
+   "extra_combat": 0.0385,
+   "counters_matter": 0.0385,
+   "extra_turn": 0.0385
+  },
+  "identities_represented": [
+   "izzet"
+  ]
+ },
+ "Food": {
+  "n_decks": 5,
+  "n_card_copies": 112,
+  "cmc_stats": {
+   "n": 111,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 2.954954954954955,
+   "p75": 4.0,
+   "max": 7.0,
+   "std": 1.4039031009616947
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.12612612612612611,
+   "2-3": 0.2882882882882883,
+   "3-4": 0.32432432432432434,
+   "4-5": 0.10810810810810811,
+   "5-6": 0.0990990990990991,
+   "6-7": 0.02702702702702703,
+   "7-8": 0.02702702702702703,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6607,
+   "Enchantment": 0.1071,
+   "Sorcery": 0.0893,
+   "Artifact": 0.0804,
+   "Instant": 0.0625
+  },
+  "effect_shares": {
+   "lifegain": 0.1849,
+   "token_creation": 0.1644,
+   "counters_matter": 0.1164,
+   "vanilla_or_unclassified_body": 0.1027,
+   "unclassified": 0.0959,
+   "life_drain_direct": 0.0753,
+   "graveyard_recursion": 0.0685,
+   "aristocrats_sac_death_trigger": 0.0342,
+   "voltron_aura_equipment": 0.0342,
+   "cost_reduction": 0.0342,
+   "attack_trigger_payoff": 0.0205,
+   "token_or_counter_doubler": 0.0137,
+   "mill": 0.0137,
+   "tribal_synergy_lord": 0.0137,
+   "discard_disruption": 0.0137
+  },
+  "identities_represented": [
+   "abzan",
+   "boros",
+   "golgari",
+   "naya"
+  ]
+ },
+ "Birthing Pod": {
+  "n_decks": 4,
+  "n_card_copies": 100,
+  "cmc_stats": {
+   "n": 100,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.5,
+   "mean": 3.69,
+   "p75": 5.0,
+   "max": 10.0,
+   "std": 1.8313656106850975
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.13,
+   "2-3": 0.15,
+   "3-4": 0.22,
+   "4-5": 0.16,
+   "5-6": 0.18,
+   "6-7": 0.1,
+   "7-8": 0.04,
+   "8-10": 0.01,
+   "10-25": 0.01
+  },
+  "type_shares": {
+   "Creature": 0.72,
+   "Enchantment": 0.12,
+   "Sorcery": 0.1,
+   "Instant": 0.04,
+   "Artifact": 0.02
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.3017,
+   "unclassified": 0.1552,
+   "graveyard_recursion": 0.1207,
+   "lifegain": 0.0948,
+   "aristocrats_sac_death_trigger": 0.0862,
+   "counters_matter": 0.0431,
+   "token_creation": 0.0431,
+   "discard_disruption": 0.0345,
+   "mill": 0.0345,
+   "life_drain_direct": 0.0259,
+   "attack_trigger_payoff": 0.0172,
+   "wheel_effect": 0.0172,
+   "voltron_aura_equipment": 0.0086,
+   "cost_reduction": 0.0086,
+   "landfall": 0.0086
+  },
+  "identities_represented": [
+   "dune-brood",
+   "glint-eye",
+   "golgari",
+   "jund"
+  ]
+ },
+ "Cantrips": {
+  "n_decks": 1,
+  "n_card_copies": 19,
+  "cmc_stats": {
+   "n": 19,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 2.789473684210526,
+   "p75": 3.7499999999999996,
+   "max": 5.0,
+   "std": 1.195559651747426
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.15789473684210525,
+   "2-3": 0.2631578947368421,
+   "3-4": 0.3157894736842105,
+   "4-5": 0.15789473684210525,
+   "5-6": 0.10526315789473684,
+   "6-7": 0.0,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5263,
+   "Instant": 0.1579,
+   "Sorcery": 0.1579,
+   "Enchantment": 0.1579
+  },
+  "effect_shares": {
+   "token_creation": 0.25,
+   "vanilla_or_unclassified_body": 0.2,
+   "unclassified": 0.15,
+   "counters_matter": 0.15,
+   "spell_copy": 0.15,
+   "blink_flicker": 0.05,
+   "extra_combat": 0.05
+  },
+  "identities_represented": [
+   "boros"
+  ]
+ },
+ "Topdeck": {
+  "n_decks": 2,
+  "n_card_copies": 63,
+  "cmc_stats": {
+   "n": 61,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 5.0,
+   "mean": 5.213114754098361,
+   "p75": 7.0,
+   "max": 10.0,
+   "std": 2.2696483016231848
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.03278688524590164,
+   "2-3": 0.08196721311475409,
+   "3-4": 0.14754098360655737,
+   "4-5": 0.11475409836065574,
+   "5-6": 0.21311475409836064,
+   "6-7": 0.13114754098360656,
+   "7-8": 0.11475409836065574,
+   "8-10": 0.09836065573770492,
+   "10-25": 0.06557377049180328
+  },
+  "type_shares": {
+   "Creature": 0.3175,
+   "Sorcery": 0.254,
+   "Enchantment": 0.254,
+   "Instant": 0.0952,
+   "Artifact": 0.0794
+  },
+  "effect_shares": {
+   "unclassified": 0.3824,
+   "vanilla_or_unclassified_body": 0.1324,
+   "cost_reduction": 0.1029,
+   "token_creation": 0.0882,
+   "graveyard_recursion": 0.0735,
+   "counters_matter": 0.0588,
+   "discard_disruption": 0.0294,
+   "lifegain": 0.0147,
+   "spell_copy": 0.0147,
+   "attack_trigger_payoff": 0.0147,
+   "voltron_aura_equipment": 0.0147,
+   "wheel_effect": 0.0147,
+   "life_drain_direct": 0.0147,
+   "blink_flicker": 0.0147,
+   "extra_turn": 0.0147
+  },
+  "identities_represented": [
+   "boros",
+   "esper"
+  ]
+ },
+ "Explore": {
+  "n_decks": 1,
+  "n_card_copies": 33,
+  "cmc_stats": {
+   "n": 33,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 2.8484848484848486,
+   "p75": 3.0,
+   "max": 5.0,
+   "std": 0.9884549351697023
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.030303030303030304,
+   "2-3": 0.3939393939393939,
+   "3-4": 0.36363636363636365,
+   "4-5": 0.12121212121212122,
+   "5-6": 0.09090909090909091,
+   "6-7": 0.0,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.7273,
+   "Enchantment": 0.1515,
+   "Instant": 0.0606,
+   "Sorcery": 0.0606
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.359,
+   "counters_matter": 0.2821,
+   "tribal_synergy_lord": 0.1026,
+   "cost_reduction": 0.0769,
+   "unclassified": 0.0513,
+   "token_or_counter_doubler": 0.0256,
+   "token_creation": 0.0256,
+   "landfall": 0.0256,
+   "spell_copy": 0.0256,
+   "theft_effect": 0.0256
+  },
+  "identities_represented": [
+   "simic"
+  ]
+ },
+ "Morph": {
+  "n_decks": 1,
+  "n_card_copies": 23,
+  "cmc_stats": {
+   "n": 23,
+   "min": 2.0,
+   "p25": 3.0,
+   "median": 5.0,
+   "mean": 4.434782608695652,
+   "p75": 5.749999999999999,
+   "max": 7.0,
+   "std": 1.3457206556993182
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.043478260869565216,
+   "3-4": 0.30434782608695654,
+   "4-5": 0.13043478260869565,
+   "5-6": 0.2608695652173913,
+   "6-7": 0.21739130434782608,
+   "7-8": 0.043478260869565216,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6522,
+   "Artifact": 0.1304,
+   "Enchantment": 0.1304,
+   "Instant": 0.0435,
+   "Sorcery": 0.0435
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4,
+   "unclassified": 0.2,
+   "landfall": 0.12,
+   "token_creation": 0.08,
+   "blink_flicker": 0.04,
+   "mill": 0.04,
+   "graveyard_recursion": 0.04,
+   "attack_trigger_payoff": 0.04,
+   "aristocrats_sac_death_trigger": 0.04
+  },
+  "identities_represented": [
+   "simic"
+  ]
+ },
+ "Zoo": {
+  "n_decks": 1,
+  "n_card_copies": 24,
+  "cmc_stats": {
+   "n": 23,
+   "min": 1.0,
+   "p25": 3.25,
+   "median": 5.0,
+   "mean": 4.6521739130434785,
+   "p75": 5.749999999999999,
+   "max": 8.0,
+   "std": 1.9695220265923694
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.043478260869565216,
+   "2-3": 0.13043478260869565,
+   "3-4": 0.08695652173913043,
+   "4-5": 0.21739130434782608,
+   "5-6": 0.2608695652173913,
+   "6-7": 0.043478260869565216,
+   "7-8": 0.08695652173913043,
+   "8-10": 0.13043478260869565,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.7917,
+   "Artifact": 0.125,
+   "Instant": 0.0833
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.375,
+   "token_creation": 0.25,
+   "counters_matter": 0.125,
+   "spell_copy": 0.125,
+   "voltron_aura_equipment": 0.0833,
+   "unclassified": 0.0417
+  },
+  "identities_represented": [
+   "simic"
+  ]
+ },
+ "Discover": {
+  "n_decks": 2,
+  "n_card_copies": 55,
+  "cmc_stats": {
+   "n": 54,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 4.851851851851852,
+   "p75": 6.0,
+   "max": 12.0,
+   "std": 2.3365644882351857
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.018518518518518517,
+   "2-3": 0.1111111111111111,
+   "3-4": 0.2037037037037037,
+   "4-5": 0.18518518518518517,
+   "5-6": 0.14814814814814814,
+   "6-7": 0.12962962962962962,
+   "7-8": 0.05555555555555555,
+   "8-10": 0.1111111111111111,
+   "10-25": 0.037037037037037035
+  },
+  "type_shares": {
+   "Creature": 0.6727,
+   "Artifact": 0.1455,
+   "Enchantment": 0.0909,
+   "Instant": 0.0545,
+   "Sorcery": 0.0364
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.339,
+   "unclassified": 0.1864,
+   "cost_reduction": 0.1186,
+   "token_creation": 0.1186,
+   "counters_matter": 0.0678,
+   "attack_trigger_payoff": 0.0508,
+   "mill": 0.0339,
+   "voltron_aura_equipment": 0.0339,
+   "graveyard_recursion": 0.0169,
+   "blink_flicker": 0.0169,
+   "tribal_synergy_lord": 0.0169
+  },
+  "identities_represented": [
+   "naya",
+   "simic"
+  ]
+ },
+ "Amass": {
+  "n_decks": 1,
+  "n_card_copies": 27,
+  "cmc_stats": {
+   "n": 27,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 3.0,
+   "mean": 3.4074074074074074,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.3678655787125473
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.037037037037037035,
+   "2-3": 0.18518518518518517,
+   "3-4": 0.4074074074074074,
+   "4-5": 0.18518518518518517,
+   "5-6": 0.14814814814814814,
+   "6-7": 0.0,
+   "7-8": 0.0,
+   "8-10": 0.037037037037037035,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5926,
+   "Sorcery": 0.2222,
+   "Enchantment": 0.1481,
+   "Instant": 0.037
+  },
+  "effect_shares": {
+   "counters_matter": 0.4524,
+   "token_creation": 0.2857,
+   "mill": 0.0714,
+   "vanilla_or_unclassified_body": 0.0476,
+   "unclassified": 0.0476,
+   "graveyard_recursion": 0.0476,
+   "theft_effect": 0.0238,
+   "attack_trigger_payoff": 0.0238
+  },
+  "identities_represented": [
+   "grixis"
+  ]
+ },
+ "Extra Upkeeps": {
+  "n_decks": 1,
+  "n_card_copies": 29,
+  "cmc_stats": {
+   "n": 29,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.3793103448275863,
+   "p75": 4.0,
+   "max": 7.0,
+   "std": 1.471892825545727
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.10344827586206896,
+   "2-3": 0.20689655172413793,
+   "3-4": 0.20689655172413793,
+   "4-5": 0.27586206896551724,
+   "5-6": 0.13793103448275862,
+   "6-7": 0.034482758620689655,
+   "7-8": 0.034482758620689655,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Enchantment": 0.3793,
+   "Creature": 0.3448,
+   "Artifact": 0.2069,
+   "Instant": 0.069
+  },
+  "effect_shares": {
+   "voltron_aura_equipment": 0.2059,
+   "unclassified": 0.2059,
+   "vanilla_or_unclassified_body": 0.1765,
+   "token_creation": 0.0882,
+   "counters_matter": 0.0882,
+   "life_drain_direct": 0.0588,
+   "lifegain": 0.0588,
+   "discard_disruption": 0.0294,
+   "mill": 0.0294,
+   "cost_reduction": 0.0294,
+   "graveyard_recursion": 0.0294
+  },
+  "identities_represented": [
+   "grixis"
+  ]
+ },
+ "Monarch": {
+  "n_decks": 3,
+  "n_card_copies": 81,
+  "cmc_stats": {
+   "n": 81,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 3.6790123456790123,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.3862388985301926
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.037037037037037035,
+   "2-3": 0.14814814814814814,
+   "3-4": 0.25925925925925924,
+   "4-5": 0.37037037037037035,
+   "5-6": 0.09876543209876543,
+   "6-7": 0.024691358024691357,
+   "7-8": 0.04938271604938271,
+   "8-10": 0.012345679012345678,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.4691,
+   "Enchantment": 0.2593,
+   "Artifact": 0.1111,
+   "Instant": 0.0988,
+   "Sorcery": 0.0617
+  },
+  "effect_shares": {
+   "unclassified": 0.1935,
+   "token_creation": 0.1935,
+   "vanilla_or_unclassified_body": 0.1828,
+   "voltron_aura_equipment": 0.086,
+   "counters_matter": 0.0753,
+   "life_drain_direct": 0.0538,
+   "cost_reduction": 0.043,
+   "lifegain": 0.0323,
+   "tribal_synergy_lord": 0.0323,
+   "discard_disruption": 0.0215,
+   "attack_trigger_payoff": 0.0215,
+   "extra_combat": 0.0215,
+   "mill": 0.0108,
+   "graveyard_recursion": 0.0108,
+   "blink_flicker": 0.0108
+  },
+  "identities_represented": [
+   "grixis",
+   "jeskai",
+   "mardu"
+  ]
+ },
+ "Land Destruction": {
+  "n_decks": 1,
+  "n_card_copies": 20,
+  "cmc_stats": {
+   "n": 19,
+   "min": 0.0,
+   "p25": 3.0,
+   "median": 3.0,
+   "mean": 3.4210526315789473,
+   "p75": 4.75,
+   "max": 6.0,
+   "std": 1.5326547135327406
+  },
+  "cmc_histogram": {
+   "0-1": 0.05263157894736842,
+   "1-2": 0.05263157894736842,
+   "2-3": 0.10526315789473684,
+   "3-4": 0.3684210526315789,
+   "4-5": 0.15789473684210525,
+   "5-6": 0.15789473684210525,
+   "6-7": 0.10526315789473684,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.65,
+   "Artifact": 0.15,
+   "Sorcery": 0.1,
+   "Enchantment": 0.1
+  },
+  "effect_shares": {
+   "token_creation": 0.1786,
+   "unclassified": 0.1786,
+   "land_destruction": 0.1429,
+   "landfall": 0.1429,
+   "vanilla_or_unclassified_body": 0.1071,
+   "lifegain": 0.0714,
+   "counters_matter": 0.0714,
+   "mill": 0.0357,
+   "extra_combat": 0.0357,
+   "graveyard_recursion": 0.0357
+  },
+  "identities_represented": [
+   "jund"
+  ]
+ },
+ "Eggs": {
+  "n_decks": 1,
+  "n_card_copies": 25,
+  "cmc_stats": {
+   "n": 25,
+   "min": 2.0,
+   "p25": 3.0,
+   "median": 5.0,
+   "mean": 5.28,
+   "p75": 7.0,
+   "max": 12.0,
+   "std": 2.506312031651287
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.16,
+   "3-4": 0.16,
+   "4-5": 0.04,
+   "5-6": 0.24,
+   "6-7": 0.08,
+   "7-8": 0.12,
+   "8-10": 0.16,
+   "10-25": 0.04
+  },
+  "type_shares": {
+   "Creature": 0.76,
+   "Enchantment": 0.12,
+   "Artifact": 0.08,
+   "Sorcery": 0.04
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4074,
+   "token_creation": 0.2222,
+   "unclassified": 0.1111,
+   "aristocrats_sac_death_trigger": 0.0741,
+   "counters_matter": 0.037,
+   "voltron_aura_equipment": 0.037,
+   "cost_reduction": 0.037,
+   "landfall": 0.037,
+   "lifegain": 0.037
+  },
+  "identities_represented": [
+   "naya"
+  ]
+ },
+ "Defenders": {
+  "n_decks": 7,
+  "n_card_copies": 193,
+  "cmc_stats": {
+   "n": 193,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.3367875647668392,
+   "p75": 4.0,
+   "max": 11.0,
+   "std": 1.6463317809936167
+  },
+  "cmc_histogram": {
+   "0-1": 0.02072538860103627,
+   "1-2": 0.07253886010362694,
+   "2-3": 0.24870466321243523,
+   "3-4": 0.19170984455958548,
+   "4-5": 0.29015544041450775,
+   "5-6": 0.09844559585492228,
+   "6-7": 0.046632124352331605,
+   "7-8": 0.02072538860103627,
+   "8-10": 0.0,
+   "10-25": 0.010362694300518135
+  },
+  "type_shares": {
+   "Creature": 0.5751,
+   "Enchantment": 0.1865,
+   "Artifact": 0.0933,
+   "Sorcery": 0.0829,
+   "Instant": 0.057,
+   "Planeswalker": 0.0052
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4308,
+   "unclassified": 0.2564,
+   "voltron_aura_equipment": 0.0821,
+   "lifegain": 0.0667,
+   "cost_reduction": 0.0359,
+   "counters_matter": 0.0359,
+   "blink_flicker": 0.0308,
+   "life_drain_direct": 0.0205,
+   "aristocrats_sac_death_trigger": 0.0205,
+   "token_creation": 0.0103,
+   "graveyard_recursion": 0.0103
+  },
+  "identities_represented": [
+   "abzan",
+   "bant",
+   "dune-brood",
+   "ink-treader",
+   "witch-maw"
+  ]
+ },
+ "Toughness Matters": {
+  "n_decks": 5,
+  "n_card_copies": 147,
+  "cmc_stats": {
+   "n": 145,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.6413793103448278,
+   "p75": 5.0,
+   "max": 11.0,
+   "std": 1.8182062478090701
+  },
+  "cmc_histogram": {
+   "0-1": 0.006896551724137931,
+   "1-2": 0.05517241379310345,
+   "2-3": 0.2413793103448276,
+   "3-4": 0.2,
+   "4-5": 0.23448275862068965,
+   "5-6": 0.14482758620689656,
+   "6-7": 0.06206896551724138,
+   "7-8": 0.027586206896551724,
+   "8-10": 0.013793103448275862,
+   "10-25": 0.013793103448275862
+  },
+  "type_shares": {
+   "Creature": 0.6327,
+   "Enchantment": 0.1973,
+   "Sorcery": 0.0816,
+   "Instant": 0.0408,
+   "Artifact": 0.034,
+   "Planeswalker": 0.0136
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4765,
+   "unclassified": 0.2349,
+   "lifegain": 0.0872,
+   "life_drain_direct": 0.0403,
+   "voltron_aura_equipment": 0.0336,
+   "counters_matter": 0.0336,
+   "aristocrats_sac_death_trigger": 0.0268,
+   "blink_flicker": 0.0201,
+   "cost_reduction": 0.0201,
+   "token_creation": 0.0134,
+   "graveyard_recursion": 0.0134
+  },
+  "identities_represented": [
+   "abzan",
+   "bant",
+   "witch-maw"
+  ]
+ },
+ "Triggered Abilities": {
+  "n_decks": 1,
+  "n_card_copies": 34,
+  "cmc_stats": {
+   "n": 33,
+   "min": 2.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.3636363636363638,
+   "p75": 4.0,
+   "max": 7.0,
+   "std": 1.2508949963969873
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.2727272727272727,
+   "3-4": 0.36363636363636365,
+   "4-5": 0.18181818181818182,
+   "5-6": 0.12121212121212122,
+   "6-7": 0.030303030303030304,
+   "7-8": 0.030303030303030304,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6176,
+   "Enchantment": 0.1471,
+   "Sorcery": 0.1176,
+   "Instant": 0.0588,
+   "Artifact": 0.0588
+  },
+  "effect_shares": {
+   "token_creation": 0.2439,
+   "counters_matter": 0.1707,
+   "vanilla_or_unclassified_body": 0.1707,
+   "blink_flicker": 0.0976,
+   "attack_trigger_payoff": 0.0732,
+   "cost_reduction": 0.0732,
+   "unclassified": 0.0732,
+   "tribal_synergy_lord": 0.0488,
+   "aristocrats_sac_death_trigger": 0.0244,
+   "lifegain": 0.0244
+  },
+  "identities_represented": [
+   "bant"
+  ]
+ },
+ "Dredge": {
+  "n_decks": 3,
+  "n_card_copies": 79,
+  "cmc_stats": {
+   "n": 78,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.358974358974359,
+   "p75": 4.0,
+   "max": 9.0,
+   "std": 1.7829272888402532
+  },
+  "cmc_histogram": {
+   "0-1": 0.02564102564102564,
+   "1-2": 0.07692307692307693,
+   "2-3": 0.2564102564102564,
+   "3-4": 0.19230769230769232,
+   "4-5": 0.2948717948717949,
+   "5-6": 0.038461538461538464,
+   "6-7": 0.038461538461538464,
+   "7-8": 0.038461538461538464,
+   "8-10": 0.038461538461538464,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5823,
+   "Enchantment": 0.1519,
+   "Sorcery": 0.1392,
+   "Instant": 0.0633,
+   "Artifact": 0.0506,
+   "Planeswalker": 0.0127
+  },
+  "effect_shares": {
+   "mill": 0.1753,
+   "vanilla_or_unclassified_body": 0.1649,
+   "unclassified": 0.1649,
+   "graveyard_recursion": 0.1649,
+   "token_creation": 0.1031,
+   "landfall": 0.0722,
+   "voltron_aura_equipment": 0.0412,
+   "counters_matter": 0.0309,
+   "lifegain": 0.0309,
+   "land_destruction": 0.0206,
+   "life_drain_direct": 0.0103,
+   "storm": 0.0103,
+   "blink_flicker": 0.0103
+  },
+  "identities_represented": [
+   "abzan",
+   "glint-eye"
+  ]
+ },
+ "Offspring": {
+  "n_decks": 1,
+  "n_card_copies": 20,
+  "cmc_stats": {
+   "n": 20,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 3.7,
+   "p75": 4.5,
+   "max": 6.0,
+   "std": 1.2688577540449522
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.05,
+   "2-3": 0.1,
+   "3-4": 0.3,
+   "4-5": 0.3,
+   "5-6": 0.15,
+   "6-7": 0.1,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.7,
+   "Enchantment": 0.15,
+   "Instant": 0.05,
+   "Artifact": 0.05,
+   "Sorcery": 0.05
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.2381,
+   "unclassified": 0.1905,
+   "token_creation": 0.1905,
+   "counters_matter": 0.1429,
+   "attack_trigger_payoff": 0.0476,
+   "extra_combat": 0.0476,
+   "token_or_counter_doubler": 0.0476,
+   "cost_reduction": 0.0476,
+   "aristocrats_sac_death_trigger": 0.0476
+  },
+  "identities_represented": [
+   "jeskai"
+  ]
+ },
+ "Energy": {
+  "n_decks": 3,
+  "n_card_copies": 98,
+  "cmc_stats": {
+   "n": 98,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 4.0,
+   "mean": 3.938775510204082,
+   "p75": 5.0,
+   "max": 9.0,
+   "std": 1.8506277287506145
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.05102040816326531,
+   "2-3": 0.23469387755102042,
+   "3-4": 0.15306122448979592,
+   "4-5": 0.22448979591836735,
+   "5-6": 0.10204081632653061,
+   "6-7": 0.14285714285714285,
+   "7-8": 0.05102040816326531,
+   "8-10": 0.04081632653061224,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5612,
+   "Artifact": 0.2347,
+   "Sorcery": 0.0714,
+   "Enchantment": 0.0612,
+   "Instant": 0.0612,
+   "Planeswalker": 0.0102
+  },
+  "effect_shares": {
+   "unclassified": 0.2417,
+   "token_creation": 0.175,
+   "attack_trigger_payoff": 0.175,
+   "vanilla_or_unclassified_body": 0.1583,
+   "counters_matter": 0.0833,
+   "cost_reduction": 0.0333,
+   "extra_turn": 0.025,
+   "extra_combat": 0.025,
+   "voltron_aura_equipment": 0.025,
+   "landfall": 0.025,
+   "blink_flicker": 0.0167,
+   "lifegain": 0.0167
+  },
+  "identities_represented": [
+   "ink-treader",
+   "jeskai",
+   "temur"
+  ]
+ },
+ "Haste": {
+  "n_decks": 1,
+  "n_card_copies": 22,
+  "cmc_stats": {
+   "n": 22,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 3.727272727272727,
+   "p75": 4.0,
+   "max": 7.0,
+   "std": 1.3205308223939953
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.045454545454545456,
+   "2-3": 0.09090909090909091,
+   "3-4": 0.3181818181818182,
+   "4-5": 0.3181818181818182,
+   "5-6": 0.13636363636363635,
+   "6-7": 0.045454545454545456,
+   "7-8": 0.045454545454545456,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6364,
+   "Enchantment": 0.1818,
+   "Artifact": 0.1364,
+   "Sorcery": 0.0455
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.3043,
+   "counters_matter": 0.3043,
+   "attack_trigger_payoff": 0.087,
+   "voltron_aura_equipment": 0.087,
+   "token_creation": 0.087,
+   "extra_combat": 0.0435,
+   "unclassified": 0.0435,
+   "cost_reduction": 0.0435
+  },
+  "identities_represented": [
+   "jeskai"
+  ]
+ },
+ "Flash": {
+  "n_decks": 1,
+  "n_card_copies": 21,
+  "cmc_stats": {
+   "n": 21,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 3.0,
+   "mean": 3.6666666666666665,
+   "p75": 4.249999999999999,
+   "max": 7.0,
+   "std": 1.3569339855976197
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.047619047619047616,
+   "2-3": 0.09523809523809523,
+   "3-4": 0.38095238095238093,
+   "4-5": 0.23809523809523808,
+   "5-6": 0.14285714285714285,
+   "6-7": 0.047619047619047616,
+   "7-8": 0.047619047619047616,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.6667,
+   "Enchantment": 0.1905,
+   "Artifact": 0.0952,
+   "Sorcery": 0.0476
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.3182,
+   "counters_matter": 0.3182,
+   "attack_trigger_payoff": 0.0909,
+   "voltron_aura_equipment": 0.0909,
+   "token_creation": 0.0909,
+   "extra_combat": 0.0455,
+   "unclassified": 0.0455
+  },
+  "identities_represented": [
+   "jeskai"
+  ]
+ },
+ "Attack Triggers": {
+  "n_decks": 2,
+  "n_card_copies": 48,
+  "cmc_stats": {
+   "n": 48,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.6041666666666665,
+   "p75": 4.5,
+   "max": 9.0,
+   "std": 1.7997636804746215
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.041666666666666664,
+   "2-3": 0.2916666666666667,
+   "3-4": 0.25,
+   "4-5": 0.16666666666666666,
+   "5-6": 0.0625,
+   "6-7": 0.125,
+   "7-8": 0.020833333333333332,
+   "8-10": 0.041666666666666664,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5625,
+   "Enchantment": 0.1875,
+   "Artifact": 0.1458,
+   "Sorcery": 0.0833,
+   "Instant": 0.0208
+  },
+  "effect_shares": {
+   "token_creation": 0.2344,
+   "attack_trigger_payoff": 0.1875,
+   "unclassified": 0.1719,
+   "vanilla_or_unclassified_body": 0.1094,
+   "counters_matter": 0.0781,
+   "extra_combat": 0.0625,
+   "life_drain_direct": 0.0469,
+   "voltron_aura_equipment": 0.0312,
+   "graveyard_recursion": 0.0312,
+   "lifegain": 0.0156,
+   "spell_copy": 0.0156,
+   "extra_turn": 0.0156
+  },
+  "identities_represented": [
+   "mardu",
+   "yore-tiller"
+  ]
+ },
+ "Die Roll": {
+  "n_decks": 1,
+  "n_card_copies": 30,
+  "cmc_stats": {
+   "n": 30,
+   "min": 0.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.1,
+   "p75": 4.0,
+   "max": 7.0,
+   "std": 1.5132745950421556
+  },
+  "cmc_histogram": {
+   "0-1": 0.03333333333333333,
+   "1-2": 0.06666666666666667,
+   "2-3": 0.26666666666666666,
+   "3-4": 0.26666666666666666,
+   "4-5": 0.26666666666666666,
+   "5-6": 0.03333333333333333,
+   "6-7": 0.0,
+   "7-8": 0.06666666666666667,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.3333,
+   "Sorcery": 0.1667,
+   "Instant": 0.1667,
+   "Artifact": 0.1667,
+   "Enchantment": 0.1333,
+   "Planeswalker": 0.0333
+  },
+  "effect_shares": {
+   "unclassified": 0.303,
+   "token_creation": 0.2121,
+   "vanilla_or_unclassified_body": 0.1818,
+   "counters_matter": 0.1212,
+   "voltron_aura_equipment": 0.0606,
+   "token_or_counter_doubler": 0.0303,
+   "life_drain_direct": 0.0303,
+   "lifegain": 0.0303,
+   "attack_trigger_payoff": 0.0303
+  },
+  "identities_represented": [
+   "mardu"
+  ]
+ },
+ "Aikido": {
+  "n_decks": 2,
+  "n_card_copies": 66,
+  "cmc_stats": {
+   "n": 65,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 3.5538461538461537,
+   "p75": 4.0,
+   "max": 8.0,
+   "std": 1.5092613499607042
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.07692307692307693,
+   "2-3": 0.15384615384615385,
+   "3-4": 0.24615384615384617,
+   "4-5": 0.35384615384615387,
+   "5-6": 0.09230769230769231,
+   "6-7": 0.015384615384615385,
+   "7-8": 0.03076923076923077,
+   "8-10": 0.03076923076923077,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Instant": 0.3788,
+   "Creature": 0.3182,
+   "Enchantment": 0.1515,
+   "Sorcery": 0.1364,
+   "Artifact": 0.0152
+  },
+  "effect_shares": {
+   "unclassified": 0.4861,
+   "vanilla_or_unclassified_body": 0.1528,
+   "life_drain_direct": 0.0833,
+   "token_creation": 0.0694,
+   "lifegain": 0.0694,
+   "aristocrats_sac_death_trigger": 0.0278,
+   "spell_copy": 0.0278,
+   "counters_matter": 0.0278,
+   "extra_combat": 0.0278,
+   "theft_effect": 0.0139,
+   "attack_trigger_payoff": 0.0139
+  },
+  "identities_represented": [
+   "mardu",
+   "yore-tiller"
+  ]
+ },
+ "Flashback": {
+  "n_decks": 1,
+  "n_card_copies": 16,
+  "cmc_stats": {
+   "n": 16,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.5,
+   "mean": 3.5625,
+   "p75": 5.0,
+   "max": 7.0,
+   "std": 1.8016919131749467
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0625,
+   "2-3": 0.375,
+   "3-4": 0.0625,
+   "4-5": 0.25,
+   "5-6": 0.0,
+   "6-7": 0.1875,
+   "7-8": 0.0625,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5,
+   "Sorcery": 0.1875,
+   "Instant": 0.125,
+   "Enchantment": 0.125,
+   "Artifact": 0.0625
+  },
+  "effect_shares": {
+   "unclassified": 0.3,
+   "cost_reduction": 0.15,
+   "token_creation": 0.15,
+   "vanilla_or_unclassified_body": 0.1,
+   "counters_matter": 0.1,
+   "aristocrats_sac_death_trigger": 0.05,
+   "graveyard_recursion": 0.05,
+   "discard_disruption": 0.05,
+   "blink_flicker": 0.05
+  },
+  "identities_represented": [
+   "temur"
+  ]
+ },
+ "Clues": {
+  "n_decks": 3,
+  "n_card_copies": 59,
+  "cmc_stats": {
+   "n": 59,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 3.3389830508474576,
+   "p75": 4.0,
+   "max": 10.0,
+   "std": 2.1676369191522937
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.13559322033898305,
+   "2-3": 0.3389830508474576,
+   "3-4": 0.22033898305084745,
+   "4-5": 0.0847457627118644,
+   "5-6": 0.03389830508474576,
+   "6-7": 0.06779661016949153,
+   "7-8": 0.05084745762711865,
+   "8-10": 0.05084745762711865,
+   "10-25": 0.01694915254237288
+  },
+  "type_shares": {
+   "Creature": 0.5085,
+   "Instant": 0.1525,
+   "Enchantment": 0.1186,
+   "Artifact": 0.1017,
+   "Sorcery": 0.1017,
+   "Planeswalker": 0.0169
+  },
+  "effect_shares": {
+   "unclassified": 0.2143,
+   "vanilla_or_unclassified_body": 0.1714,
+   "token_creation": 0.1571,
+   "counters_matter": 0.1143,
+   "blink_flicker": 0.0714,
+   "life_drain_direct": 0.0714,
+   "cost_reduction": 0.0571,
+   "graveyard_recursion": 0.0286,
+   "lifegain": 0.0143,
+   "attack_trigger_payoff": 0.0143,
+   "mill": 0.0143,
+   "extra_combat": 0.0143,
+   "voltron_aura_equipment": 0.0143,
+   "extra_turn": 0.0143,
+   "aristocrats_sac_death_trigger": 0.0143
+  },
+  "identities_represented": [
+   "ink-treader",
+   "yore-tiller"
+  ]
+ },
+ "Ad Nauseam": {
+  "n_decks": 2,
+  "n_card_copies": 68,
+  "cmc_stats": {
+   "n": 67,
+   "min": 1.0,
+   "p25": 2.0,
+   "median": 3.0,
+   "mean": 2.8208955223880596,
+   "p75": 4.0,
+   "max": 6.0,
+   "std": 1.3705361532237608
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.19402985074626866,
+   "2-3": 0.2835820895522388,
+   "3-4": 0.1791044776119403,
+   "4-5": 0.22388059701492538,
+   "5-6": 0.08955223880597014,
+   "6-7": 0.029850746268656716,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.4706,
+   "Enchantment": 0.1618,
+   "Sorcery": 0.1471,
+   "Artifact": 0.1176,
+   "Instant": 0.1029
+  },
+  "effect_shares": {
+   "mill": 0.2533,
+   "unclassified": 0.2,
+   "vanilla_or_unclassified_body": 0.1733,
+   "graveyard_recursion": 0.0933,
+   "lifegain": 0.0533,
+   "attack_trigger_payoff": 0.04,
+   "voltron_aura_equipment": 0.0267,
+   "landfall": 0.0267,
+   "counters_matter": 0.0267,
+   "token_creation": 0.0267,
+   "spell_copy": 0.0267,
+   "theft_effect": 0.0133,
+   "extra_turn": 0.0133,
+   "aristocrats_sac_death_trigger": 0.0133,
+   "wheel_effect": 0.0133
+  },
+  "identities_represented": [
+   "glint-eye"
+  ]
+ },
+ "Anthems": {
+  "n_decks": 1,
+  "n_card_copies": 28,
+  "cmc_stats": {
+   "n": 28,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 3.0,
+   "mean": 3.0,
+   "p75": 3.0,
+   "max": 6.0,
+   "std": 1.1338934190276817
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.10714285714285714,
+   "2-3": 0.10714285714285714,
+   "3-4": 0.6071428571428571,
+   "4-5": 0.10714285714285714,
+   "5-6": 0.0,
+   "6-7": 0.07142857142857142,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.5714,
+   "Artifact": 0.2143,
+   "Enchantment": 0.1429,
+   "Sorcery": 0.0714
+  },
+  "effect_shares": {
+   "counters_matter": 0.4062,
+   "unclassified": 0.1562,
+   "graveyard_recursion": 0.125,
+   "cost_reduction": 0.0938,
+   "vanilla_or_unclassified_body": 0.0938,
+   "aristocrats_sac_death_trigger": 0.0625,
+   "token_or_counter_doubler": 0.0312,
+   "tribal_synergy_lord": 0.0312
+  },
+  "identities_represented": [
+   "glint-eye"
+  ]
+ },
+ "Multicolor Matters": {
+  "n_decks": 1,
+  "n_card_copies": 16,
+  "cmc_stats": {
+   "n": 16,
+   "min": 2.0,
+   "p25": 3.0,
+   "median": 3.0,
+   "mean": 3.5,
+   "p75": 4.5,
+   "max": 6.0,
+   "std": 1.1726039399558574
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.1875,
+   "3-4": 0.4375,
+   "4-5": 0.125,
+   "5-6": 0.1875,
+   "6-7": 0.0625,
+   "7-8": 0.0,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.625,
+   "Enchantment": 0.1875,
+   "Instant": 0.0625,
+   "Sorcery": 0.0625,
+   "Artifact": 0.0625
+  },
+  "effect_shares": {
+   "counters_matter": 0.3333,
+   "token_creation": 0.2778,
+   "vanilla_or_unclassified_body": 0.1667,
+   "lifegain": 0.0556,
+   "attack_trigger_payoff": 0.0556,
+   "aristocrats_sac_death_trigger": 0.0556,
+   "unclassified": 0.0556
+  },
+  "identities_represented": [
+   "ink-treader"
+  ]
+ },
+ "Activated Abilities": {
+  "n_decks": 1,
+  "n_card_copies": 28,
+  "cmc_stats": {
+   "n": 28,
+   "min": 1.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 3.7142857142857144,
+   "p75": 5.0,
+   "max": 8.0,
+   "std": 1.4603605928757768
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.03571428571428571,
+   "2-3": 0.17857142857142858,
+   "3-4": 0.25,
+   "4-5": 0.25,
+   "5-6": 0.21428571428571427,
+   "6-7": 0.03571428571428571,
+   "7-8": 0.0,
+   "8-10": 0.03571428571428571,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.8929,
+   "Enchantment": 0.0714,
+   "Artifact": 0.0357
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.4545,
+   "counters_matter": 0.1515,
+   "blink_flicker": 0.1515,
+   "graveyard_recursion": 0.0606,
+   "unclassified": 0.0606,
+   "mill": 0.0303,
+   "voltron_aura_equipment": 0.0303,
+   "attack_trigger_payoff": 0.0303,
+   "token_creation": 0.0303
+  },
+  "identities_represented": [
+   "ink-treader"
+  ]
+ },
+ "Planeswalkers": {
+  "n_decks": 2,
+  "n_card_copies": 45,
+  "cmc_stats": {
+   "n": 45,
+   "min": 2.0,
+   "p25": 3.0,
+   "median": 4.0,
+   "mean": 3.977777777777778,
+   "p75": 5.0,
+   "max": 7.0,
+   "std": 1.3247874276256784
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.08888888888888889,
+   "3-4": 0.37777777777777777,
+   "4-5": 0.2,
+   "5-6": 0.17777777777777778,
+   "6-7": 0.1111111111111111,
+   "7-8": 0.044444444444444446,
+   "8-10": 0.0,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.3556,
+   "Enchantment": 0.2444,
+   "Planeswalker": 0.1778,
+   "Artifact": 0.1333,
+   "Sorcery": 0.0444,
+   "Instant": 0.0444
+  },
+  "effect_shares": {
+   "counters_matter": 0.4151,
+   "unclassified": 0.1321,
+   "vanilla_or_unclassified_body": 0.0755,
+   "token_or_counter_doubler": 0.0755,
+   "blink_flicker": 0.0755,
+   "token_creation": 0.0566,
+   "landfall": 0.0377,
+   "extra_turn": 0.0377,
+   "lifegain": 0.0377,
+   "infect_poison": 0.0189,
+   "mill": 0.0189,
+   "cost_reduction": 0.0189
+  },
+  "identities_represented": [
+   "five-color",
+   "witch-maw"
+  ]
+ },
+ "Devoid": {
+  "n_decks": 1,
+  "n_card_copies": 22,
+  "cmc_stats": {
+   "n": 22,
+   "min": 2.0,
+   "p25": 3.0,
+   "median": 5.0,
+   "mean": 5.5,
+   "p75": 7.0,
+   "max": 10.0,
+   "std": 2.29128784747792
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.045454545454545456,
+   "3-4": 0.22727272727272727,
+   "4-5": 0.09090909090909091,
+   "5-6": 0.18181818181818182,
+   "6-7": 0.13636363636363635,
+   "7-8": 0.13636363636363635,
+   "8-10": 0.09090909090909091,
+   "10-25": 0.09090909090909091
+  },
+  "type_shares": {
+   "Creature": 0.6364,
+   "Artifact": 0.1818,
+   "Enchantment": 0.0909,
+   "Sorcery": 0.0455,
+   "Instant": 0.0455
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.28,
+   "unclassified": 0.16,
+   "cost_reduction": 0.16,
+   "tribal_synergy_lord": 0.08,
+   "counters_matter": 0.08,
+   "graveyard_recursion": 0.04,
+   "voltron_aura_equipment": 0.04,
+   "blink_flicker": 0.04,
+   "theft_effect": 0.04,
+   "lifegain": 0.04,
+   "attack_trigger_payoff": 0.04
+  },
+  "identities_represented": [
+   "five-color"
+  ]
+ },
+ "Evoke": {
+  "n_decks": 1,
+  "n_card_copies": 35,
+  "cmc_stats": {
+   "n": 35,
+   "min": 2.0,
+   "p25": 3.0,
+   "median": 5.0,
+   "mean": 4.628571428571429,
+   "p75": 6.0,
+   "max": 9.0,
+   "std": 1.790222879750919
+  },
+  "cmc_histogram": {
+   "0-1": 0.0,
+   "1-2": 0.0,
+   "2-3": 0.14285714285714285,
+   "3-4": 0.2,
+   "4-5": 0.08571428571428572,
+   "5-6": 0.22857142857142856,
+   "6-7": 0.22857142857142856,
+   "7-8": 0.05714285714285714,
+   "8-10": 0.05714285714285714,
+   "10-25": 0.0
+  },
+  "type_shares": {
+   "Creature": 0.7714,
+   "Enchantment": 0.1143,
+   "Artifact": 0.0571,
+   "Sorcery": 0.0286,
+   "Instant": 0.0286
+  },
+  "effect_shares": {
+   "vanilla_or_unclassified_body": 0.525,
+   "cost_reduction": 0.1,
+   "tribal_synergy_lord": 0.1,
+   "counters_matter": 0.05,
+   "token_creation": 0.05,
+   "unclassified": 0.05,
+   "attack_trigger_payoff": 0.05,
+   "landfall": 0.025,
+   "aristocrats_sac_death_trigger": 0.025,
+   "graveyard_recursion": 0.025
+  },
+  "identities_represented": [
+   "five-color"
+  ]
+ }
+}

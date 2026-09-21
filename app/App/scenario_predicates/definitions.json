@@ -1,0 +1,48 @@
+{
+  "version": "4.4",
+  "note": "Deklarative Beschreibung jedes 'derived'-Praedikat-Typs fuer das Scenario-Schema v4.4. Jeder Eintrag mit 'handler' != null ist implementiert (handlers.py); Eintraege mit 'handler': null sind bewusst als Platzhalter deklariert (Vertrag/Parameter-Form liegt fest), Implementierung folgt in einem spaeteren Work Package, sobald die dafuer noetige Engine-Infrastruktur existiert.",
+
+  "predicates": [
+    {
+      "id": "resource_available",
+      "model_layer": "exact",
+      "description_de": "Prueft, ob mindestens 'min_count' einer Ressource aktuell verfuegbar sind (Mana, ungetappte Kreaturen/Artefakte, Food/Treasure/Clue). Deckuebergreifend nutzbar, z.B. Aziza 'tap 3 creatures'.",
+      "params": {
+        "resource": "mana | untapped_creatures | untapped_artifacts | food | treasure | clues",
+        "min_count": "int"
+      },
+      "handler": "resource_available"
+    },
+    {
+      "id": "opponent_life_at_or_below",
+      "model_layer": "exact",
+      "description_de": "Prueft das AKTUELLE Gegnerleben (nicht das eigene) gegen einen Schwellwert. 'target' waehlt einen Gegner: 'any' (mind. einer erfuellt es), 'each' (alle erfuellen es), oder ein 0-basierter Index.",
+      "params": {
+        "threshold": "float",
+        "target": "any | each | <int index>"
+      },
+      "handler": "opponent_life_at_or_below"
+    },
+    {
+      "id": "x_spell_lethal",
+      "model_layer": "simplified",
+      "description_de": "Sucht das KLEINSTE bezahlbare X eines benannten X-Spells in der Hand, bei dem (X-Metrik 'opponent_life_loss' * copy_multiplier) das Restleben des Ziels erreicht. Vereinfachung: nutzt verfuegbare Gesamt-Manawertung statt vollstaendigem Payment-Solver fuer den Mana-Rahmen; nutzt bestehende x_effect_metrics()-Heuristik fuer den Damage-Output. Fuer Aziza-Copy: copy_multiplier=2 fuer Original+1 Kopie, 3 fuer +2 Kopien usw.",
+      "params": {
+        "card": "string (Kartenname)",
+        "copy_multiplier": "int (default 1)",
+        "target": "any | each | <int index>"
+      },
+      "handler": "x_spell_lethal"
+    },
+    {
+      "id": "commander_damage_lethal",
+      "model_layer": "simplified",
+      "description_de": "Prueft, OB der Commander diesen Zug (falls er unblockiert durchkommt) genug Combat-Damage fuer 21 Commander-Damage gegen ein Ziel liefern wuerde: (aktuelle Power, Double-Strike verdoppelt) >= (21 - bereits gegen dieses Ziel erhaltener Commander-Damage aus state.commander_damage_dealt). Das ist eine OPPORTUNITY-Aussage ('waere lethal, WENN unblockiert'), keine Garantie - ob es wirklich unblockiert bleibt, entscheidet die probabilistische Combat-Interaction-Funktion zur Laufzeit, nicht dieses Praedikat. Equipment-Boni sind nur enthalten, soweit sie bereits in creature_power() einfliessen (Team-P/T-Board-Modifier); ein dediziertes Equipment-Attach-Modell folgt in einem spaeteren Work Package.",
+      "params": {
+        "commander": "string (Kartenname, informativ; primaer wird ueber card.commander gematcht)",
+        "target": "any | each | <int index>"
+      },
+      "handler": "commander_damage_lethal"
+    }
+  ]
+}

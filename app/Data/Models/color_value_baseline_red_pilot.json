@@ -1,0 +1,73 @@
+{
+  "_status": "PILOT / DRAFT - NOT loaded by ValueModel or engine.py. See Docs/COLOR_VALUE_PILOT_v1_red.md for full methodology, sources, and caveats before wiring this in.",
+  "_data_sources": {
+    "scryfall": "UNREACHABLE from this sandbox (403 on both api.scryfall.com and scryfall.com). Card mana costs/oracle text below are from the model's own MTG knowledge and are NOT live-verified against Scryfall this session.",
+    "edhrec": "Reachable. Real deck-inclusion/synergy percentages fetched from edhrec.com/tags/card-draw/mono-red (519 decks) and edhrec.com/tags/control/mono-red (727 decks). No dedicated EDHREC tag exists for 'removal' or 'board-wipe' alone - 'control' is the closest real tag and mixes both."
+  },
+  "color": "R",
+  "categories": {
+    "draw": {
+      "confidence": "medium - real EDHREC popularity data available, but costs/effects are from own knowledge",
+      "shape": "loot (draw N, discard M<N), not clean unconditional draw",
+      "by_mana_value": {
+        "1": {
+          "expected_net_cards": 0.0,
+          "example": "Faithless Looting {R}: draw 2, discard 2 - 62% inclusion despite net-zero card advantage; pure filtering alone justifies 1 mana in red"
+        },
+        "2": {
+          "expected_net_cards": 1.0,
+          "example": "Thrill of Possibility / Tormenting Voice / Unexpected Windfall {1}{R}: discard 1, draw 2 -> net +1 card; this is red's real draw baseline at 2 mana, not draw-2-clean"
+        },
+        "3": {
+          "expected_net_cards": 1.0,
+          "note": "shifts toward selection + opponent disruption rather than more raw cards (Demand Answers {2}{R})"
+        },
+        "5": {
+          "expected_net_cards": null,
+          "note": "NO reliable one-sided precedent found in mono-red EDHREC card-draw data at this cost. Do not score against an invented card-count target; judge on incidental upside (damage/treasure/wheel-symmetry) instead."
+        }
+      }
+    },
+    "interaction": {
+      "confidence": "medium-high - real EDHREC control-tag data, Lightning Bolt is a very well-established reference point",
+      "shape": "flat rate per mana for narrow/cheap removal, unconditional reach priced higher",
+      "by_mana_value": {
+        "1": {
+          "expected_effect_points_per_mana": 3.0,
+          "example": "Lightning Bolt {R}: 3 damage to any target, 43% inclusion - the reference anchor"
+        },
+        "2": {
+          "expected_effect_points_per_mana": 0.5,
+          "example": "Vandalblast {1}{R}: destroy 1 artifact, 46% inclusion - narrow (artifacts only)"
+        },
+        "3": {
+          "expected_effect_points_per_mana": 0.33,
+          "example": "Chaos Warp {2}{R}: hits ANY permanent, random replacement downside, 66% inclusion - the single most-played card in the whole control dataset; this is the 'unconditional removal' price point in red"
+        }
+      }
+    },
+    "boardwipe": {
+      "confidence": "low - no dedicated EDHREC tag exists; only one data point (Blasphemous Act) is confirmed via the control-tag fetch, the rest are from own knowledge only",
+      "shape": "NOT a flat rate - needs a two-parameter model (base cost + scaling discount condition), a plain per-mana damage number misrepresents cards like Blasphemous Act",
+      "confirmed_example": {
+        "card": "Blasphemous Act",
+        "base_cost": "{8}{R}, reduced by {1} per other creature you control, minimum {R}",
+        "effect": "13 damage to all creatures",
+        "edhrec_inclusion": "64% (464/727 decks) in the control tag - confirms this is close to a universal include in mono-red decks wanting a wipe"
+      },
+      "unconfirmed_examples_own_knowledge_only": [
+        {"card": "Fiery Cannonade", "cost": "{1}{R}", "effect": "2 damage to each creature without flying"},
+        {"card": "Anger of the Gods / Sweltering Suns", "cost": "{1}{R}{R}", "effect": "3 damage to all creatures"},
+        {"card": "Chain Reaction", "cost": "{3}{R}{R}", "effect": "damage to all creatures equal to creatures you control"}
+      ]
+    }
+  },
+  "open_for_full_rollout": [
+    "verify mana costs/oracle text against a real data source once available (Scryfall unreachable here)",
+    "design a base-cost + scaling-discount schema for boardwipe instead of a flat per-mana rate",
+    "repeat this pilot for W/U/B/G",
+    "design Keywords category (lump Lifelink etc. into one bucket per user's instruction)",
+    "design Power+Toughness category (user suggested SUM of P+T rather than tracking separately)",
+    "design the compositional 'Baukastensystem' (Instant/Sorcery/Creature type x category x keywords)"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "note": "WP8. Tunable parameters for the generic resource-allocation planner (App/resource_planner/planner.py) and its first concrete user, Katara's Waterbend (App/engine.py::maybe_use_waterbend). Kept here per project convention (weights/constants in JSON, not code) even though the planner itself needs no numeric calibration yet beyond the search bound below - this file is the place future users of the planner (Convoke/Improvise/Crew/Aziza copy costs/equip decisions) add their own tunables.",
+
+  "search": {
+    "max_exhaustive_costly_resources": 10,
+    "_comment": "Informational mirror of resource_planner/planner.py::_MAX_EXHAUSTIVE_COSTLY - kept here so the bound is visible without opening the code, but the code constant is what actually governs behavior (not read from this file, to avoid a second place a stale JSON value could silently diverge from what runs)."
+  },
+
+  "waterbend": {
+    "include_generic_mana": false,
+    "_comment_include_generic_mana": "v4.9.0: deliberately false. Katara's Waterbend cost can be helped by any generic mana too, not just tapped artifacts/creatures, but re-deriving how much mana is still free this late in the turn (after whatever else already got cast) would need a second full mana re-solve to avoid double-counting sources already spent - that is exactly the kind of extra precision this project avoids faking. maybe_use_waterbend therefore only offers untapped non-creature artifacts and untapped creatures as funding, which is enough to test and exercise the Vigilance-sequencing behavior the WP8 brief asked for. Revisit if/when a turn-wide mana ledger exists that this can safely read from without re-deriving it."
+  }
+}

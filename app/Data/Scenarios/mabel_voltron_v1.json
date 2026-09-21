@@ -1,0 +1,15 @@
+[
+  {
+    "name": "Mabel Voltron (21 Commander Damage, festes Ziel)",
+    "kind": "Win Condition",
+    "enabled": true,
+    "steer": true,
+    "description": "Mabels Equipment-Voltron-Plan aus dem echten 'Mice with Swords'-Deck: Mabel, Heir to Cragflame im Spiel (erzeugt bei ETB das Cragflame-Equipment-Token, +1/+1 + Vigilance/Trample/Haste, equip {2} - siehe Decks/Mice with Swords.txt und das bestehende Equipment-System aus WP7/Iteration 2), plus genug ausgeruestete Power, um die restlichen bis 21 Commander-Damage in einem Angriff zu liefern (commander_damage_lethal-Praedikat, bereits seit WP7 implementiert). WP10s eigentliche Neuerung liegt NICHT in diesem Szenario selbst, sondern in Strategy.voltron_target_index (App/engine.py) - setze diesen Wert (0-basierter Gegner-Index) in der Strategy-Datei, damit attack_phase Mabels Commander-Damage konsequent an DASSELBE Ziel richtet, statt wie bisher jeden Zug erneut an den Gegner mit dem gerade hoechsten Leben zu wechseln. Dieses Szenario prueft nur die Lethal-OPPORTUNITY (Praedikat-Semantik: 'waere lethal, wenn unblockiert') gegen 'target': 'any' - welcher Gegner tatsaechlich anvisiert wird, entscheidet strategy.voltron_target_index zur Laufzeit, nicht dieses Szenario.",
+    "requirements": [
+      {"card": "Mabel, Heir to Cragflame", "count": 1, "zones": ["battlefield"]}
+    ],
+    "derived": [
+      {"type": "commander_damage_lethal", "params": {"commander": "Mabel, Heir to Cragflame", "target": "any"}}
+    ]
+  }
+]

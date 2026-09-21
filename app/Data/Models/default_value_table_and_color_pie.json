@@ -1,0 +1,102 @@
+{
+  "_status": "CONCEPT / DRAFT - NOT loaded by ValueModel or engine.py. See Docs/DEFAULT_VALUES_AND_COLOR_PIE_v1.md for methodology and sources.",
+  "_data_sources": {
+    "color_pie_classification": "https://magic.wizards.com/en/news/making-magic/mechanical-color-pie-2021 (official WotC design document - primary/secondary/tertiary per color per mechanic)",
+    "root_reference_cards": "Own MTG knowledge, not live-verified against Scryfall this session (same limitation as the red pilot)."
+  },
+  "conservatism_discount": 0.20,
+  "default_value_table": {
+    "draw": {"root_card": "Concentrate {3}{U}: draw 3", "root_rate": 0.75, "unit": "cards_per_mana", "default_rate": 0.60},
+    "loot": {"root_card": "standard loot template: discard 1, draw 2, 2 mana", "root_rate": 0.5, "unit": "net_cards_per_mana", "default_rate": 0.40},
+    "burn": {"root_card": "Lightning Bolt {R}: 3 damage", "root_rate": 3.0, "unit": "damage_per_mana", "default_rate": 2.4},
+    "interaction": {"root_card": "Murder {1}{B}{B}: unconditional destroy", "root_rate": 0.333, "unit": "kills_per_mana", "default_rate": 0.27},
+    "boardwipe": {"root_card": "Wrath of God {2}{W}{W}: destroy all creatures", "root_rate": 0.25, "unit": "wipes_per_mana", "default_rate": 0.20},
+    "ramp": {"root_card": "Rampant Growth {1}{G}: 1 permanent mana from next turn on", "root_rate": 0.5, "unit": "permanent_mana_per_mana_invested", "default_rate": 0.417},
+    "mill": {"root_card": null, "root_rate": null, "unit": "cards_per_mana", "default_rate": 2.0, "confidence": "low - no stable, widely-recognized root reference card found; placeholder pending discussion"}
+  },
+  "color_pie_multipliers": {
+    "_scale": "1.0 = at the category's root/best-in-class rate (the color WotC lists as primary for that mechanic). Values sourced from magic.wizards.com/en/news/making-magic/mechanical-color-pie-2021.",
+    "draw": {"W": 0.30, "U": 1.00, "B": 0.60, "R": 0.25, "G": 0.50},
+    "interaction": {"W": 0.70, "U": 0.35, "B": 1.00, "R": 0.70, "G": 0.60},
+    "boardwipe": {"W": 1.00, "U": 0.35, "B": 0.70, "R": 0.65, "G": 0.30},
+    "ramp": {"W": 0.20, "U": 0.45, "B": 0.40, "R": 0.55, "G": 1.00},
+    "_note_red_interaction": "Red is NOT primary for 'destroy' removal but IS primary for damage-based removal (a different mechanic). The 0.70 multiplier reflects that Red gets there a different way, not that it is generically weak - consistent with the red pilot's Lightning Bolt finding (3.0 effect points/mana, above the category root)."
+  },
+  "resource_to_mana_conversion": {
+    "_status": "IMPLEMENTED as of v4.15.4 (value-estimation utilities only - see Data/Models/goldfish_value_model.json::resource_to_mana_conversion and ValueModel.life_as_mana_equivalent/delve_mana_equivalent/convoke_improvise_mana_equivalent/sacrifice_cost_equivalent/stun_counter_value_multiplier/stun_counter_mana_equivalent_fallback/uptime_value_discount in App/engine.py). NOT wired into the real cast/payment path (available_mana_value) - that remains a separate, larger, not-yet-built feature. Converts alternative resources paid as costs into the same mana_unit currency already used throughout goldfish_value_model.json, so downside-gated cards become comparable without a blanket multiplier. (Contrast: the DIFFERENT self-scaling-condition gap boardwipe_effective_cost_estimate used to flag as open - 'costs {N} less for each creature you control'-shaped text - WAS wired into the real payment path in v4.15.5 via the new module-level boardwipe_self_scaling_discount function called from cast_option; this resource_to_mana_conversion section is not affected by that and remains estimate-only.)",
+    "_taxonomy": "Two buckets: (A) additional/alternative CASTING costs - a resource is actually spent to reduce/replace mana; (B) built-in DOWNSIDES of the resulting permanent/effect - no resource is spent, but usability is restricted. Life/Delve/Convoke/Emerge/Discard/Echo are bucket A. Stun counters/Suspend/Decayed/conditional attack-block restrictions are bucket B.",
+    "bucket_a_additional_costs": {
+      "delve": {
+        "rate": 1.0,
+        "unit": "mana_per_graveyard_card_exiled",
+        "source": "Official WotC keyword templating: exiling a card from graveyard pays for exactly {1} generic mana (Treasure Cruise, Dig Through Time, Tasigur, the Golden Fang)."
+      },
+      "convoke_improvise": {
+        "rate": 1.0,
+        "unit": "mana_per_tapped_creature_or_artifact",
+        "source": "Official WotC keyword templating: tapping an untapped creature (Convoke) or artifact (Improvise) pays for {1} generic mana (Convoke additionally allows paying colored mana of the creature's color)."
+      },
+      "emerge_validates_sacrifice_lookup": {
+        "note": "Emerge's own reminder text defines its cost reduction as exactly the mana value of the exiled creature - this is official confirmation that the dynamic-lookup approach already proposed for sacrifice_as_cost (rather than a flat constant) is the right model, not a new rate to add."
+      },
+      "discard_as_cost": {
+        "rate": null,
+        "note": "No single official numeric conversion exists (unlike delve/convoke). Reuse the existing discard_self=-1.2 knob already in goldfish_value_model.json rather than inventing a new constant."
+      },
+      "echo": {
+        "rate": null,
+        "method": "deferred_payment",
+        "formula": "effective_cost ~= cast_cost + (echo_cost * probability_echo_is_actually_paid)",
+        "status": "cataloged only, not worked out in detail"
+      }
+    },
+    "bucket_b_builtin_downsides": {
+      "stun_counters": "see stun_counter_as_cost below",
+      "suspend": {
+        "method": "same percentage-of-value discount approach as stun counters, scaled by the length of the delay",
+        "status": "no new mechanism needed - same modeling as stun_counter_as_cost"
+      },
+      "decayed": {
+        "method": "value the creature as a single attack's worth of impact rather than ongoing board presence (it is sacrificed after attacking and cannot block)",
+        "status": "same bucket-B usage-limited-duration logic, no new formula needed"
+      },
+      "explicitly_out_of_scope": "Energy counters and planeswalker loyalty are separate resource systems entirely (not mana-alternatives) - deliberately excluded, noted so it's clear they were considered, not missed."
+    },
+    "life_as_cost": {
+      "rate": 0.5,
+      "unit": "mana_per_life_point",
+      "source": "Official WotC design rate, derived from Phyrexian mana templating (New Phyrexia, {C/P} symbols): pay 1 colored mana OR pay 2 life. 2 life = 1 mana.",
+      "cross_check": "Existing goldfish_value_model.json life_gain_per_point=0.667 is the same order of magnitude as this cost-side rate (0.5) - consistent, not contradictory; treated as a mild validation of the existing knob rather than a reason to change it."
+    },
+    "sacrifice_as_cost": {
+      "rate": null,
+      "method": "dynamic_lookup",
+      "formula": "cost_equivalent = ValueModel.aggregate_value(...) of the specific sacrificed permanent, not a flat constant",
+      "note": "Conceptually the same idea as the existing discard_self=-1.2 knob (an abstract card-resource cost), but sacrifice should ideally use the actual value of the specific card sacrificed rather than a flat penalty, since a 1-mana token and a fully-built bomb are not equivalent sacrifices."
+    },
+    "stun_counter_as_cost": {
+      "rate": 1.0,
+      "unit": "mana_equivalent_per_counter",
+      "confidence": "low - no official WotC conversion rate exists for this (unlike life/Phyrexian mana)",
+      "preferred_method": "percentage discount on the affected permanent's own value, rather than a flat mana amount, because delaying a strong bomb is worse than delaying a small mana dork",
+      "fallback_method": "flat rate above, only if the permanent's own value is not yet known at evaluation time"
+    },
+    "conditional_restrictions": {
+      "example": "can attack only if you control a legendary creature",
+      "method": "NOT a resource conversion - no currency changes hands, so folding this into mana-equivalents would be a category error",
+      "preferred_method": "uptime probability discount - estimate the fraction of games in which the condition is met, multiply the stat's usable value by that fraction"
+    }
+  },
+  "open_questions_not_implemented": [
+    {
+      "topic": "gated_downside_creatures",
+      "example": "legendary creature-land, 4 mana, 8/8, enters with stun counters, cannot attack until counters removed",
+      "status": "partially refined via resource_to_mana_conversion above (life/sacrifice/stun-counter now have a concrete conversion approach); conditional restrictions (can't-attack-unless clauses) are explicitly out of scope for mana-conversion and still need an uptime-probability model - not designed in detail, not implemented"
+    },
+    {
+      "topic": "engine_value_blend",
+      "idea": "blend the predefined static ValueModel score with an observed average net_value contribution per card across real simulation runs (card_impact.csv already tracks per-card data per run)",
+      "status": "NOT implemented - would need new cross-run tracking/aggregation logic, not just a JSON table; flagged as a distinct future work package"
+    }
+  ]
+}
