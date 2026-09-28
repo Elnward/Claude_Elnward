@@ -233,10 +233,13 @@ def _pt_stats(pairs: list[tuple[float, int]]) -> dict | None:
 
 
 _COMPARE_FIELDS = [
-    ("n_lands", "Laender"), ("n_ramp", "Ramp"), ("n_card_advantage", "Card Advantage"),
-    ("n_interaction_total", "Interaction (gesamt)"), ("n_boardwipes", "davon Board Wipes"),
-    ("n_protection", "Protection"), ("n_strategy_cards", "Strategie-Karten"),
-    ("n_creatures", "Kreaturen"), ("avg_nonland_cmc", "Ø Manavalue (Nicht-Land)"),
+    # v4.79.0: was a mix of German and English labels leaking into the Web
+    # UI's Analysis tab (deck-vs-reference comparison table) -- all-English
+    # now, per UI-Feedback ("everything English, no mixed language").
+    ("n_lands", "Lands"), ("n_ramp", "Ramp"), ("n_card_advantage", "Card Advantage"),
+    ("n_interaction_total", "Interaction (total)"), ("n_boardwipes", "Board Wipes"),
+    ("n_protection", "Protection"), ("n_strategy_cards", "Strategy Cards"),
+    ("n_creatures", "Creatures"), ("avg_nonland_cmc", "Avg. Mana Value (Nonland)"),
 ]
 
 

@@ -11,6 +11,15 @@ from __future__ import annotations
 
 from .registry import PredicateResult, register_predicate
 
+# combat_model.interaction is a standalone leaf module (no import of
+# engine.py or scenario_predicates), so importing it directly here -- unlike
+# engine.py's own helpers, reached only through the passed-in `ops` -- does
+# not create a circular import. Relative, matching this file's own `.registry`
+# import style so it resolves the same way whether this package loads as
+# `App.scenario_predicates` or as a bare `scenario_predicates` (see engine.py's
+# own try/except import of this package's `registry` module).
+from ..combat_model.interaction import block_rate_for as _combat_block_rate_for
+
 
 def _opponent_indices(state, target) -> list:
     n = len(state.opponents)
@@ -207,5 +216,78 @@ def _p_commander_damage_lethal(ops, params, state, strategy) -> PredicateResult:
     return PredicateResult(
         satisfied=ok,
         detail=f"OPPORTUNITY only (assumes unblocked): {detail}",
+        progress=progress,
+    )
+
+
+@register_predicate("board_damage_lethal")
+def _p_board_damage_lethal(ops, params, state, strategy) -> PredicateResult:
+    """v4.79.0 (Runde 1, original Punkt 6): is the current board (creatures +
+    token groups able to attack right now) lethal against the target
+    opponent(s)' CURRENT life -- not a fixed assumed-40 starting life.
+
+    Before this predicate existed, an alpha-strike or token-swarm win
+    condition had no dedicated way to express "my board is lethal this
+    turn" at all, so scenarios for that shape typically fell back to a
+    fixed "total power >= 40" requirement authored by hand (or by the AI
+    scenario prompt) as a stand-in for "opponent's starting life" -- which
+    silently stopped meaning "lethal" the moment the opponent had already
+    taken damage from anything else that game (a big one-time swing against
+    an already-damaged opponent then went unrecognized as a win).
+
+    Simplification (disclosed, same spirit as x_spell_lethal's mana-budget
+    stand-in for a full payment solver): reads tapped/summoning-sickness
+    state as-is from the current snapshot (so this reflects "if everyone
+    who COULD attack right now did"), and uses each attacker's EXPECTED
+    damage (power * (1 - block_rate), the same per-attacker block-rate
+    model real combat resolution uses) rather than a full stochastic
+    resolution of who actually gets blocked. Equipment/trigger-based
+    evasion multipliers are not folded in here (those only apply inside
+    the real attack_phase resolution, not this feasibility estimate).
+    """
+    target = params.get("target", "any")
+    indices = _opponent_indices(state, target)
+    if not indices:
+        return PredicateResult.not_computable(f"no opponent matches target '{target}'")
+    lives = [state.opponents[i] for i in indices]
+    remaining = min(lives) if target != "each" else max(lives)
+    if remaining <= 0:
+        return PredicateResult(satisfied=True, detail="target already at/below 0 life")
+
+    entries = []  # (power, keywords, is_commander)
+    for p in state.creatures():
+        if getattr(p, "tapped", False):
+            continue
+        kws = ops.effective_keywords_in_state(p, state)
+        power = ops.creature_power(p, state)
+        if power > 0:
+            entries.append((power, kws, bool(p.card.commander)))
+    for g in state.creature_tokens:
+        if g.count <= 0:
+            continue
+        if g.entered_turn == state.turn and "haste" not in set(g.keywords):
+            continue
+        power = ops.token_group_power(g, state) * g.count
+        if power > 0:
+            entries.append((power, set(g.keywords), False))
+
+    if not entries:
+        return PredicateResult(satisfied=False, detail="no creature able to attack this turn", progress=0.0)
+
+    n_attackers = len(entries)
+    profile, turn = strategy.opponent_profile, state.turn
+    expected = 0.0
+    for power, kws, is_cmd in entries:
+        if "double strike" in kws:
+            power *= 2.0
+        rate = _combat_block_rate_for(profile, turn, n_attackers, kws, is_commander=is_cmd)
+        expected += power * (1.0 - rate)
+
+    ok = expected >= remaining
+    progress = min(1.0, expected / remaining) if remaining > 0 else 1.0
+    return PredicateResult(
+        satisfied=ok,
+        detail=(f"estimated damage after blockers {expected:.1f} vs {remaining:.1f} needed "
+                f"(target={target}, current life, {n_attackers} potential attacker(s))"),
         progress=progress,
     )

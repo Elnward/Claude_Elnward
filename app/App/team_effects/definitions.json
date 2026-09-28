@@ -1,0 +1,42 @@
+{
+  "version": "1.0",
+  "note": "v4.76.0 WP3: deklarative Muster fuer Team-/Stammes-Pumps, Craterhoof-artige ETB-Finisher, X-Kreatur-Tutoren (Finale of Devastation, Green Sun's Zenith) und 'Tap N untapped <Typ> you control'-Kosten. 'regex' wird gegen die kleingeschriebene, von Reminder-Text befreite Oracle-Zeile geprueft. Neue Karten gleicher Mechanik brauchen nur einen neuen JSON-Eintrag bzw. matchen bereits.",
+  "patterns": [
+    {
+      "id": "typed_pump_until_eot",
+      "kind": "effect",
+      "model_layer": "exact",
+      "regex": "^(other )?((?:[a-z]+ )?creatures|[a-z]+) you control get \\+(\\d+)/\\+(\\d+)(?: and gain ([a-z]+(?: and [a-z]+)?))? until end of turn",
+      "description_de": "Aktivierte/ausgeloeste Team-Pumps bis Zugende, auf einen Kreaturtyp begrenzt ('Elf creatures you control get +3/+3 and gain trample' - Ezuri; 'Elves you control get +2/+2 and gain deathtouch' - Elvish Warmaster) oder auf alle Kreaturen (Overrun). Vorher galt Ezuris Bonus fuer ALLE Kreaturen und Warmasters Faehigkeit lief gar nicht."
+    },
+    {
+      "id": "typed_anthem_static",
+      "kind": "static",
+      "model_layer": "exact",
+      "regex": "^(other )?((?:[a-z]+ )?creatures|[a-z]+)(?: you control)? get \\+(\\d+)/\\+(\\d+)(?: and have ([a-z]+))?\\.?$",
+      "description_de": "Statische Stammes-Lords ('Other Elves you control get +1/+1' - Imperious Perfect, 'Other Elf creatures get +1/+1 and have forestwalk' - Elvish Champion, Elvish Archdruid). Wirkt nur auf eigene Kreaturen des Typs; 'other' schliesst die Quelle aus. Zeilen mit 'for each' (skalierende Lords) sind bewusst ausgenommen."
+    },
+    {
+      "id": "etb_team_pump_x_creatures",
+      "kind": "etb",
+      "model_layer": "exact",
+      "regex": "^when (?:this creature|[^,]+?) enters(?: the battlefield)?, creatures you control (?:gain trample and )?get \\+x/\\+x(?: and gain trample)? until end of turn, where x is the number of creatures you control",
+      "description_de": "Craterhoof Behemoth: beim Eintreten +X/+X und Trample fuer alle eigenen Kreaturen bis Zugende, X = Anzahl eigener Kreaturen inkl. Spielsteine. Vorher wurde nur Trample erkannt."
+    },
+    {
+      "id": "x_creature_tutor_to_battlefield",
+      "kind": "x_spell",
+      "model_layer": "simplified",
+      "regex": "search your library( and/or graveyard)? for an? (?:([a-z]+) )?creature card with (?:mana value|converted mana cost) x or less(?:,| and) put it onto the battlefield",
+      "pump_regex": "if x is (\\d+) or more, creatures you control get \\+x/\\+x and gain ([a-z]+) until end of turn",
+      "description_de": "X-Tutor direkt aufs Spielfeld (Finale of Devastation, Green Sun's Zenith). Ziel: ein ETB-Team-Finisher, wenn das Board breit genug ist, sonst die hoechste Tutor-Prioritaet mit Manawert <= X. Finales +X/+X-Zusatz ab X>=10 wird angewendet. Vereinfachung: das Ziel wird aus Bibliothek/Friedhof gewaehlt, ohne Gegner-Interaktion."
+    },
+    {
+      "id": "tap_n_untapped_cost",
+      "kind": "cost",
+      "model_layer": "exact",
+      "regex": "tap (one|two|three|four|five|six|seven|eight|nine|ten|\\d+) untapped ([a-z]+) you control",
+      "description_de": "Aktivierungskosten 'Tap N untapped <Typ> you control' (Lathril: zehn Elfen). Vorher wurde nur das {T} der Quelle geprueft - die Faehigkeit feuerte also ohne die zehn Elfen. Jetzt nur mit genug ungetappten Kreaturen des Typs (ohne Quelle; Spielsteine zaehlen), die dann tatsaechlich getappt werden."
+    }
+  ]
+}

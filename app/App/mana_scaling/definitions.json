@@ -1,0 +1,44 @@
+{
+  "version": "1.0",
+  "note": "v4.76.0 WP1: Deklarative Beschreibung skalierender Mana-Faehigkeiten ('Add {G} for each Elf you control', 'Add X mana ... where X is the number of Elves', 'equal to its power'). Jeder Eintrag verweist per 'handler' auf eine Funktion in handlers.py; 'regex' wird zeilenweise gegen den kleingeschriebenen, von Reminder-Text befreiten Oracle-Text geprueft. Vorher lieferte der generische Parser fuer diese Karten 1 Mana (erstes Symbol) oder 0 Mana (X/power). Neue Karten mit identischer Mechanik brauchen nur einen neuen JSON-Eintrag, keinen neuen Python-Code.",
+
+  "patterns": [
+    {
+      "id": "symbol_per_type_you_control",
+      "model_layer": "exact",
+      "regex": "add (\\{[wubrgc]\\}) for each (other )?([a-z]+) you control",
+      "handler": "symbol_per_count",
+      "scope": "you_control",
+      "description_de": "Ein Mana-Symbol pro kontrolliertem Permanent des genannten Typs/Kreaturtyps (Elvish Archdruid, Circle of Dreams Druid, Gaea's Cradle). Kreatur-Spielsteine zaehlen mit."
+    },
+    {
+      "id": "symbol_per_type_on_battlefield",
+      "model_layer": "simplified",
+      "regex": "add (\\{[wubrgc]\\}) for each (other )?([a-z]+) on the battlefield",
+      "handler": "symbol_per_count",
+      "scope": "battlefield",
+      "description_de": "Wie oben, aber 'on the battlefield' (Priest of Titania). Gezaehlt werden nur EIGENE Permanents - das Modell kennt kein gegnerisches Board, das Ergebnis ist also eine Untergrenze."
+    },
+    {
+      "id": "x_any_one_color_per_type",
+      "model_layer": "simplified",
+      "regex": "add x mana of any one color, where x is the number of ([a-z]+) (?:you control|on the battlefield)",
+      "handler": "any_one_color_per_count",
+      "description_de": "X Mana einer Farbe, X = Anzahl eines Kreaturtyps (Wirewood Channeler). Farbauswahl auf die Commander-Farben begrenzt; gegnerische Kreaturen zaehlen nicht mit."
+    },
+    {
+      "id": "symbol_times_own_power",
+      "model_layer": "exact",
+      "regex": "add an amount of (\\{[wubrgc]\\}) equal to [^.]*?power",
+      "handler": "symbol_times_own_power",
+      "description_de": "Mana in Hoehe der eigenen Staerke inkl. +1/+1-Marken und statischer Boni (Marwyn, the Nurturer)."
+    },
+    {
+      "id": "tap_n_untapped_type",
+      "model_layer": "simplified",
+      "regex": "^tap (one|two|three|four|five|\\d+) untapped ([a-z]+) you control: add ((?:\\{[wubrgc]\\})+)",
+      "handler": "tap_n_untapped_type",
+      "description_de": "'Tap three untapped Elves you control: Add {G}{G}{G}' (Heritage Druid). Nur verfuegbar, wenn genug ungetappte Kreaturen des Typs liegen; die mitgetappten Kreaturen werden NICHT einzeln blockiert (bewusste Vereinfachung, im Log markiert)."
+    }
+  ]
+}

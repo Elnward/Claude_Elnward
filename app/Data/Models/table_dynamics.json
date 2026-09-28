@@ -1,0 +1,72 @@
+{
+  "version": "1.4",
+  "_comment": "v4.83.0 (Siegquoten-Debug, siehe Docs/README.md v4.83.0). Parameter fuer den SYMMETRISCHEN Viererttisch des Advanced-Gegnermodells, die generische Siegbedingungs-Ausfuehrung, die Nutzung eigener Interaktion und den generischen Trigger-Bus. Vor v4.83.0 war der Tisch asymmetrisch: Gegner griffen NUR den getesteten Spieler an (nie einander), ihre Interaktion/Wipes verbrauchten sich nie, Wipes trafen nur das Brett des Spielers, tote Gegner handelten weiter und eigene Removal-Karten des Spielers wurden nie gewirkt. 'enabled': false stellt das alte Tischverhalten exakt wieder her (jeder Unterblock hat zusaetzlich einen eigenen Schalter).",
+  "enabled": true,
+  "combat_damage_per_board_unit": 1.8,
+  "opp_vs_opp_damage_factor": 0.75,
+  "opp_vs_opp_attrition_units": 0.35,
+  "interaction_consume": 1.0,
+  "wipe_consume": 1.0,
+  "wipe_board_survival": 0.25,
+  "seat_wipe_only_when_behind": true,
+  "opponent_draws_per_turn": 1,
+  "focus_targeting": true,
+  "attack_target_board_weight": 3.0,
+  "block_reference_units": 3.0,
+  "block_multiplier_range": [
+    0.2,
+    1.4
+  ],
+  "open_board_units": 1.0,
+  "_comment_attack": "Eigener Angriff im Advanced-Tisch: Ziel = lebender Sitz mit minimalem (Leben + attack_target_board_weight * board_presence) - wie am echten Tisch wird der Spieler mit wenig Blockern/Leben angegriffen. Die Blockrate des Kampfmodells (kalibriert fuer einen 'typischen' Gegner) wird mit board_presence(Ziel) / block_reference_units skaliert (begrenzt auf block_multiplier_range). Commander/Engine-Kreaturen mit 'balanced'-Haltung greifen zusaetzlich an, wenn das Ziel <= open_board_units Brett hat (sicherer Angriff).",
+  "_comment_params": "combat_damage_per_board_unit: Schaden je board_presence-Einheit (vorher fest 1.0 im Code). opp_vs_opp_damage_factor: Anteil des Drucks, der beim Angriff auf einen ANDEREN Gegner-Sitz durchkommt (dessen Blocker fangen den Rest ab - Spiegel zu defense.py beim Spieler). opp_vs_opp_attrition_units: Kreatur-Einheiten, die jede Seite bei einem Gegner-gegen-Gegner-Angriff verliert (Tausch). interaction_consume/wipe_consume: um wieviel eine GENUTZTE Interaktion/ein Wipe den Bestand (interaction_availability/wipe_readiness = laut state_equation die WAHRSCHEINLICHKEIT, gerade live Interaktion bzw. einen Wipe auf der Hand zu haben) senkt - vorher 0, d.h. ein einmal gewachsener Wert feuerte jede Runde erneut. Gemessen (8 Trainingsdecks x 30 Partien, 10 Zuege): vorher 4,3 Interaktions-Einsaetze je Sitz, jetzt 2,2; grobe Erwartung aus der Decklisten-Dichte (~22 % der Nicht-Land-Karten inkl. Protection, ~17-20 gesehene Karten): ~2,4-2,8 - vorher also ~1,7x zu viel. wipe_board_survival: Anteil der board_presence, der einen Wipe ueberlebt (fuer ALLE Sitze inkl. Wirker). seat_wipe_only_when_behind: ein Sitz wirkt seinen Wipe nur, wenn er nicht selbst das groesste Brett hat. focus_targeting: der Spieler lenkt Kampfschaden/'target opponent' auf den lebenden Gegner mit dem niedrigsten Leben (vorher: hoechstes Leben = Schaden gleichmaessig verschmiert, niemand stirbt vor 120 Gesamtschaden).",
+  "player_interaction": {
+    "enabled": true,
+    "removal_min_seat_units": 2.0,
+    "wipe_min_table_units": 7.0,
+    "wipe_max_own_units": 2,
+    "counterspell_enabled": true,
+    "_comment": "Eigene Removal/Wipes/Counterspells des Spielers werden gegen die abstrakten Sitze genutzt (vorher 'reactive only' = nie gewirkt). Gezielte Entfernung: sobald ein lebender Sitz >= removal_min_seat_units Brett hat, mit Restmana nach der eigenen Entwicklung (vor dem Kampf bzw. im Endschritt) -> -1 board_presence bei diesem Sitz. Kreatur-Wipe: wenn die lebenden Sitze zusammen >= wipe_min_table_units haben und das eigene Brett <= wipe_max_own_units Kreatur-Einheiten umfasst -> alle Sitze x wipe_board_survival, eigene Kreaturen sterben ebenfalls. Counterspell: kontert einen gegnerischen Wipe (wenn eigenes Brett >= 2 Kreaturen) oder gezielte Entfernung auf Commander/Engine/Finisher, falls ungetappt Mana bereitsteht."
+  },
+  "win_condition_execution": {
+    "enabled": true,
+    "disruption_use_share": 0.7,
+    "_comment": "Erreichte, vom Nutzer definierte 'Win Condition'-Szenarien werden jetzt AUSGEFUEHRT (vorher nur als Status gemessen - 'reach_but_no_full_win'). Je lebendem Sitz: Stoerchance = min(1, interaction_availability) * disruption_use_share (nur ein Teil der Interaktion ist sofortschnell bzw. wird auf die Kombo verwendet); eine Stoerung verbraucht 1 Interaktion des Sitzes und kostet ein Kombo-Teil (Permanent -> Friedhof bzw. Handkarte gekontert). Ohne Stoerung: Scope 'each'/'mixed'/'n/a' = alle Gegner auf 0, Scope 'any' = der Fokus-Gegner auf 0. Einfache Profile: Stoerchance = OPPONENT_PROFILES[p]['removal'] * disruption_use_share. Goldfish: nie gestoert.",
+    "loose_policy": "execute",
+    "_comment_loose_policy": "v4.84.0: Umgang mit 'losen' Win Conditions (ohne Lethalitaets-Praedikat): 'execute' = beim Erreichen Tischsieg (Standard, wie v4.83.0), 'board_lethal' = zaehlen nur, wenn das Brett gegen ALLE Gegner lethal ist, 'measure_only' = nur messen. Summary: outcomes.win_condition_quality."
+  },
+  "trigger_bus": {
+    "enabled": true,
+    "max_fires_per_ability_per_turn": 8,
+    "max_depth": 2,
+    "per_event_cap": 5,
+    "_comment": "Generischer Dispatcher fuer ausgeloeste Faehigkeiten (App/trigger_bus). Vorher liefen nur handverdrahtete Einzelfaelle; 'exact' klassifizierte Zeilen wie 'Whenever you cast an enchantment spell, draw a card' taten nie etwas. Schutzgrenzen gegen Endlosschleifen: je Faehigkeit hoechstens max_fires_per_ability_per_turn Ausloesungen pro Zug, Verschachtelungstiefe max_depth, je Ereignis mit Anzahl (Token-Schwarm) hoechstens per_event_cap Einzel-Ausloesungen.",
+    "mdfc_land_until_lands": 8,
+    "proactive_sacrifices_per_turn": 4,
+    "_comment_v4850": "v4.85.0: mdfc_land_until_lands - eine modale doppelseitige Karte (MDFC) mit Land-Rueckseite wird als Land gespielt, wenn kein anderes Land auf der Hand ist und weniger als so viele Laender liegen; sonst bleibt sie Zauber (Seite A oder B, je nachdem, was bezahlbar ist). proactive_sacrifices_per_turn - Obergrenze fuer freiwillige Opfer an kostenlosen Opfer-Ausgaengen im Endschritt (nur schwache Token, Power <= 1, 2 bleiben stehen, und nur mit Tod-Ausloeser auf dem Feld). Opfer als Antwort auf Wipe/Removal sind davon unabhaengig."
+  },
+  "_comment_calibration": "Kalibrierung v4.83.0 (App/benchmark/training_deck_benchmark.py): 40 zufaellig gezogene echte EDHREC-Durchschnittsdecks (die Datenbasis, aus der die Sitze abgeleitet sind) spielen gegen drei zufaellige Bracket-3-Sitze, 50 Partien je Deck, 20 Zuege (Partien laufen praktisch aus). Scan combat_damage_per_board_unit (Siege/Niederlagen/offen): 1.0 -> 35.8/36.5/27.8 %, 1.5 -> 28.7/59.4/11.9 %, 2.0 -> 21.8/74.0/4.2 %. Gewaehlt 1.8; Endstand mit allen v4.83.0-Aenderungen: Stichprobe A 25.6/67.0/7.4 %, unabhaengige Kontroll-Stichprobe B (40 andere Decks) 23.1/68.1/8.8 % - Erwartung am fairen Vierertisch 25 %. Vor v4.83.0: 0.6 % Siege (10 Zuege). Physikalisch plausibel: eine board_presence-Einheit ~ eine Kreatur mit typischer Power 2.5-3 (color_keyword_profile.json), von der gut die Haelfte bis zwei Drittel durchkommt.",
+  "simple_profiles_use_table": true,
+  "interaction_removal_share": 0.83,
+  "passive_value_board_bonus": 0.25,
+  "passive_value_interaction_bonus": 0.1,
+  "sac_drain_life_per_unit": 3.0,
+  "disruption_tap_chance_per_unit": 1.0,
+  "opponent_commander_damage_share": 0.3,
+  "_comment_v4840": "v4.84.0: simple_profiles_use_table - einfache Profile (aggro/midrange/control/horde/random ohne Advanced-Haken) laufen als 3 Sitze dieser Strategie am symmetrischen Tisch. interaction_removal_share 0.83 = Removal/(Removal+Protection) in den 1.585 Trainingsdecks (7,36 vs. 1,52 Karten je Deck; der Rest der 'Interaktion' schuetzt das eigene Brett und trifft den Spieler nicht). win_condition_execution.disruption_use_share 0.7 = Anteil Spontanzauber/Flash an der Removal-/Counter-Interaktion der Trainingsdecks (nur diese kann eine Kombo im eigenen Zug stoppen; vorher Schaetzwert 0.5). passive_value_* / sac_drain_life_per_unit / disruption_tap_chance_per_unit: erste Spielwirkung der bisher nur mitgefuehrten Sitz-Bestaende (Schaetzwerte, klein, da die Bestaende selbst klein sind: typ. 0.05-0.3). opponent_commander_damage_share 0.3: Anteil des Kampfdrucks eines Sitzes, der von seinem Commander kommt (Schaetzwert) - 21 = verloren.",
+  "_comment_calibration_v4840": "v4.84.0 Nachkalibrierung (nach Block A/B; Benchmark-Cache mit korrigiertem DFC-Format - in v4.83.0 trugen doppelseitige Karten im Benchmark Namenspraefixe und Rueckseiten-Text, z. B. Tovolar): 2 x 40 Trainingsdecks, 40 Partien je Deck, 20 Zuege. combat_damage_per_board_unit 1.8 -> A 26.0 % / B 23.1 % Siege (= 25,1 % der entschiedenen Partien im Mittel), 1.9 -> 23.4 / 21.0, 2.0 -> 24.7 / 20.5 (Rauschen ~ +-2 pp). Bleibt 1.8. Spieltempo bei 1.8: erster Ausfall am Tisch Median Zug 10 (Quartile 8-12), Partie fuer den Spieler entschieden Median Zug 11 (9-13). Eigene Interaktionsschwellen (removal_min_seat_units 1/2/3, wipe_min_table_units 5/7/10) aendern die Siegquote nur im Rauschen (26,6/26,0/26,6 bzw. 26,2/26,0/23,9 %) - Standard 2 / 7 bleibt.",
+  "table_politics": {
+    "enabled": true,
+    "kingmaking_life_threshold": 15.0,
+    "kingmaking_revenge_weight": 2.0,
+    "kingmaking_leader_weight": 0.08,
+    "kingmaking_grudge_decay": 0.6,
+    "_comment": "v4.86.0 (Tischpolitik, Baustein 1: Rache-/Kingmaking-Ziel). Nur die eigene Kampf-/Praesenzdruck-Zielwahl eines Sitzes aendert sich, und nur wenn dessen Leben <= kingmaking_life_threshold ist (chancenlos/am Ausscheiden) - alle anderen Sitze und alle anderen Wirkungen (gezielte Entfernung, Wipes) bleiben bei der bisherigen Gleichverteilung. Statt 'irgendein Ziel' gewichtet: Rache (kingmaking_revenge_weight * Schaden, den dieser Sitz in den letzten Zuegen von genau diesem Ziel erlitten hat; ein Gedaechtnis pro Sitz, das jeden Zug mit kingmaking_grudge_decay abklingt) plus Tischfuehrung (kingmaking_leader_weight * (Leben + attack_target_board_weight * Brett) des Ziels - dieselbe Formel wie die eigene Fokus-Zielwahl des Spielers, hier aber invertiert: das STAERKSTE statt das schwaechste Ziel gilt als attraktiv). Alles Schaetzwerte ohne Trainingsdeck-Grundlage (anders als z. B. interaction_removal_share) - kingmaking_life_threshold 15 von 40 Start-Leben (~37 %), kingmaking_revenge_weight/leader_weight so gewaehlt, dass beide Effekte spuerbar, aber nicht dominant sind (Gewicht 1.0 als neutrale Basis je Ziel). enabled hier zusaetzlich zum globalen table_dynamics.enabled abschaltbar.",
+    "grudge_weight": 0.1,
+    "target_mode": "uniform",
+    "threat_leader_weight": 0.08,
+    "group_hug_malus_per_point": 0.15,
+    "group_hug_value_cap": 5.0,
+    "_comment_v487": "v4.87.0 (Tischpolitik, Bausteine 2-4). grudge_weight: kleiner, IMMER aktiver Rache-Bias fuer JEDEN Sitz (nicht nur chancenlose - dort gilt weiterhin das groessere kingmaking_revenge_weight), ueber dasselbe abklingende Gedaechtnis wie Baustein 1; 'wer lange verschont hat, seltener' ergibt sich von selbst aus dem Abklingen, keine eigene Buchhaltung noetig. target_mode 'uniform' (Standard, kein Leader-Bias ausserhalb chancenloser Sitze) oder 'threat' (threat_leader_weight gilt fuer JEDEN Sitz - der ganze Tisch zielt bevorzugt auf das staerkste Ziel, nicht nur auf ein Zufallsziel). group_hug_malus_per_point/group_hug_value_cap: eigene Karten, die auch Gegnern etwas geben (Howling Mine, Rites of Flourishing, Minds Aglow, ...) senken das Zielgewicht des Spielers multiplikativ (1 - malus*wert, min. 0.1) - textbasierte Heuristik (_group_hug_value), kein Trainingsdeck-Datensatz. Alles Schaetzwerte, ueber table_politics.enabled komplett abschaltbar (dann wieder reine Gleichverteilung wie vor v4.86.0)."
+  }
+}

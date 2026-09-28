@@ -1,7 +1,6 @@
 {
   "version": "1.0",
   "note": "Erste Kalibrierung. block_rate_base ist ungefaehr 1 - (altes OPPONENT_PROFILES.block_factor), damit der ERWARTUNGSWERT des durchkommenden Schadens grob dem alten pauschalen block_factor-Modell entspricht. Das ist eine bewusste Eichung, KEINE reale Matchup-Statistik (siehe Projekt-Philosophie, Abschnitt 28). Alle Werte hier sind frei per Hand justierbar, ohne Code zu aendern.",
-
   "profiles": {
     "goldfish": {
       "block_rate_base": 0.0,
@@ -14,7 +13,7 @@
     },
     "midrange": {
       "block_rate_base": 0.32,
-      "trade_rate_given_blocked": 0.50
+      "trade_rate_given_blocked": 0.5
     },
     "control": {
       "block_rate_base": 0.42,
@@ -23,25 +22,22 @@
     },
     "horde": {
       "block_rate_base": 0.28,
-      "trade_rate_given_blocked": 0.50,
+      "trade_rate_given_blocked": 0.5,
       "_comment": "Horde kann gangblocken (mehrere kleine Token gegen einen Angreifer); vereinfachend gleiche trade_rate wie midrange."
     }
   },
-
   "evasion_keyword_multiplier": {
     "flying": 0.35,
     "menace": 0.55,
     "trample": 0.85,
     "_comment": "Multiplikator auf block_rate. Flying/Menace/Trample WIRKEN GEMEINSAM multiplikativ (z.B. Flying+Trample = 0.35*0.85)."
   },
-
   "wide_board": {
     "soft_cap_attackers": 3,
-    "decay_per_extra_attacker": 0.90,
+    "decay_per_extra_attacker": 0.9,
     "min_multiplier": 0.35,
     "_comment": "Ab mehr als soft_cap_attackers Angreifern sinkt block_rate je zusaetzlichem Angreifer multiplikativ um decay_per_extra_attacker, nach unten begrenzt durch min_multiplier."
   },
-
   "turn_ramp": {
     "start_turn": 3,
     "max_turn": 8,
@@ -49,7 +45,6 @@
     "max_multiplier": 1.15,
     "_comment": "Linearer Anstieg von start_multiplier (bei start_turn) auf max_multiplier (bei max_turn und danach); vor start_turn gilt start_multiplier. Modelliert, dass der Gegner frueh im Spiel weniger Blocker/Removal zur Verfuegung hat."
   },
-
   "importance_targeting": {
     "removal_weight": 0.8,
     "combat_block_weight": 0.5,
@@ -57,24 +52,64 @@
     "_comment": "Gewichtet Removal-Zielwahl und Combat-Blockchance danach, wie viel 'Aktivitaet' (state.impact, laufend WAEHREND des aktuellen Runs) eine Karte bereits gezeigt hat - zusaetzlich zur bestehenden statischen tutor_priority-Liste, nicht als Ersatz dafuer. Rein kausal innerhalb desselben Runs (kein Leck aus zukuenftigen/anderen Runs). removal_weight skaliert den Einfluss auf die Ziel-Score fuer Spot-Removal; combat_block_weight skaliert den Bonus auf die Blockchance des wichtigsten aktuellen Angreifers relativ zu den uebrigen.",
     "_comment_target_focus_chance": "v4.8.3, aus dem 200er-Diagnostic-Run vom 06.09.2026 abgeleitet: vorher wurde das Spot-Removal-Ziel IMMER deterministisch per max(score) gewaehlt, wodurch ueber 200 Runs ~61% des gesamten gegnerischen Removals im Bilbo-Deck auf genau 2 Karten (Bilbo, Doctor Strange) konzentriert war. target_focus_chance ist die Wahrscheinlichkeit, dass der Gegner ueberhaupt das (laut removal_target_score) wichtigste Ziel trifft; sonst faellt die Wahl gleichverteilt zufaellig auf ein beliebiges legales Ziel - modelliert, dass reales Removal nicht immer exakt das wichtigste Ziel treffen kann (Mana/Farbe/Timing/Aufsparen), OHNE ein echtes Entscheidungsmodell des Gegners vorzutaeuschen. 1.0 = alte, voll deterministische Zielwahl; 0.0 = komplett gleichverteilt zufaellig (removal_weight/tutor_priority ohne jeden Effekt auf die Zielwahl)."
   },
-
   "posture": {
     "balanced_min_other_attackers": 2,
     "_comment": "Nur fuer Commander Posture 'balanced' (und den 'auto'-Fallback ohne erkennbare Rollenpraeferenz): der Commander greift zusaetzlich an, wenn bereits mindestens so viele ANDERE Kreaturen angreifen - mehr Angreifer verduennen die Blockchance pro Angreifer (siehe wide_board oben), das Risiko fuer den Commander ist dann geringer."
   },
-
   "commander_targeting": {
     "block_bias": 1.25,
     "_comment": "WP6 Iteration 2+, seit v4.7.5 offen ('the commander painted a target on itself'): der Commander ist ab Zug 1 oeffentlich bekannt (Command Zone, meist die zentrale Spielplan-Karte) und wird deshalb bevorzugt geblockt - UNABHAENGIG davon, ob er in DIESEM Run schon live_impact_score-Aktivitaet gezeigt hat (das misst separat importance_targeting.combat_block_weight und wirkt erst, sobald der Commander etwas getan hat). block_bias ist ein reiner Multiplikator NUR auf die block_rate des Commander-Angreifers, multiplikativ zusaetzlich zu Turn-Ramp/Wide-Board/Evasion und zum impact-basierten Bonus. Erst-Schaetzwert (kein externes Referenzdatum verfuegbar, siehe Projekt-Praxis 'klar benannter Erst-Schaetzwert statt erfundener Praezision', wie x_spell_proximity_bonus_max/value_curve_exponents). 1.0 = kein Effekt (altes Verhalten)."
   },
-
   "first_strike": {
     "trade_rate_multiplier": 0.5,
     "_comment": "WP6: naeherungsweise Abbildung des zweistufigen First-Strike/Regular-Damage-Combat-Schritts fuer einen GEBLOCKTEN Angreifer mit 'first strike' ODER 'double strike' (double strike bekommt in v4.7.5 bereits die doppelte UNBLOCKED-Schadenszahl - unveraendert). Da dieses Modell keine echten Blocker-Statuswerte (Power/Toughness) kennt, wird die reale Regel 'schlaegt vor dem Blocker zu und toetet ihn oft, bevor der Blocker ueberhaupt zurueckschlagen kann' als flache Reduktion auf trade_rate_given_blocked genaehert - first strike und double strike bekommen DENSELBEN Faktor, weil beide im ersten Schadensschritt gleich viel Power zufuegen; der Unterschied (zweiter Schlag bei double strike) wirkt sich nur auf den GEGNER aus, nicht auf die eigene Ueberlebenschance. Erst-Schaetzwert (kein externes Referenzdatum verfuegbar, gleiche Praxis wie commander_targeting.block_bias). 1.0 = kein Effekt (altes Verhalten, entspricht dem bisherigen Zustand fuer first strike, das bisher GAR KEINE Combat-Wirkung hatte)."
   },
-
   "equipment": {
     "attack_tap_trigger_block_rate_multiplier": 0.6,
     "_comment": "WP6/v4.15.3: Naeherung fuer Equipment mit 'Whenever equipped creature attacks, tap target creature defending player controls' (echtes Beispiel: Captain America's Shield, Decks/Mice with Swords.txt). Da dieses Modell keine echten gegnerischen Kreaturen kennt (siehe interaction.py-Moduldocstring), wird der Tap-Effekt als reduzierte Blockchance FUER DIESEN EINEN Angreifer angenaehert, statt einen echten Blocker abzutappen - gleicher Stil wie evasion_keyword_multiplier (flying/menace/trample), nur equipment-ausgeloest statt keyword-ausgeloest. Erst-Schaetzwert (kein externes Referenzdatum verfuegbar, gleiche Praxis wie first_strike/commander_targeting). 1.0 = kein Effekt."
+  },
+  "defense": {
+    "enabled": true,
+    "avg_attacker_power": {
+      "aggro": 3.0,
+      "midrange": 4.0,
+      "control": 4.0,
+      "horde": 1.5
+    },
+    "blockable_share": {
+      "aggro": 0.7,
+      "midrange": 0.8,
+      "control": 0.6,
+      "horde": 0.9
+    },
+    "max_prevented_share": 0.8,
+    "chump_only_below_life": 15,
+    "death_rate_when_outclassed": 0.8,
+    "death_rate_when_survivable": 0.1,
+    "_comment": "v4.76.0 WP2 (App/combat_model/defense.py): ungetappte eigene Kreaturen blocken einen Teil des abstrakten Gegnerdrucks. Der Druck eines Zuges wird in abstrakte Angreifer der profiltypischen Staerke avg_attacker_power zerlegt; blockable_share davon ist ueberhaupt blockbar (Rest = Evasion, Burn, Drain, Planeswalker). Jeder Block stoppt einen Angreifer; hoechstens max_prevented_share des Drucks eines Zuges kann verhindert werden. Blocker, die wahrscheinlich ueberleben (Toughness > Angreiferstaerke), blocken immer; Chump-Blocks erst, wenn das Leben nach dem Treffer unter chump_only_below_life faellt; Commander/Engine-Kreaturen nur gegen toedlichen Schaden. Alle Werte sind klar benannte ERST-SCHAETZWERTE (kein externes Referenzdatum, gleiche Praxis wie commander_targeting.block_bias), keine Matchup-Statistik. enabled=false stellt das alte, board-unabhaengige Verhalten bytegleich wieder her.",
+    "_comment_values": "avg_attacker_power: Aggro viele 2-4er, Midrange 3-5er, Control wenige grosse Drohungen, Horde 1/1-Token mit Anthems. blockable_share: Control-Druck kommt oft nicht ueber Kampf (Planeswalker, Drain), Horde fast nur ueber Boden-Token."
+  },
+  "keyword_effects": {
+    "enabled": true,
+    "profile_file": "color_keyword_profile.json",
+    "menace_min": 0.2,
+    "menace_max": 0.9,
+    "flanking_trade_rate_multiplier": 0.8,
+    "bushido_trade_rate_multiplier_per_point": 0.85,
+    "rampage_trade_rate_multiplier": 0.9,
+    "annihilator_creature_share": 0.5,
+    "attrition_decay_half_life_turns": 1.0,
+    "attrition_min_units": 0.05,
+    "protection_removal_share_threshold": 0.5,
+    "goad_all_suppression_units": 99,
+    "goad_one_player_units": 3,
+    "defense_first_strike_death_bump": 0.5,
+    "_comment": "v4.82.0 'Runde 4' (App/combat_model/keyword_effects.py): farbabhaengiges Keyword-Kampfmodell auf Basis von Data/Models/color_keyword_profile.json (1.585 echte EDHREC-Bracket-3-Decks, mengengewichtet je Farbidentitaet). Eingeschraenkte-Blocker-Keywords (Flying/Fear/Intimidate/Protection/Shadow/Horsemanship) nutzen 1-(1-s)^k, k so geeicht, dass evasion_keyword_multiplier.flying (0.35) beim gepoolten Flying/Reach-Anteil ALLER Decks exakt reproduziert wird. Menace skaliert mit creatures_per_deck, verankert an evasion_keyword_multiplier.menace, begrenzt auf [menace_min, menace_max]. Trample: statt Block-Faktor echter Ueberschussschaden (Power - mean_toughness der Gegnerfarbe). flanking/bushido/rampage: Multiplikator auf die eigene Todeschance beim Block (Erst-Schaetzwerte). annihilator_creature_share: Anteil der N geopferten gegnerischen Permanents, der als Kreatur-Verlust (Attrition) zaehlt (Erst-Schaetzwert, Gegner opfern bevorzugt Unwichtiges). attrition_decay_half_life_turns: bei einfachen Profilen (kein Gegner-Board) wirkt ein getoeteter Gegner-Angreifer als ABKLINGENDER Druck-Debuff (volle Wirkung in der naechsten Gegnerrunde, danach je Runde halbiert bei 1.0; 0 = genau eine Runde). Im Advanced-Modell senkt Attrition stattdessen direkt board_presence des Sitzplatzes (wie ein Removal; die Zustandsgleichung waechst von dort aus nach). protection_removal_share_threshold: Protection from X schuetzt im Advanced-Modell vor gezieltem Removal eines Sitzplatzes, wenn mindestens dieser Anteil seiner Nicht-Land-Karten Farbe X hat (spell_color_X). goad_all_suppression_units: 'goad each creature ...' unterdrueckt den gesamten Druck einer Runde. defense_first_strike_death_bump: Anteil, um den gegnerische First-Strike-Angreifer die Todeschance eigener Blocker Richtung 1 anheben. enabled=false stellt das Verhalten vor v4.82.0 bytegleich wieder her.",
+    "ordinary_kill_credit": 1.0,
+    "_comment_ordinary_kill_credit": "v4.83.0: Anteil eines gewoehnlichen Kampf-Kills (min(1, Power / typische Gegner-Toughness)), der als Attrition gutgeschrieben wird - fuer eigene geblockte Angreifer UND eigene Blocker. 0 = v4.82.0-Verhalten (nur Deathtouch/Wither/Infect)."
+  },
+  "playstyle": {
+    "attacker_selection_max_power": 3.0,
+    "_comment": "v4.77.0 WP-A (App/combat_model/playstyle.py): deck-wide play-style sliders (Decks/.deck_meta.json -> \"playstyle\", 0..100 each). attacker_selection_max_power is the power a creature must reach (or have an evasion keyword, or the 'finisher' role) to always attack regardless of the attacker_selection slider -- at attacker_selection=0 the strength bar sits at this value; at attacker_selection=100 (default) the bar sits at 0, so every creature always attacks, byte-identical to pre-v4.77.0 behavior. aggression then decides, per game, how often a creature BELOW that bar attacks anyway (100 = always, default). block_willingness lives entirely in the \"defense\" section above (chump_only_below_life scales around its configured value). All a disclosed first estimate, same practice as commander_targeting.block_bias -- no external reference data exists for 'how strong is strong enough to always attack'."
   }
 }

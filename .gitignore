@@ -1,12 +1,31 @@
+# --- Python / System ---------------------------------------------------------
 __pycache__/
 *.pyc
 *.pyo
 *.log
 .DS_Store
 Thumbs.db
+.venv/
 
-# Lokale Simulationslaeufe -- persoenliche Ergebnisse, kein Teil der
-# Installation. Der Ordner selbst bleibt im Repo (fuer neue Laeufe),
-# sein Inhalt nicht.
+# --- Lokale Simulationslaeufe ---------------------------------------------------
+# Persoenliche Ergebnisse, kein Teil der Installation. Der Ordner selbst
+# bleibt im Repo (fuer neue Laeufe), sein Inhalt nicht.
 app/Goldfish_Results/*
 !app/Goldfish_Results/.gitkeep
+
+# --- Lokaler Zustand, den das Programm selbst anlegt und fortschreibt ------------
+# Commander/Strategie-Tags/Spielstil je Deck
+app/Decks/.deck_meta.json
+# Gelerntes Wertgedaechtnis ueber viele Laeufe (fehlt = sauberer Kaltstart)
+app/Data/Learned/engine_value_store.json
+
+# --- Arbeitsordner neben dem Programm (nicht Teil der App) ----------------------
+/Archiv/
+/Claude outputs/
+/Claude_Elnward/
+/Image/
+/Projects/
+/Training data/
+/*.zip
+/Ordner_Reorganisieren.bat
+/reorganize.ps1

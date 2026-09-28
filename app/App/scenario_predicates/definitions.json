@@ -43,6 +43,15 @@
         "target": "any | each | <int index>"
       },
       "handler": "commander_damage_lethal"
+    },
+    {
+      "id": "board_damage_lethal",
+      "model_layer": "simplified",
+      "description_de": "Prueft, ob der aktuelle Board-Zustand (Kreaturen + Token-Gruppen, die gerade angreifen koennten) genug ERWARTETEN Schaden NACH Bloggern (pro Angreifer ueber das echte Block-Rate-Modell aus App/combat_model) gegen das AKTUELLE Leben des Ziels bringen wuerde - nicht gegen eine fest angenommene Start-40. Fuer Alpha-Strike-/Token-Schwarm-Win-Conditions gedacht, die vorher kein eigenes Praedikat hatten und deshalb typischerweise ueber ein fest verdrahtetes 'Gesamtmacht >= 40' modelliert wurden (falsch, sobald der Gegner schon Schaden von anderswo genommen hat). Vereinfachung: liest getappt/Summoning-Sickness so wie im aktuellen Snapshot, nutzt den ERWARTUNGSWERT pro Angreifer (power * (1 - block_rate)) statt einer vollen stochastischen Aufloesung; Equipment-/Trigger-Ausweich-Multiplikatoren fliessen hier nicht ein (nur in der echten attack_phase-Aufloesung).",
+      "params": {
+        "target": "any | each | <int index>"
+      },
+      "handler": "board_damage_lethal"
     }
   ]
 }

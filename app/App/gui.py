@@ -698,7 +698,7 @@ class ManaStrip(ManaCostCanvas):
 class GoldfishApp(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Commander Goldfish v4.75.0")
+        self.title("Commander Goldfish v4.87.0")
         self.geometry("1540x920")
         self.minsize(1200, 740)
 
@@ -722,7 +722,7 @@ class GoldfishApp(tk.Tk):
 
         self.runs_var = tk.IntVar(value=5000)
         self.run_mode_var = tk.StringVar(value="Standard (5,000)")
-        self.turns_var = tk.IntVar(value=10)
+        self.turns_var = tk.IntVar(value=20)  # v4.83.0/v4.84.0: am Vierertisch ist nach 10 Zuegen erst ~die Haelfte entschieden
         self.seed_var = tk.IntVar(value=1)
         self.opponent_var = tk.StringVar(value="goldfish")
         # v4.15.7 (task #18, "Voltron-GUI-Feld"): GUI exposure for the
@@ -743,7 +743,9 @@ class GoldfishApp(tk.Tk):
         # siehe Docs/README.md v4.64.0). "colors": ["?"] bzw.
         # "strategy": "?" markiert "zufällig" - aufgelöst pro Run in
         # engine._resolve_advanced_opponent_seats_for_run, nicht hier.
-        self.advanced_opponent_enabled_var = tk.BooleanVar(value=False)
+        # v4.77.0 WP-C: default True (same default flip as the web UI's
+        # "Advanced opponent model" checkbox) -- see Docs/README.md v4.77.0.
+        self.advanced_opponent_enabled_var = tk.BooleanVar(value=True)
         self.advanced_opponent_seat_count_var = tk.IntVar(value=3)
         self.advanced_opponent_seat_specs = [
             {"colors": ["R"], "strategy": "aggro"},

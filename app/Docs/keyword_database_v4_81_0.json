@@ -1,0 +1,445 @@
+{
+  "version": "1.0",
+  "engine_version": "4.81.0",
+  "generated": "2026-09-26",
+  "note_de": "Vollstaendige Keyword-Recherche + Proxy-Mapping-Datenbank (Runde 3, siehe Docs/README.md v4.81.0 Eintrag). Ziel: fuer ein Tool, das BELIEBIGE hochgeladene Decks pruefen soll, muss jedes etablierte MTG-Keyword in irgendeiner Form (auch bewusst vereinfacht) erkannt und - wo sinnvoll simulierbar - ausgefuehrt werden koennen, statt nur ignoriert zu werden. Diese Datei kategorisiert JEDES recherchierte Keyword in eine von vier Kategorien: implemented_generic (real ausfuehrbar, exakt oder vereinfacht), recognized_no_op_combat (erkannt/getaggt, aber strukturell wirkungslos ohne ein Gegner-Board-Modell - eine bewusste, dokumentierte Engine-Design-Entscheidung, kein Versehen), deferred_documented (noch nicht umgesetzt, mit Proxy-Idee und Prioritaets-Einschaetzung fuer kuenftige Runden), und ability_words_not_keywords (keine echten Keywords - reine Karten-Labels ohne geteilte Regelbedeutung, jede Karte muesste einzeln als DEDICATED_RESOLVERS-Eintrag behandelt werden).",
+  "categories": {
+    "implemented_generic": [
+      {
+        "id": "draw",
+        "summary_de": "Ziehe N Karten.",
+        "handler": "draw",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "gain_life",
+        "summary_de": "Erhalte N Leben (inkl. Replacement-Effekte).",
+        "handler": "gain_life",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "opponent_life_loss",
+        "summary_de": "Gegner verliert/verlieren N Leben.",
+        "handler": "opponent_life_loss",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "scry",
+        "summary_de": "Scry N.",
+        "handler": "scry",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "surveil",
+        "summary_de": "Surveil N.",
+        "handler": "surveil",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "connive",
+        "summary_de": "Ziehe, dann lege ab; Nicht-Land abgelegt -> +1/+1-Counter.",
+        "handler": "connive",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "create_token",
+        "summary_de": "Erzeuge N Token (Food/Treasure/Clue/Creature).",
+        "handler": "create_token",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "plus1_counter",
+        "summary_de": "Lege N +1/+1-Counter auf ein Ziel.",
+        "handler": "plus1_counter",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "keyword_counter",
+        "summary_de": "Lege einen benannten Keyword-Counter auf ein Ziel.",
+        "handler": "keyword_counter",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "grant_keyword_until_eot",
+        "summary_de": "Ziel erhaelt ein Keyword bis Zugende.",
+        "handler": "grant_keyword_until_eot",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "team_pt_bonus",
+        "summary_de": "Team-weiter P/T-Bonus bis Zugende.",
+        "handler": "team_pt_bonus",
+        "layer": "simplified",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "grant_team_keyword",
+        "summary_de": "Team-weites Keyword bis Zugende.",
+        "handler": "grant_team_keyword",
+        "layer": "simplified",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "typed_pt_bonus",
+        "summary_de": "Getypter Team-Pump (+ Keywords) bis Zugende (Overrun/Ezuri-Form).",
+        "handler": "typed_pt_bonus",
+        "layer": "exact",
+        "since": "v4.76.0"
+      },
+      {
+        "id": "set_base_pt",
+        "summary_de": "Setzt Basis-P/T eines Ziels (Waterbend-Form).",
+        "handler": "set_base_pt",
+        "layer": "simplified",
+        "since": "v4.76.0"
+      },
+      {
+        "id": "haste",
+        "summary_de": "Keine Sommerkrankheit.",
+        "handler": "(generisch im Combat/Tap-Code)",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "vigilance",
+        "summary_de": "Tappt beim Angreifen nicht.",
+        "handler": "(generisch)",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "lifelink",
+        "summary_de": "Kampfschaden gewinnt gleichzeitig Leben.",
+        "handler": "(generisch)",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "defender",
+        "summary_de": "Kann nicht angreifen.",
+        "handler": "(generisch)",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "infect",
+        "summary_de": "Kampfschaden an Spieler wird zu Poison-Countern; 10+ = Verlust.",
+        "handler": "(generisch)",
+        "layer": "exact",
+        "since": "v4.21.0"
+      },
+      {
+        "id": "persist",
+        "summary_de": "Kehrt mit -1/-1-Counter zurueck (falls keiner drauf war).",
+        "handler": "(generisch)",
+        "layer": "exact",
+        "since": "v4.21.0"
+      },
+      {
+        "id": "undying",
+        "summary_de": "Kehrt mit +1/+1-Counter zurueck (falls keiner drauf war).",
+        "handler": "(generisch)",
+        "layer": "exact",
+        "since": "v4.21.0"
+      },
+      {
+        "id": "prowess",
+        "summary_de": "+1/+1 bis Zugende bei Nicht-Kreatur-Zauber.",
+        "handler": "(generisch)",
+        "layer": "exact",
+        "since": "v4.22.0"
+      },
+      {
+        "id": "delve",
+        "summary_de": "Exile Friedhofskarten fuer je {1} generische Mana-Ersparnis.",
+        "handler": "(generisch, Payment-Pipeline)",
+        "layer": "exact",
+        "since": "v4.22.0"
+      },
+      {
+        "id": "devour",
+        "summary_de": "Opfere Kreaturen (nur Token) beim ETB fuer +1/+1-Counter je Opfer.",
+        "handler": "(generisch, own_etb_effects)",
+        "layer": "exact",
+        "since": "v4.21.0"
+      },
+      {
+        "id": "cycling",
+        "summary_de": "Lege ab, ziehe eine Karte.",
+        "handler": "maybe_cycle_cards",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "basic_landcycling",
+        "summary_de": "Lege ab, hole ein Basic-Land in die Hand.",
+        "handler": "maybe_landcycle_cards",
+        "layer": "exact",
+        "since": "v4.80.0"
+      },
+      {
+        "id": "flashback",
+        "summary_de": "Cast aus dem Friedhof fuer Alt-Kosten, danach Exile.",
+        "handler": "maybe_flashback_cards",
+        "layer": "exact",
+        "since": "<=v4.7"
+      },
+      {
+        "id": "proliferate",
+        "summary_de": "Waehlt vereinfachend alle fuer den Spieler eindeutig guenstigen Counter-Arten (nie eigene -1/-1).",
+        "handler": "proliferate",
+        "layer": "simplified",
+        "since": "v4.80.0"
+      },
+      {
+        "id": "modal_choice (\"Choose one/two\")",
+        "summary_de": "Generische Bullet-Auswahl fuer Instant/Sorcery und Self-ETB (nur unter bereits erkannten Aktionstypen).",
+        "handler": "resolve_modal_choice_actions",
+        "layer": "simplified",
+        "since": "v4.80.0"
+      },
+      {
+        "id": "discard_hand (\"discard a/N card(s)\" als Effekt)",
+        "summary_de": "Neu: generischer Effekt-Discard (nie Kosten) - waehlt via hand_evaluation die wertaermsten Handkarten.",
+        "handler": "discard_hand",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "mill",
+        "summary_de": "Neu (Bugfix): echte Bibliothek->Friedhof-Mutation fuer Selbst-Mill (Gegner-Mill bleibt No-Op).",
+        "handler": "mill",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "amass",
+        "summary_de": "Neu: waechst/erzeugt eine Army-TokenGroup (Counter direkt in P/T gefaltet).",
+        "handler": "amass",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "explore",
+        "summary_de": "Neu: Land->Hand, sonst +1/+1-Counter + feste Keep/Mill-Heuristik.",
+        "handler": "explore",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "bolster",
+        "summary_de": "Neu: N +1/+1-Counter auf eigene Kreatur mit geringster Toughness.",
+        "handler": "bolster",
+        "layer": "exact",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "fabricate",
+        "summary_de": "Neu: immer Counter-Zweig statt Token-Zweig (vereinfachte Wahl).",
+        "handler": "fabricate",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "monstrosity",
+        "summary_de": "Neu: einmalig pro Kreatur (Flag ueber Named-Counter 'monstrous').",
+        "handler": "monstrosity",
+        "layer": "exact",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "populate",
+        "summary_de": "Neu: kopiert die staerkste eigene Kreatur-TokenGroup.",
+        "handler": "populate",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "support",
+        "summary_de": "Neu: Counter-Spread auf bis zu N eigene Kreaturen, schwaechste zuerst.",
+        "handler": "support",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "discover",
+        "summary_de": "Neu: Free-Cast-Zweig vereinfacht zu 'in die Hand'; Rest wird gemillt.",
+        "handler": "discover",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "monarch",
+        "summary_de": "Neu: befristeter Ersatz (2 Bonus-Zuege) statt unsimulierbarer Dauer-Designation.",
+        "handler": "monarch",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      },
+      {
+        "id": "ascend / city's blessing",
+        "summary_de": "Neu: monotones Zustands-Flag (>=10 Permanents, einmal erreicht -> dauerhaft); kartenspezifische Auszahlungen brauchen weiterhin DEDICATED_RESOLVERS.",
+        "handler": "has_city_blessing()",
+        "layer": "simplified",
+        "since": "v4.81.0"
+      }
+    ],
+    "recognized_no_op_combat": [
+      {
+        "id": "flying",
+        "reason_de": "Evasion; Combat-Modell nutzt es real fuer den Block-Rate-Multiplikator (kein reines No-Op mehr seit v4.63/combat_model)."
+      },
+      {
+        "id": "trample",
+        "reason_de": "Wie Flying: real im abstrakten Combat-Modell (evasion multiplier), kein Blocker-Modell fuer echten Overkill-Schaden."
+      },
+      {
+        "id": "menace",
+        "reason_de": "Wie Flying/Trample: real im abstrakten Combat-Modell."
+      },
+      {
+        "id": "first strike",
+        "reason_de": "Real im abstrakten Combat-Modell (trade-rate multiplier), keine echte zweistufige Schadensabwicklung."
+      },
+      {
+        "id": "double strike",
+        "reason_de": "Wie First Strike."
+      },
+      {
+        "id": "deathtouch",
+        "reason_de": "Nur getaggt - kein Blocker-Modell, gegen das 'letal ab 1 Schaden' greifen koennte."
+      },
+      {
+        "id": "reach",
+        "reason_de": "Nur getaggt - kein Blocker-Modell."
+      },
+      {
+        "id": "hexproof",
+        "reason_de": "Nur getaggt - kein Targeting-Modell fuer gegnerische Spells/Fähigkeiten."
+      },
+      {
+        "id": "shroud",
+        "reason_de": "Nur getaggt - wie Hexproof, zusaetzlich auch fuer den eigenen Controller irrelevant."
+      },
+      {
+        "id": "indestructible",
+        "reason_de": "Nur getaggt - keine generische 'destroy'-Wirkung gegen eigene Permanents simuliert."
+      },
+      {
+        "id": "ward",
+        "reason_de": "Nur getaggt - kein gegnerisches Targeting, das die Ward-Taxe/den Ward-Counter je ausloesen wuerde."
+      },
+      {
+        "id": "protection",
+        "reason_de": "Nur getaggt (separat von der 'protection'-ROLLE fuer Schutzzauber, die real gegen die abstrakte Gegner-Removal wirkt)."
+      },
+      {
+        "id": "flash",
+        "reason_de": "Nur getaggt - kein echter gegnerischer Stack, auf den man reagieren muesste."
+      },
+      {
+        "id": "wither",
+        "reason_de": "Bewusst dokumentiert unmodelliert (-1/-1-Counter-Kampfschaden setzt gegnerische Kreaturen voraus, die nicht existieren)."
+      },
+      {
+        "id": "fight",
+        "reason_de": "Keine gegnerischen Permanents, die man je bekaempfen koennte - strukturell ausgeschlossen."
+      },
+      {
+        "id": "goad",
+        "reason_de": "Erzwingt gegnerisches Angriffsverhalten - kein Gegner-KI-Modell dafuer vorhanden."
+      },
+      {
+        "id": "ninjutsu",
+        "reason_de": "Braucht einen 'unblocked attacker'-Zustand gegen einen echten Blocker - Zielgruppe existiert nicht als simulierte Entscheidung."
+      },
+      {
+        "id": "detain",
+        "reason_de": "Wirkt gegen gegnerische Permanents - kein Gegner-Board."
+      },
+      {
+        "id": "regenerate",
+        "reason_de": "Schild gegen Zerstoerung/Kampfschaden - beides ohne Gegner-Board irrelevant."
+      },
+      {
+        "id": "banding, flanking, bushido, rampage, provoke, exalted, mentor, battalion, training, frenzy, afflict, enrage, ingest, toxic",
+        "reason_de": "Alle kampf-/blocker-abhaengig; ohne Gegner-Board strukturell No-Op, gleiche Kategorie wie Deathtouch/Reach."
+      },
+      {
+        "id": "landwalk (alle Typen)",
+        "reason_de": "Nur relevant, wenn ein Verteidiger ein Land eines Typs kontrolliert - kein Verteidiger-Board vorhanden."
+      },
+      {
+        "id": "phasing",
+        "reason_de": "Betrifft Verfuegbarkeit fuer Targeting/Angriff gegen echte Gegner - in diesem Solo-Goldfish-Modell irrelevant."
+      },
+      {
+        "id": "horsemanship, shadow",
+        "reason_de": "Sehr enge Block-Restriktionen, strukturell wie Landwalk irrelevant."
+      }
+    ],
+    "deferred_documented": [
+      {
+        "id": "kicker",
+        "proxy_idea_de": "Bewusst NICHT umgesetzt (bestehende Scope-Notiz engine.py ~5146): erfordert eine bedingt hoehere Gesamtkosten-Entscheidung UND eine Resolutions-Zeit-Pruefung, ob gekickert wurde - 'echte Chirurgie' an der Kern-Cast-Pipeline."
+      },
+      {
+        "id": "madness",
+        "proxy_idea_de": "Proxy-Idee: an die neue discard_hand-Aktion haengen - wenn eine abgelegte Karte Madness hat, alternative Kosten pruefen und sofort casten. Noch nicht verdrahtet (Runde 4 Kandidat)."
+      },
+      {
+        "id": "morph / megamorph / disguise / manifest",
+        "proxy_idea_de": "Erfordert verdecktes-Karten-Tracking (Identitaet vs. sichtbare 2/2) - eigenes State-Modell noetig, nicht additiv."
+      },
+      {
+        "id": "suspend",
+        "proxy_idea_de": "Erfordert Time-Counter-Tracking + verzoegerten Free-Cast-Trigger - eigenes State-Modell."
+      },
+      {
+        "id": "convoke / improvise (echte Zahlung)",
+        "proxy_idea_de": "Aktuell nur Value-Schaetzung (convoke_improvise_mana_equivalent); echte Zahlungs-Integration wuerde die Kern-Payment-Pipeline anfassen - hohes Risiko, wie bereits in Runde 2 begruendet."
+      },
+      {
+        "id": "splice",
+        "proxy_idea_de": "Seltene Mechanik, erfordert Hand-Introspektion waehrend eines ANDEREN Casts - Sonderfall, geringe Prioritaet."
+      },
+      {
+        "id": "cascade",
+        "proxy_idea_de": "Proxy-Idee: exile top library cards until nonland with lower MV found, cast free - aehnlich zu Discover, aber mit Free-Cast statt Hand. Guter Runde-4-Kandidat (gleiche Free-Cast-Einschraenkung wie Discover)."
+      },
+      {
+        "id": "escape / eternalize / embalm / unearth / disturb / jump-start",
+        "proxy_idea_de": "Alle 'Cast aus dem Friedhof mit Zusatzkosten' - strukturell aehnlich zu Flashback, aber je mit eigenen Nebenbedingungen (Exile-N-Karten, Token-Kopie statt Original, ...). Guter Runde-4-Batch (ein Muster, mehrere Varianten)."
+      },
+      {
+        "id": "adapt / evolve / afterlife / renown / bloodthirst / graft / modular",
+        "proxy_idea_de": "Alle einfache, Amass/Bolster-aehnliche Counter-Vergabe unter einer Bedingung - guter Runde-4-Batch nach demselben Muster wie dieses Paket."
+      },
+      {
+        "id": "boast / exert / outlast / raid",
+        "proxy_idea_de": "Bedingte Aktivierung ('nur wenn diese Kreatur angegriffen hat' etc.) - braucht Zugriff auf bereits vorhandene Angriffs-Zustands-Flags; technisch machbar, noch nicht verdrahtet."
+      },
+      {
+        "id": "cipher / extort",
+        "proxy_idea_de": "Erfordern Trigger bei 'Kampfschaden an Spieler' (Cipher) bzw. bei jedem Zauber-Cast (Extort) - beide OHNE Gegner-Board simulierbar, da Spieler-Ziel weiterhin das abstrakte Leben ist; Runde-4-Kandidat."
+      },
+      {
+        "id": "populate/support-Familie (Bolster/Amass-verwandte Mechaniken nicht oben gelistet: Assemble, Incubate, Fabricate-Token-Zweig)",
+        "proxy_idea_de": "Analog zu bereits Implementiertem, aber mit eigenen Sonderfaellen (Contraptions/Incubators als eigene Objekttypen) - geringe Prioritaet ohne belegte Kartennutzung."
+      },
+      {
+        "id": "ability words (Raid, Landfall, Metalcraft, Delirium, Ferocious, Formidable, Threshold, Domain, Coven, Alliance, Corrupted, Valiant, Vivid, Adamant, Undergrowth, ...)",
+        "proxy_idea_de": "KEINE echten Keywords - tragen keine geteilte Regelbedeutung, jede Karte schreibt ihre Bedingung explizit aus. Kein generischer Resolver moeglich; nur ueber DEDICATED_RESOLVERS pro Karte."
+      }
+    ]
+  }
+}

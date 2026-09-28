@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import json
 import random
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
@@ -69,6 +69,13 @@ class AttackerInfo:
     # exactly one attacker); App/engine.py sets this to the token group's
     # `count` when building a token-group AttackerInfo.
     attack_weight: float = 1.0
+    # v4.82.0 ("Runde 4", keyword_effects.py): Farben des Angreifers
+    # (Intimidate) und aus dem Oracle-Text geparste seltene Kampf-Keywords
+    # (Fear/Intimidate/Shadow/Landwalk/Protection-Farben/Flanking/...), die
+    # `keywords` (nur KNOWN_KEYWORDS) nicht fuehrt. Beide bleiben leer, solange
+    # der Aufrufer sie nicht setzt -> exakt altes Verhalten.
+    colors: Set[str] = field(default_factory=set)
+    combat_extras: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -178,12 +185,26 @@ def _commander_block_bias() -> float:
 
 def block_rate_for(
     profile_name: str, turn: int, n_attackers: int, keywords: Set[str], is_commander: bool = False,
+    *, context: Any = None, attacker: Optional["AttackerInfo"] = None,
 ) -> float:
+    """v4.82.0: `context` (keyword_effects.KeywordCombatContext) ersetzt den
+    flachen _evasion_multiplier durch das farbabhaengige Keyword-Modell.
+    context=None (Default) -> byte-identisch zum alten Verhalten."""
     profile = _profile_weights(profile_name)
     base = profile.get("block_rate_base", 0.0)
     if base <= 0:
         return 0.0
-    rate = base * _turn_ramp_multiplier(turn) * _wide_board_multiplier(n_attackers) * _evasion_multiplier(keywords)
+    if context is not None:
+        from . import keyword_effects as _kwe  # local import: keyword_effects imports this module
+        evasion = _kwe.attack_block_multiplier(
+            keywords,
+            getattr(attacker, "combat_extras", {}) or {},
+            getattr(attacker, "colors", set()) or set(),
+            context,
+        )
+    else:
+        evasion = _evasion_multiplier(keywords)
+    rate = base * _turn_ramp_multiplier(turn) * _wide_board_multiplier(n_attackers) * evasion
     if is_commander:
         rate *= _commander_block_bias()
     return max(0.0, min(1.0, rate))
@@ -217,9 +238,16 @@ def resolve_combat_interaction(
     outcomes: List[AttackOutcome] = []
 
     all_names = [a.name for a in attackers]
+    # v4.82.0: farbabhaengiges Keyword-Modell (keyword_effects.py), vom
+    # Aufrufer ueber state._kw_combat_ctx gesetzt - fehlt es, laeuft alles
+    # exakt wie vor v4.82.0.
+    kw_ctx = getattr(state, "_kw_combat_ctx", None) if state is not None else None
+    if kw_ctx is not None:
+        from . import keyword_effects as _kwe
 
     for a in attackers:
-        rate = block_rate_for(profile_name, turn, n, a.keywords, is_commander=a.is_commander)
+        rate = block_rate_for(profile_name, turn, n, a.keywords, is_commander=a.is_commander,
+                              context=kw_ctx, attacker=a)
         if rate > 0 and a.equipment_evasion_multiplier != 1.0:
             rate = max(0.0, min(1.0, rate * a.equipment_evasion_multiplier))
         if state is not None and rate > 0:
@@ -237,10 +265,17 @@ def resolve_combat_interaction(
             continue
 
         effective_trade_rate = max(0.0, min(1.0, trade_rate * _first_strike_trade_rate_multiplier(a.keywords)))
+        excess = 0.0
+        if kw_ctx is not None:
+            effective_trade_rate *= _kwe.trade_rate_multiplier(a.combat_extras or {})
+            # Trample: Ueberschussschaden eines GEBLOCKTEN Tramplers geht zum
+            # Spieler durch (ersetzt im Keyword-Modell den alten flachen
+            # evasion_keyword_multiplier.trample-Faktor).
+            excess = _kwe.trample_excess(a.power, a.keywords, kw_ctx)
         died = rng.random() < effective_trade_rate
         outcomes.append(AttackOutcome(
-            name=a.name, damage_dealt=0.0, blocked=True, died=died,
-            lifelink_gain=0.0, source_kind=a.source_kind, source_ref=a.source_ref,
+            name=a.name, damage_dealt=excess, blocked=True, died=died,
+            lifelink_gain=(excess if a.lifelink else 0.0), source_kind=a.source_kind, source_ref=a.source_ref,
             is_commander=a.is_commander,
         ))
 

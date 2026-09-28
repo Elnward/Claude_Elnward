@@ -31,6 +31,8 @@ ROOT = Path(__file__).resolve().parent
 APP_DIR = ROOT / "app"
 WEB_SERVER = APP_DIR / "web_server.py"
 INSTALLER = ROOT / "install_dependencies.py"
+VENV_DIR = ROOT / ".venv"
+VENV_PYTHON = VENV_DIR / ("Scripts/python.exe" if sys.platform == "win32" else "bin/python")
 
 # (Modulname-zu-Paketname, wo die beiden voneinander abweichen)
 REQUIRED_MODULES = [
@@ -82,7 +84,30 @@ def ensure_dependencies() -> bool:
     return True
 
 
+def reexec_into_venv_if_needed() -> int | None:
+    """Falls unter .venv/ ein eigener Interpreter existiert und das Skript
+    nicht schon darueber laeuft, sich selbst damit neu starten. So landen
+    alle Startwege (bat, IDE, `python Start_...py`) automatisch in der
+    projekteigenen, isolierten Umgebung statt im ggf. veralteten/geteilten
+    System-Python."""
+    if not VENV_PYTHON.exists():
+        return None
+    try:
+        same_interpreter = Path(sys.executable).resolve() == VENV_PYTHON.resolve()
+    except OSError:
+        same_interpreter = False
+    if same_interpreter:
+        return None
+
+    result = subprocess.run([str(VENV_PYTHON), str(Path(__file__).resolve()), *sys.argv[1:]])
+    return result.returncode
+
+
 def main() -> int:
+    reexec_result = reexec_into_venv_if_needed()
+    if reexec_result is not None:
+        return reexec_result
+
     if not APP_DIR.exists() or not WEB_SERVER.exists():
         print(f"FEHLER: Der Ordner app/ mit web_server.py wurde nicht gefunden")
         print(f"(erwartet unter {WEB_SERVER}).")
@@ -104,7 +129,14 @@ def main() -> int:
     # relativ zu seinem eigenen Ordner). Darum als Subprozess mit cwd=app/
     # starten, statt es hier als Modul zu importieren.
     extra_args = sys.argv[1:]
-    result = subprocess.run([sys.executable, str(WEB_SERVER), *extra_args], cwd=str(APP_DIR))
+    # v4.76.0: feste Hash-Saat. Ohne sie ordnet Python Mengen (set) in jedem
+    # Prozess anders an; dieselbe Simulation mit demselben "Seed" lieferte
+    # dadurch bei jedem Programmstart leicht andere Zahlen (gemessen: Bilbo V1,
+    # 200 Spiele, 18.0 % vs. 15.0 % Niederlagen). Mit PYTHONHASHSEED=0 ist ein
+    # Lauf bei gleichem Seed wieder exakt reproduzierbar.
+    import os
+    env = dict(os.environ, PYTHONHASHSEED="0")
+    result = subprocess.run([sys.executable, str(WEB_SERVER), *extra_args], cwd=str(APP_DIR), env=env)
     return result.returncode
 
 

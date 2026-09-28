@@ -59,6 +59,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
+import zlib
 import math
 import random
 import re
@@ -170,7 +171,7 @@ COLORS = ("W", "U", "B", "R", "G")
 # output claimed to be v4.7.0 regardless of how many work packages had actually
 # landed. That made it impossible to tell, from a result ZIP alone, which build
 # produced it.
-ENGINE_VERSION = "4.75.0"
+ENGINE_VERSION = "4.87.0"
 COLORLESS = "C"
 
 BASIC_COLOR = {
@@ -513,9 +514,24 @@ def detect_input_format(path: Path) -> str:
 def load_txt_entries(path: Path) -> List[DeckEntry]:
     entries = []
     in_sideboard = False
+    sideboard_saw_card = False
     for lineno, raw in enumerate(path.read_text(encoding="utf-8-sig", errors="replace").splitlines(), 1):
         line = raw.strip()
         if not line:
+            # v4.78.0 (Fremd-Deck-Import: Sideboard-Quirk): mirrors the blank-
+            # line-closes-an-active-section heuristic detect_commander_hints
+            # already uses for its Commander block. Some real exports put a
+            # trailing card (occasionally the commander itself, misplaced by
+            # whatever tool produced the file) in its own paragraph AFTER a
+            # "SIDEBOARD:" marker with no closing header - previously that
+            # trailing block stayed silently marked "sideboard" through EOF
+            # and was dropped entirely. Only closes the section once at least
+            # one card line was actually consumed inside it, so an incidental
+            # blank line right after the "SIDEBOARD:" header itself doesn't
+            # immediately re-open mainboard parsing.
+            if in_sideboard and sideboard_saw_card:
+                in_sideboard = False
+                sideboard_saw_card = False
             continue
         if line.startswith("//"):
             heading = line[2:].strip()
@@ -528,6 +544,7 @@ def load_txt_entries(path: Path) -> List[DeckEntry]:
                 # user's) can silently change behavior on this rewrite.
                 low = heading.lower()
                 in_sideboard = "sideboard" in low or "maybeboard" in low
+            sideboard_saw_card = False
             continue
         if line.startswith("#"):
             continue
@@ -546,8 +563,10 @@ def load_txt_entries(path: Path) -> List[DeckEntry]:
             kind = _classify_txt_header(line)
             if kind:
                 in_sideboard = kind in ("sideboard", "companion")
+                sideboard_saw_card = False
             continue
         if in_sideboard:
+            sideboard_saw_card = True
             continue
         line = _TRAILING_COMMANDER_ANNOTATION_RE.sub("", line).strip()
         m = TXT_LINE_RE.match(line)
@@ -560,6 +579,124 @@ def load_txt_entries(path: Path) -> List[DeckEntry]:
             collector_number=(m.group("collector") or ""),
         ))
     return entries
+
+
+def _txt_mainboard_line_indices(path: Path) -> Tuple[List[Tuple[int, str, int, str]], bool]:
+    """v4.78.0 (UI-Feedback Punkt 7): scans a TXT decklist with the exact
+    same section-tracking state machine as load_txt_entries (including the
+    v4.78.0 trailing-blank-line-closes-sideboard fix above). Returns
+    (entries, ends_in_sideboard): entries is, for every MAINBOARD card line
+    only, (line_index, normalized_name, count, raw_line); ends_in_sideboard
+    is the in_sideboard flag's value at EOF, so a caller appending a new
+    line knows whether it needs a blank separator first to land in the
+    mainboard instead of silently extending an still-open sideboard/
+    companion section. add_card_to_txt_deck/remove_card_from_txt_deck use
+    this instead of re-implementing their own parser, so "add"/"remove"
+    always agree with what a simulation run would actually count - a
+    sideboard duplicate of a card never gets bumped or deleted by mistake.
+    """
+    lines = path.read_text(encoding="utf-8-sig", errors="replace").splitlines()
+    in_sideboard = False
+    sideboard_saw_card = False
+    out: List[Tuple[int, str, int, str]] = []
+    for i, raw in enumerate(lines):
+        line = raw.strip()
+        if not line:
+            if in_sideboard and sideboard_saw_card:
+                in_sideboard = False
+                sideboard_saw_card = False
+            continue
+        if line.startswith("//"):
+            heading = line[2:].strip()
+            kind = _classify_txt_header(heading)
+            if kind:
+                in_sideboard = kind in ("sideboard", "companion")
+            else:
+                low = heading.lower()
+                in_sideboard = "sideboard" in low or "maybeboard" in low
+            sideboard_saw_card = False
+            continue
+        if line.startswith("#"):
+            continue
+        if not line[:1].isdigit():
+            kind = _classify_txt_header(line)
+            if kind:
+                in_sideboard = kind in ("sideboard", "companion")
+                sideboard_saw_card = False
+            continue
+        if in_sideboard:
+            sideboard_saw_card = True
+            continue
+        clean = _TRAILING_COMMANDER_ANNOTATION_RE.sub("", line).strip()
+        m = TXT_LINE_RE.match(clean)
+        if not m:
+            continue
+        out.append((i, normalize_name(m.group("name")), int(m.group("count")), raw))
+    return out, in_sideboard
+
+
+def add_card_to_txt_deck(path: Path, card_name: str, count: int = 1) -> int:
+    """v4.78.0 (UI-Feedback Punkt 7): adds `count` copies of card_name to a
+    TXT decklist's mainboard - bumps an existing mainboard line's count if
+    the card is already there (matched via normalize_name, so case/spacing
+    differences don't create a duplicate line), otherwise appends a new
+    "<count> <name>" line at the end of the file. Returns the card's new
+    total count in the deck. Never touches sideboard/companion lines. Does
+    NOT validate the name against Scryfall (no network dependency for a
+    plain text edit) - a typo surfaces the same way any other unrecognized
+    decklist line already does, the next time the deck is loaded.
+    """
+    if count <= 0:
+        raise ValueError("count must be positive")
+    norm = normalize_name(card_name).lower()
+    lines = path.read_text(encoding="utf-8-sig", errors="replace").splitlines()
+    entries, ends_in_sideboard = _txt_mainboard_line_indices(path)
+    for i, name, cur_count, raw in entries:
+        if name.lower() == norm:
+            new_count = cur_count + count
+            lines[i] = re.sub(r"^(\s*)\d+", r"\g<1>" + str(new_count), raw, count=1)
+            path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+            return new_count
+    # Not present yet - append a new line. Trim trailing blank lines first,
+    # then, if the file still ends inside an open sideboard/companion
+    # section, close it with an explicit "Mainboard" header before the new
+    # line - deterministic regardless of whether that sideboard section
+    # ever had a card in it (unlike the blank-line rule load_txt_entries
+    # itself uses when parsing an existing file, which only fires once a
+    # card has actually been seen in the section; here we're writing the
+    # file, so there's no reason to lean on that heuristic instead of just
+    # saying so outright).
+    while lines and not lines[-1].strip():
+        lines.pop()
+    if ends_in_sideboard:
+        lines.append("Mainboard")
+    lines.append(f"{count} {card_name}".strip())
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return count
+
+
+def remove_card_from_txt_deck(path: Path, card_name: str, count: Optional[int] = None) -> bool:
+    """v4.78.0 (UI-Feedback Punkt 7): removes `count` copies of card_name
+    from a TXT decklist's mainboard (all copies of that line if `count` is
+    None or >= the line's current count). Returns True if a matching
+    mainboard line was found and changed, False if the card isn't in the
+    mainboard at all (a sideboard-only card is correctly reported as not
+    found here - this only ever edits what the simulation actually uses).
+    """
+    norm = normalize_name(card_name).lower()
+    lines = path.read_text(encoding="utf-8-sig", errors="replace").splitlines()
+    entries, _ends_in_sideboard = _txt_mainboard_line_indices(path)
+    matches = [t for t in entries if t[1].lower() == norm]
+    if not matches:
+        return False
+    i, _name, cur_count, raw = matches[0]
+    if count is None or count >= cur_count:
+        del lines[i]
+    else:
+        new_count = cur_count - count
+        lines[i] = re.sub(r"^(\s*)\d+", r"\g<1>" + str(new_count), raw, count=1)
+    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return True
 
 
 def sniff_dialect(path: Path) -> csv.Dialect:
@@ -1674,6 +1811,59 @@ def connive(state: GameState, n: int, strategy: Strategy, source: Optional[Perma
         if source is not None and not card.is_land:
             source.counters += 1
         state.log(f"connive discard: {card.name}")
+
+
+def proliferate(state: GameState, strategy: Strategy, source: str = "Proliferate"):
+    """v4.80.0 "Runde 2": Proliferate ("Choose any number of permanents and/or
+    players, then give each another counter of each kind already there.").
+
+    Goldfishing simplification (disclosed, same spirit as this engine's other
+    "assume the obviously-correct choice" defaults, e.g. Devour's smallest-
+    power-first sacrifice): the real ability lets a player pick which
+    permanents/players to include. Since every choice here is either strictly
+    good for us or a no-op, always proliferate everything that can only help:
+    our own +1/+1 counters, planeswalker loyalty, any other named counter on
+    our own permanents (saga lore counters, etc. - progressing them is a real
+    benefit, not a downside, in a goldfish context), and each opponent's
+    existing poison counters (a permanent, real downside for THEM, so
+    proliferating it is a genuine benefit for us). Never Permanent.
+    minus1_counters - a real, self-inflicted downside this engine already
+    tracks separately from named_counters/counters, which we would obviously
+    decline to make worse; this engine has no opposing permanents to apply it
+    to instead (see the opponent_life_loss design note elsewhere in this
+    file for the same "no opposing board" scope boundary).
+
+    Doubling Season doubles each counter WE gain this way (same precedent as
+    keyword_library's plus1_counter handler), but never an opponent's poison
+    (a counter on a player we do not control).
+    """
+    doubled = 2 if state.has("Doubling Season") else 1
+    gained_ours = 0
+    for p in state.battlefield:
+        if p.counters > 0:
+            p.counters += doubled
+            gained_ours += doubled
+        if p.loyalty is not None and p.loyalty > 0:
+            p.loyalty += doubled
+            gained_ours += doubled
+        for kind in list(p.named_counters):
+            if p.named_counters[kind] > 0:
+                p.named_counters[kind] += doubled
+                gained_ours += doubled
+
+    gained_poison = 0
+    for i in list(state.poison_counters):
+        if state.poison_counters[i] > 0:
+            state.poison_counters[i] += 1
+            gained_poison += 1
+
+    if gained_ours or gained_poison:
+        record_impact(state, source, "proliferate_counters", gained_ours + gained_poison)
+        state.log(
+            f"PROLIFERATE ({source}): +{gained_ours} own counter(s), "
+            f"+{gained_poison} opponent poison counter(s)"
+        )
+    return bool(gained_ours or gained_poison)
 
 
 # ---------------------------------------------------------------------------
@@ -2868,6 +3058,7 @@ def simulate_game(
         state.well_caps_this_turn = []
         state.trudge_garden_triggers_this_turn = 0
         state.frying_pan_bonus_this_turn = 0.0
+        state.modal_chosen_this_turn = {}
         state.event_log = []
         untap_step(state)
 
@@ -3524,6 +3715,13 @@ _STRATEGY_TAG_TO_ARCHETYPE_TAG = {
     "enchantress": "Enchantress", "graveyard": "Graveyard",
     "lands": "Lands Matter", "control": "Control", "aggro": "Aggro",
     "combo": "Combo",
+    # v4.79.0: "food" was already a selectable Strategy-tab checkbox but had
+    # no entry here, so picking it silently did nothing for the EDHREC
+    # reference comparison. "tribal" is a new checkbox (UI-Feedback point 2)
+    # -- both are real, separate archetypes in the reference data
+    # (App/archetype_profile/data/identity_tag_summary.json has both
+    # "Food" and "Tribal" as top-level keys), not one subsuming the other.
+    "food": "Food", "tribal": "Tribal",
 }
 
 _ARCHETYPE_ANALYZER = None  # lazy singleton - App/archetype_profile/data/ takes ~1-2s to load
@@ -4773,6 +4971,35 @@ def x_effect_metrics(card: Card, x: int, state: GameState, strategy: Strategy) -
     return m
 
 
+_POWER_SCALED_COST_DISCOUNT_RE = re.compile(
+    r"(?P<types>[a-z]+(?:(?:,\s*| and | or )[a-z]+)*) spells you cast"
+    r"(?: with mana value (?P<mv>\d+) or greater)?"
+    r" cost \{x\} less to cast, where x is (?P<subject>[a-z' ]+?)'s power\b"
+)
+_POWER_SCALED_COST_TYPE_WORDS = {
+    "instant", "sorcery", "creature", "artifact", "enchantment", "planeswalker", "noncreature",
+}
+
+
+def _card_matches_power_scaled_cost_types(card: Card, types_phrase: str) -> bool:
+    for w in re.findall(r"[a-z]+", types_phrase):
+        if w not in _POWER_SCALED_COST_TYPE_WORDS:
+            continue
+        if w == "instant" and card.is_instant:
+            return True
+        if w == "sorcery" and card.is_sorcery:
+            return True
+        if w == "creature" and card.is_creature:
+            return True
+        if w == "artifact" and card.is_artifact:
+            return True
+        if w == "enchantment" and card.is_enchantment:
+            return True
+        if w == "noncreature" and not card.is_creature:
+            return True
+    return False
+
+
 def effective_cost_discount(card: Card, state: GameState) -> Tuple[int, Dict[str, int]]:
     raw = card.min_cost
     discount = 0
@@ -4786,6 +5013,34 @@ def effective_cost_discount(card: Card, state: GameState) -> Tuple[int, Dict[str
             d = max(0, int(math.floor(state.life_gained_this_turn_amount)))
             discount += d
             attribution[p.card.name] = attribution.get(p.card.name, 0) + d
+            continue
+
+        # v4.87.3: generic "<types> spells you cast [with mana value N or
+        # greater] cost {X} less to cast, where X is <subject>'s power" - a
+        # dynamic reduction scaled by the SOURCE PERMANENT's own current
+        # power, gated by an optional mana-value threshold and a spell-type
+        # filter. A third, distinct dynamic shape from the fixed-integer and
+        # Ezzaroot-style reductions above/below. Real card that surfaced
+        # this gap: The Scarlet Witch (MSH) - "Instant and sorcery spells
+        # you cast with mana value 4 or greater cost {X} less to cast,
+        # where X is The Scarlet Witch's power." - found via the
+        # reliability-sweep-v1 follow-up (Aziza V2 test run, see
+        # Docs/README.md v4.87.3). `subject` is deliberately NOT required to
+        # literally repeat the permanent's own name - text_references_source
+        # already recognizes "this creature"/"this permanent"/the card's
+        # own name as the same self-reference, the same test used
+        # everywhere else in this file; a subject naming some OTHER,
+        # unrelated permanent (a real but different card shape) is
+        # correctly left unhandled rather than guessed at.
+        m = _POWER_SCALED_COST_DISCOUNT_RE.search(low)
+        if m and text_references_source(p.card, m.group("subject") + "'s power"):
+            mv_req = m.group("mv")
+            mv_ok = mv_req is None or card.mana_value >= int(mv_req)
+            if mv_ok and _card_matches_power_scaled_cost_types(card, m.group("types")):
+                d = max(0, int(math.floor(creature_power(p, state))))
+                if d:
+                    discount += d
+                    attribution[p.card.name] = attribution.get(p.card.name, 0) + d
             continue
 
         # Generic fixed cost reduction.
@@ -5612,6 +5867,7 @@ def simulate_game_v4(
         state.well_caps_this_turn = []
         state.trudge_garden_triggers_this_turn = 0
         state.frying_pan_bonus_this_turn = 0.0
+        state.modal_chosen_this_turn = {}
         state.event_log = []
         untap_step(state)
 
@@ -6413,6 +6669,12 @@ class ScenarioStrategy(_V4_Strategy):
     # Commander Posture (WP5): "auto" | "passive" | "balanced" | "aggressive".
     # See App/combat_model/posture.py for what each mode actually does.
     commander_posture: str = "auto"
+    # v4.77.0 (WP-A): deck-wide play style, three 0..100 sliders --
+    # "aggression", "attacker_selection", "block_willingness". See
+    # App/combat_model/playstyle.py for the full semantics; an empty/partial
+    # dict here is defaulted per-slider by playstyle.get(), so {} (the
+    # default) reproduces pre-v4.77.0 behavior exactly.
+    playstyle: Dict[str, float] = field(default_factory=dict)
 
 
 def load_strategy_v41(path: Optional[Path], commander: Optional[Card], *,
@@ -6736,6 +6998,7 @@ def simulate_game_v41(
         state.well_caps_this_turn = []
         state.trudge_garden_triggers_this_turn = 0
         state.frying_pan_bonus_this_turn = 0.0
+        state.modal_chosen_this_turn = {}
         state.event_log = []
         untap_step(state)
         update_scenario_progress(state, strategy, sc_progress, "untap")
@@ -7551,6 +7814,15 @@ each other and with everything else in the scenario. Implemented predicate types
   an OPPORTUNITY check ("would be lethal if unblocked"), not a guarantee — whether it
   actually connects is decided by the probabilistic combat-interaction step at
   simulation time, not by this predicate.
+- `board_damage_lethal` — `{"target": "any|each|<int index>"}` (v4.79.0): is the whole
+  current board (every creature able to attack right now + token groups) lethal against
+  the target's CURRENT life, using each attacker's expected damage after an estimated
+  block chance (the same per-attacker block-rate model real combat uses), summed. Use
+  this for an alpha-strike or token-swarm win condition INSTEAD OF a fixed
+  `"thresholds": {"life": 40}`-style number: a fixed 40 stops meaning "lethal" the moment
+  the opponent has taken damage from anything else that game, while this predicate always
+  compares against life as it actually stands. No named card needed — it reads the whole
+  board.
 
 Every predicate returns a three-way result, never a bare bool: `satisfied` (the
 normal answer), `computable` (False for a declared-but-not-yet-implemented predicate
@@ -7576,6 +7848,13 @@ scenario counts as "reached" is still the plain boolean `satisfied`.
    time (an X-spell's lethality, whether commander damage would close a game) rather
    than trying to hand-encode them as static card/zone facts.
 6. Do not claim scenario reach proves a deterministic win through interaction.
+7. For an alpha-strike or token-swarm win condition (win by attacking with a big/wide
+   board, not by a single named card's effect), use the `board_damage_lethal` derived
+   predicate. Do NOT approximate it with a fixed `"thresholds": {"life": 40}` (or any
+   other fixed number) as a stand-in for "opponent's life total" — the opponent's life
+   moves during the game, so a fixed threshold silently stops meaning "lethal" the
+   moment they take damage from anything else. `board_damage_lethal` always compares
+   against the opponent's life as it actually stands when checked.
 """
 
 
@@ -9717,6 +9996,7 @@ def simulate_game_v440(
         state.well_caps_this_turn = []
         state.trudge_garden_triggers_this_turn = 0
         state.frying_pan_bonus_this_turn = 0.0
+        state.modal_chosen_this_turn = {}
         state.event_log = []
 
         start_hand, land_name, casts = [], "", []
@@ -10280,6 +10560,22 @@ def apply_advanced_opponent_model_override(
         strategy.advanced_opponent_seats = [dict(seat) for seat in advanced_opponent_seats]
 
 
+def apply_playstyle_override(
+    strategy: "Strategy",
+    playstyle: Optional[Dict[str, Any]],
+) -> None:
+    """v4.77.0 (WP-A, web UI 'Play style' sliders on the Change Commander
+    dialog): same additive override pattern as apply_advanced_opponent_model_
+    override directly above -- an explicit GUI/pipeline value overwrites
+    whatever Decks/.deck_meta.json (or a strategy file) set, or leaves the
+    field untouched if the caller passes None. Values are copied as given;
+    App/combat_model/playstyle.py::get() is what actually clamps/defaults
+    them at read time, so a partial dict (e.g. only one slider changed) is
+    fine here too."""
+    if playstyle is not None:
+        strategy.playstyle = dict(playstyle)
+
+
 def _detail_log_policy(runs: int) -> Tuple[int, str]:
     if runs <= 500:
         return runs, "full diagnostic logs for every run"
@@ -10309,6 +10605,7 @@ def run_pipeline_v440(
     voltron_target_index: Optional[int] = None,
     advanced_opponent_model: Optional[bool] = None,
     advanced_opponent_seats: Optional[Sequence[Dict[str, Any]]] = None,
+    playstyle: Optional[Dict[str, Any]] = None,
 ):
     deck_file = Path(deck_file)
     vm = ValueModel.load(value_model_file)
@@ -10339,6 +10636,7 @@ def run_pipeline_v440(
         strategy.commander_colors = set().union(*(c.color_identity for c in deck if c.commander))
     apply_voltron_target_override(strategy, voltron_target_index)
     apply_advanced_opponent_model_override(strategy, advanced_opponent_model, advanced_opponent_seats)
+    apply_playstyle_override(strategy, playstyle)
 
     cfg = SimConfig(runs=runs, turns=turns, seed=seed)
     policy = MulliganPolicy()
@@ -11046,9 +11344,59 @@ def _parse_semantic_actions(effect: str) -> List[SemanticAction]:
             raw=effect,
         ))
 
+    # v4.87.3: "Search your library for a card named <X>, put it into your
+    # hand[, then shuffle]." - a named tutor (to hand, not the battlefield;
+    # the land-search branch above is the separate battlefield-bound case).
+    # Found via the reliability-sweep-v1 follow-up: Shadowborn Apostle
+    # ("{1}{B}, Discard a card: Search your library for a card named
+    # Shadowborn Apostle, put it into your hand, then shuffle.") was flagged
+    # by model_gaps as cast often but modeled as near-worthless, because
+    # this effect text matched no action at all - the mana+discard cost
+    # parsing already worked (see discard_count above), only the effect
+    # itself fell through. Not specific to self-tutoring: <X> can name any
+    # card, matching the real breadth of this templating (Apostle just
+    # happens to name itself). Matched against the ORIGINAL-case text (not
+    # `low`) so the captured name's capitalization survives for the exact
+    # library lookup the handler does.
+    m = re.search(
+        r"search your library for a card named ([^,\.]+?),?\s*put (?:it|that card) into your hand"
+        r"(?:,?\s*then shuffle(?:\s+your library)?)?",
+        strip_reminder_text(effect), re.IGNORECASE,
+    )
+    if m:
+        actions.append(SemanticAction(
+            kind="named_tutor_to_hand",
+            token=m.group(1).strip(),
+            raw=effect,
+        ))
+
     # Keyword grants / counters.
     for kw in KNOWN_KEYWORDS | {"lifelink", "indestructible"}:
         if re.search(rf"\b(?:target|that|another target) creature gains {re.escape(kw)} until end of turn\b", low):
+            actions.append(SemanticAction(
+                kind="grant_keyword_until_eot",
+                keyword=kw,
+                target="target_creature",
+                raw=effect,
+            ))
+        # v4.87.3: same grant, phrased WITHOUT an explicit "target/that
+        # creature" subject - almost always a self-buff ("This creature
+        # gains X until end of turn.") or a card naming itself directly
+        # ("The Vision gains double strike until end of turn." - found via
+        # the reliability-sweep-v1 follow-up, The Vision (MSH), whose modal
+        # "choose one that hasn't been chosen this turn" ability grants
+        # itself double strike/indestructible this way). This function only
+        # ever sees the bare effect string, not the source Card, so the
+        # actual subject is deliberately NOT re-derived here - it is left to
+        # _semantic_target_creature/text_references_source at execution time
+        # (execute_semantic_action -> _semantic_target_creature), which
+        # already resolves "this creature"/"this permanent"/the card's own
+        # name to the source permanent correctly; this branch's only job is
+        # to stop such phrasings from being silently dropped before they
+        # ever reach that resolver. elif guards against double-counting the
+        # same keyword when the target/that-creature phrasing above already
+        # matched.
+        elif re.search(rf"\bgains {re.escape(kw)} until end of turn\b", low):
             actions.append(SemanticAction(
                 kind="grant_keyword_until_eot",
                 keyword=kw,
@@ -11645,6 +11993,48 @@ def try_semantic_board_protection(
 # Coverage / AI handoff now exposes semantic execution mode
 # ---------------------------------------------------------------------------
 
+_BARE_KEYWORD_TOKENS = KNOWN_KEYWORDS | {"lifelink", "indestructible"}
+
+
+def _is_false_alarm_review_line(raw: str) -> bool:
+    """v4.79.0 (Runde 1): a line that lands in the 'review' execution tier
+    but is actually fully handled elsewhere in the engine, not a real gap:
+
+      * a plain mana ability ("{T}: Add {G}.") - parse_add_mana_options has
+        its own dedicated parser used directly for cost payment, completely
+        independent of this line-by-line SemanticAbility/_parse_semantic_
+        actions system, which has no "add mana" action kind at all and so
+        always falls through to "review" for these lines regardless of how
+        well the ability is actually modeled.
+      * a bare static keyword line ("Flying", "Trample, haste", "Ward 2",
+        "Protection from black and from red") - the card's own keywords are
+        read directly from its printed text into Card.keywords and used by
+        combat/effective_keywords_in_state; there is no "keyword action" to
+        recognize here either, so these also default to "review" even
+        though nothing about them is actually unsimulated.
+
+    Both were surfacing as spurious "N key cards not (fully) simulated"
+    entries in the coverage warning and model_gaps list for cards whose
+    only 'review' lines were one of these two shapes (e.g. any card whose
+    single unmodeled-looking line was just its own mana ability or its own
+    keyword line). This does not touch execution_mode/confidence itself
+    (kept for other downstream scoring) - it only decides what counts
+    towards the reported coverage mix and the model-gap warning.
+    """
+    if parse_add_mana_options(raw):
+        return True
+    low = strip_reminder_text(raw).lower().strip().rstrip(".")
+    if not low:
+        return False
+    for part in low.split(","):
+        p = re.sub(r"^\s*and\s+", "", part.strip())
+        p = re.sub(r"\s+\d+$", "", p)                                   # "ward 2" -> "ward"
+        p = re.sub(r"\s+from\s+\w+(\s+and\s+from\s+\w+)*$", "", p)      # "protection from black and from red" -> "protection"
+        if p not in _BARE_KEYWORD_TOKENS:
+            return False
+    return True
+
+
 _V450_card_model_coverage_rows_old = card_model_coverage_rows
 def card_model_coverage_rows(deck: List[Card]) -> List[dict]:
     base = _V450_card_model_coverage_rows_old(deck)
@@ -11655,7 +12045,13 @@ def card_model_coverage_rows(deck: List[Card]) -> List[dict]:
         if not c:
             continue
         abilities = parse_oracle_semantics(c)
-        modes = Counter(a.execution_mode for a in abilities)
+        # v4.79.0: don't let a false-alarm review line (see
+        # _is_false_alarm_review_line) count as "review" in the reported
+        # mix - that mix is what the model-gap warning keys off of.
+        modes = Counter(
+            "exact" if (a.execution_mode == "review" and _is_false_alarm_review_line(a.raw)) else a.execution_mode
+            for a in abilities
+        )
         parsed = []
         for a in abilities:
             action_names = [x.kind + (f":{x.keyword}" if x.keyword else "") for x in a.actions]
@@ -12266,6 +12662,16 @@ def try_cast_option(state: GameState, strategy: Strategy, opt: CastOption) -> bo
                 ))
                 record_impact(state, p.card.name, "prowess_triggers", 1)
 
+    # v4.87.3: repeating tracked-choice triggers ("whenever you cast a
+    # <filter> spell, choose one that hasn't been chosen this turn - ...",
+    # e.g. The Vision (MSH) - see resolve_repeating_modal_trigger's own
+    # docstring for why this needed real per-turn bookkeeping rather than
+    # being silently skipped). Same funnel reasoning as the prowess check
+    # right above: every self-cast, creature or noncreature, needs to pass
+    # through this so any battlefield permanent with this template can react.
+    for p in state.battlefield:
+        resolve_repeating_modal_trigger(state, strategy, p, card)
+
     if card.is_permanent and not card.is_land:
         permanent_enters(state, strategy, card)
         record_impact(state, card.name, "entered", 1)
@@ -12530,22 +12936,31 @@ def _parse_semantic_actions(effect: str) -> List[SemanticAction]:
             raw=effect,
         ))
 
-    for kw in KNOWN_KEYWORDS | {"lifelink", "indestructible"}:
-        if re.search(
-            rf"creatures you control (?:gain|have) {re.escape(kw)}(?: until end of turn)?",
-            low,
-        ):
-            if not any(
-                a.kind == "grant_team_keyword"
-                and a.keyword == kw
-                for a in actions
-            ):
-                actions.append(SemanticAction(
-                    kind="grant_team_keyword",
-                    keyword=kw,
-                    target="creatures_you_control",
-                    raw=effect,
-                ))
+    # v4.79.0: was a per-keyword full-string regex requiring the keyword to
+    # sit immediately after "have"/"gain" - so "creatures you control have
+    # flying, first strike, vigilance, trample, haste, and protection from
+    # black and from red" (Akroma's Memorial) only ever matched "flying",
+    # the one keyword directly adjacent to "have". Comma-separated grant
+    # lists are the normal templating for this effect (not a one-card
+    # quirk), so this generalizes: capture the whole keyword-list clause
+    # once, then check every KNOWN_KEYWORD against just that clause. Fixes
+    # every card using this phrasing, not only the one that surfaced it.
+    m_kwlist = re.search(r"creatures you control (?:gain|have) ([^.;]+)", low)
+    if m_kwlist:
+        kw_span = m_kwlist.group(1)
+        for kw in KNOWN_KEYWORDS | {"lifelink", "indestructible"}:
+            if re.search(rf"\b{re.escape(kw)}\b", kw_span):
+                if not any(
+                    a.kind == "grant_team_keyword"
+                    and a.keyword == kw
+                    for a in actions
+                ):
+                    actions.append(SemanticAction(
+                        kind="grant_team_keyword",
+                        keyword=kw,
+                        target="creatures_you_control",
+                        raw=effect,
+                    ))
 
     # v4.19.0: fixed-number "deals N damage to <a player-shaped target>" -
     # added for planeswalker loyalty abilities (e.g. Ugin's "+2: Ugin deals 3
@@ -14255,6 +14670,88 @@ def maybe_cycle_cards(state: GameState, strategy: Strategy, limit: int = 10):
             return  # nothing on the board could actually afford any of them
 
 
+_LANDCYCLING_RE = re.compile(r"\b(?:basic )?landcycling\s*((?:\{[^}]+\})+)")
+
+
+def _landcycling_cost(card: Card) -> Optional[Tuple[int, Counter]]:
+    if not card.is_land:  # same "can't be cycled from hand for mana it doesn't have yet" scope as Cycling
+        m = _LANDCYCLING_RE.search(strip_reminder_text(card.oracle_text).lower())
+        if m:
+            return parse_mana_cost(m.group(1))
+    return None
+
+
+def maybe_landcycle_cards(state: GameState, strategy: Strategy, limit: int = 10):
+    """v4.80.0 "Runde 2": (Basic) Landcycling ("{cost}, Discard this card:
+    Search your library for a basic land card, reveal it, put it into your
+    hand, then shuffle."). Same shape/precedent as maybe_cycle_cards right
+    above (itself modeled on maybe_flashback_cards): reuses find_payment/
+    apply_payment directly, cheapest-affordable-first, capped loop. The one
+    real difference from plain Cycling is the reward - a basic land to hand
+    (find_basic_for_fetch's own land-choice heuristic, but to HAND, not
+    "onto the battlefield" like put_basic_from_library - per the card text)
+    instead of a drawn card.
+
+    Scope: only the "(Basic) Landcycling" templating (Borough Backup,
+    Migratory Route - the two real cards in this project's own decks that
+    use it). A specific-basic-type variant ("Islandcycling" etc.) is a
+    distinct regex this pass doesn't add - no real card in any of the 5
+    decks tested uses it; disclosed gap, same "no calibration data yet"
+    precedent as Devour's own scope note elsewhere in this file.
+    """
+    for _ in range(limit):
+        options = []
+        for card in state.hand:
+            parsed = _landcycling_cost(card)
+            if parsed is not None:
+                options.append((parsed[0], card, parsed[1]))
+        if not options:
+            return
+        options.sort(key=lambda t: t[0])
+        for total_cost, card, req in options:
+            land = find_basic_for_fetch(state, set(), strategy)
+            if land is None:
+                return  # no basic land left anywhere in the library
+            plan = find_payment(state, strategy, total_cost, req)
+            if plan is None:
+                continue
+            apply_payment(state, plan, strategy)
+            state.hand.remove(card)
+            state.graveyard.append(card)
+            state.library.remove(land)
+            state.hand.append(land)
+            record_impact(state, card.name, "landcycled", 1)
+            state.log(f"LANDCYCLING: {card.name} discarded, fetched {land.name} to hand")
+            break
+        else:
+            return  # nothing on the board could actually afford any of them
+
+
+_V4800_maybe_cycle_cards_old = maybe_cycle_cards
+def maybe_cycle_cards(state: GameState, strategy: Strategy, limit: int = 10):
+    maybe_landcycle_cards(state, strategy, limit=limit)
+    _V4800_maybe_cycle_cards_old(state, strategy, limit=limit)
+
+
+_V4800_is_false_alarm_review_line_old = _is_false_alarm_review_line
+def _is_false_alarm_review_line(raw: str) -> bool:
+    """v4.80.0 "Runde 2": extends the v4.79.0 false-alarm filter (see its own
+    docstring) to the Cycling family - Cycling/Basic Landcycling/Flashback
+    cost lines. Each is fully handled by its own dedicated end-of-turn pass
+    (maybe_cycle_cards/maybe_landcycle_cards/maybe_flashback_cards),
+    completely independent of the per-line SemanticAbility/
+    _parse_semantic_actions system, which has no action kind for any of
+    them either - the exact same "reporting artifact, not a real simulation
+    gap" shape as the v4.79.0 mana-ability/bare-keyword cases, now surfaced
+    by the Runde 2 Landcycling work (Borough Backup's own landcycling line
+    was showing as an unmodeled 'review' line despite being fully resolved
+    by maybe_landcycle_cards)."""
+    if _V4800_is_false_alarm_review_line_old(raw):
+        return True
+    low = strip_reminder_text(raw).lower()
+    return bool(_CYCLING_RE.search(low) or _LANDCYCLING_RE.search(low) or _FLASHBACK_RE.search(low))
+
+
 def end_step(state: GameState, strategy: Strategy):
     # Only value/resource activations belong in this window.
     try_generic_semantic_activations(
@@ -14808,10 +15305,10 @@ def attack_phase(state: GameState, strategy: Strategy, rng: Optional[random.Rand
                 ):
                     i = fixed_target
                 else:
-                    i = max(
-                        range(len(state.opponents)),
-                        key=lambda j: state.opponents[j],
-                    )
+                    # v4.83.0: Fokus-Zielwahl (Advanced-Tisch: niedrigstes
+                    # Leben unter den lebenden Gegnern), sonst unveraendert
+                    # hoechstes Leben - siehe _combat_damage_target_index.
+                    i = _combat_damage_target_index(state)
                 # v4.21.0: Infect. "Damage dealt to a player by a source
                 # with infect isn't dealt as normal - it causes that many
                 # poison counters instead" (real rule 702.90c), with 10+
@@ -15858,6 +16355,7 @@ from App.opponent_model.state_equation import (
     advance_opponent_state as _opp_model_advance,
     query_board_effects as _opp_model_query_board_effects,
     query_castable_state as _opp_model_query_castable,
+    query_combat_state as _opp_model_query_combat,
     _flavor_cell as _opp_model_flavor_cell,
 )
 from App.removal_profile.classifier import deck_removal_coverage as _deck_removal_coverage
@@ -16890,6 +17388,10 @@ def run_pipeline_v440(*args, **kwargs):
 
 _WC_TARGET_AWARE_PREDICATE_TYPES = {
     "opponent_life_at_or_below", "x_spell_lethal", "commander_damage_lethal",
+    # v4.79.0 (Runde 1, Punkt 6): board_damage_lethal is the new
+    # alpha-strike/token-swarm predicate and is just as target-aware
+    # (any/each/index) as the three above.
+    "board_damage_lethal",
 }
 
 
@@ -17070,6 +17572,5125 @@ def _parse_semantic_actions(effect: str) -> List[SemanticAction]:
             ))
 
     return actions
+
+
+# ---------------------------------------------------------------------------
+# v4.80.0 "Runde 2" WP-A: generic keyword-grant generalizations + Proliferate.
+#
+# 1) Team pump + trailing keyword-LIST grant in ONE clause. The generic
+#    (untyped, "Overrun"-shaped) team_pt_bonus match a few lines above this
+#    wrapper only ever captured the "+N/+N" half of "Creatures you control
+#    get +N/+N and gain KEYWORD[, KEYWORD...] until end of turn" - a real,
+#    common single-sentence templating (e.g. Lorehold Charm's third mode:
+#    "Creatures you control get +1/+1 and gain trample until end of turn")
+#    that combines a pump with a keyword grant in ONE sentence never fed the
+#    keyword half into grant_team_keyword at all: that regex requires
+#    "creatures you control (?:gain|have)" immediately, not "... get +N/+N
+#    and gain ...". Reuses the exact same "capture the whole keyword-list
+#    clause, then scan every KNOWN_KEYWORD against it" technique as the
+#    v4.79.0 multi-keyword fix above, so - unlike App/team_effects' own
+#    typed/tribal equivalent of this pattern, capped at two keywords
+#    ("([a-z]+(?: and [a-z]+)?)") - this is not capped at one or two
+#    keywords either. That registry is left as-is; this fix is scoped to
+#    engine.py's own untyped/all-creatures parser.
+# 2) "each creature you control (gain|have)s ..." - the SAME grant, singular
+#    subject. Real templating uses the plural "creatures you control" the
+#    overwhelming majority of the time (why the v4.79.0 fix was scoped to
+#    it), but the singular "each creature you control gains/has ..." shape
+#    also appears and was previously invisible to this parser entirely (no
+#    keyword captured at all, not even the first one).
+# 3) Proliferate as a recognized, executable action. Previously "proliferate"
+#    was detected only for role/keyword TAGGING via keyword_set() (line
+#    ~8627), never turned into a SemanticAction - a real proliferate card's
+#    own line did nothing at all when activated/triggered. See
+#    engine.proliferate() for the goldfishing simplification this applies
+#    (always proliferate every counter type that can only help). Real
+#    activation-cost recognition (mana/{T}/sacrifice/"tap N untapped <type>"
+#    via the existing v4.76.0 execute_semantic_ability tap_n_cost wrapper) is
+#    completely unchanged and already correctly gates this the same as any
+#    other activated ability - a card whose cost isn't recognized still
+#    can't auto-fire this for free.
+# ---------------------------------------------------------------------------
+_V4800_parse_semantic_actions_old = _parse_semantic_actions
+def _parse_semantic_actions(effect: str) -> List[SemanticAction]:
+    actions = _V4800_parse_semantic_actions_old(effect)
+    low = strip_reminder_text(effect).lower()
+
+    def _scan_keyword_clause(clause: str):
+        for kw in KNOWN_KEYWORDS | {"lifelink", "indestructible"}:
+            if re.search(rf"\b{re.escape(kw)}\b", clause):
+                if not any(a.kind == "grant_team_keyword" and a.keyword == kw for a in actions):
+                    actions.append(SemanticAction(
+                        kind="grant_team_keyword",
+                        keyword=kw,
+                        target="creatures_you_control",
+                        raw=effect,
+                    ))
+
+    m_pump_kw = re.search(
+        r"creatures you control get \+\d+/\+\d+(?: until end of turn)?,? and (?:gain|have) ([^.;]+)",
+        low,
+    )
+    if m_pump_kw:
+        _scan_keyword_clause(m_pump_kw.group(1))
+
+    m_each = re.search(r"each creature you control (?:gains?|has|have) ([^.;]+)", low)
+    if m_each:
+        _scan_keyword_clause(m_each.group(1))
+
+    if re.search(r"\bproliferates?\b", low) and not any(a.kind == "proliferate" for a in actions):
+        actions.append(SemanticAction(kind="proliferate", raw=effect))
+
+    return actions
+
+
+# ---------------------------------------------------------------------------
+# v4.76.0 WP1: Skalierende Mana-Faehigkeiten (App/mana_scaling Registry).
+#
+# Diagnose (Lathril-Lauf 21.09., siehe Docs/README.md v4.76.0): der generische
+# Parser parse_add_mana_options las "Add {G} for each Elf you control" als
+# flaches 1 Mana (erstes Symbol) und "Add X mana ... where X is the number of
+# Elves" / "equal to Marwyn's power" als 0 Mana. Priest of Titania, Elvish
+# Archdruid, Circle of Dreams Druid, Wirewood Channeler, Marwyn, Gaea's Cradle
+# ... lieferten dadurch einen Bruchteil ihres echten Outputs. Additiver
+# Wrapper: nur Zeilen, die ein Registry-Muster trifft, werden neu bewertet;
+# alle anderen Mana-Zeilen derselben Karte laufen unveraendert durch den
+# alten Parser.
+# ---------------------------------------------------------------------------
+try:
+    from App import mana_scaling as _mana_scaling
+except ImportError:  # engine.py run standalone from inside App/
+    import mana_scaling as _mana_scaling
+
+_V4760_card_mana_options_old = card_mana_options
+def card_mana_options(p: Permanent, state: GameState, strategy: Strategy) -> List[Counter]:
+    scaled = _mana_scaling.resolve_mana_options(sys.modules[__name__], p, state, strategy)
+    if scaled is None:
+        return _V4760_card_mana_options_old(p, state, strategy)
+    c = p.card
+    if p.tapped:
+        return []
+    if c.is_creature and p.entered_turn == state.turn and "haste" not in c.keywords:
+        return []
+    rest = parse_add_mana_options(
+        _mana_scaling.text_without_scaling_lines(sys.modules[__name__], c.oracle_text)
+    )
+    if c.is_land and state.has("Great Divide Guide"):
+        rest.extend(Counter({x: 1}) for x in (strategy.commander_colors or set(COLORS)))
+    return dedupe_options(list(rest) + list(scaled))
+
+
+_V4760_apply_payment_old = apply_payment
+def apply_payment(state: GameState, plan: PaymentPlan, strategy: Optional[Strategy] = None):
+    """WP1: "Tap N untapped <Type> you control: Add ..." (Heritage Druid) needs
+    N-1 FURTHER untapped creatures of that type as its cost. The payment
+    solver only taps the source itself, so tap the co-payers here -- never
+    one this same plan already used as its own mana source. If not enough
+    remain, the plan over-counted: log it and record an engine metric
+    instead of silently inventing mana."""
+    used_ids = {
+        id(state.battlefield[src.permanent_index])
+        for src, _ in plan.used
+        if src.permanent_index is not None and 0 <= src.permanent_index < len(state.battlefield)
+    }
+    extra_taps = []
+    for src, _ in plan.used:
+        if src.permanent_index is None or not (0 <= src.permanent_index < len(state.battlefield)):
+            continue
+        p = state.battlefield[src.permanent_index]
+        for d in _mana_scaling.match_card(sys.modules[__name__], p.card.oracle_text):
+            if d.handler != "tap_n_untapped_type":
+                continue
+            line = next(
+                (strip_reminder_text(x).lower().strip() for x in split_oracle_lines(p.card.oracle_text)
+                 if d.regex.search(strip_reminder_text(x).lower().strip())),
+                "",
+            )
+            m = d.regex.search(line)
+            need = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5}.get(m.group(1), 0) if m else 0
+            if not need and m and m.group(1).isdigit():
+                need = int(m.group(1))
+            extra_taps.append((p, need - 1, m.group(2) if m else ""))
+    _V4760_apply_payment_old(state, plan, strategy)
+    _is_type = _mana_scaling.handlers._is_type
+    singular = _mana_scaling.handlers.singular
+    for source_perm, n_more, kind in extra_taps:
+        kind = singular(kind)
+        pool = [
+            q for q in state.battlefield
+            if q is not source_perm and not q.tapped and id(q) not in used_ids and _is_type(q.card, kind)
+        ]
+        # prefer co-payers that have no mana ability of their own
+        if strategy is not None:
+            pool.sort(key=lambda q: 1 if card_mana_options(q, state, strategy) else 0)
+        for q in pool[:max(0, n_more)]:
+            q.tapped = True
+            used_ids.add(id(q))
+        short = max(0, n_more) - len(pool[:max(0, n_more)])
+        if short:
+            record_engine_metric(state, "tap_n_cost_overcount", short)
+            state.log(f"ENGINE NOTE: {source_perm.card.name} cost needed {short} more untapped {kind}(s) than were free")
+        else:
+            state.log(f"{source_perm.card.name}: tapped {n_more} further {kind}(s) as cost")
+
+
+def mana_scaling_note(card: Card) -> str:
+    defs = _mana_scaling.match_card(sys.modules[__name__], card.oracle_text)
+    return "; ".join(f"mana_scaling:{d.id} ({d.model_layer})" for d in defs)
+
+
+# ---------------------------------------------------------------------------
+# v4.76.0 WP2: board-aware defense against the abstract opponent pressure
+# (App/combat_model/defense.py, weights: combat_interaction_weights.json ->
+# "defense"). Additive outer wrapper around BOTH opponent models (simple
+# profile clock and the v4.63 advanced multi-seat model): it measures how much
+# pressure damage the wrapped phase dealt, lets still-untapped creatures block
+# part of it, restores that life and undoes a loss that the blocks prevented.
+# "defense.enabled": false restores the old behavior exactly.
+# ---------------------------------------------------------------------------
+try:
+    from App.combat_model import defense as combat_defense
+except ImportError:
+    from combat_model import defense as combat_defense
+
+_V4760_apply_opponent_old = apply_abstract_opponent_phase
+def apply_abstract_opponent_phase(state: GameState, strategy: Strategy, rng: random.Random):
+    if strategy.opponent_profile == "goldfish":
+        return _V4760_apply_opponent_old(state, strategy, rng)
+    dmg_before = float(state.damage_taken)
+    lost_before = state.lost_turn
+    _V4760_apply_opponent_old(state, strategy, rng)
+    dealt = float(state.damage_taken) - dmg_before
+    if dealt <= 0 or state.win_turn is not None:
+        return
+    prevented, lost, logs = combat_defense.absorb_pressure(
+        sys.modules[__name__], state, strategy, rng, dealt, strategy.opponent_profile,
+    )
+    for line in logs:
+        state.log(line)
+    if prevented > 0:
+        state.life += prevented
+        state.damage_taken -= prevented
+        state.damage_prevented_by_blockers = getattr(state, "damage_prevented_by_blockers", 0.0) + prevented
+        if lost_before is None and state.lost_turn == state.turn and state.life > 0:
+            state.lost_turn = None
+            state.log("DEFENSE: blocks prevented lethal damage this turn")
+    if lost:
+        state.blockers_lost = getattr(state, "blockers_lost", 0) + lost
+
+
+_V4760_turn_row_old = _turn_row_v440
+def _turn_row_v440(run_id, turn, state, strategy, *args, **kwargs) -> dict:
+    row = _V4760_turn_row_old(run_id, turn, state, strategy, *args, **kwargs)
+    row["damage_prevented_by_blockers_total"] = round(float(getattr(state, "damage_prevented_by_blockers", 0.0)), 3)
+    row["blockers_lost_total"] = int(getattr(state, "blockers_lost", 0))
+    return row
+
+
+_V4760_stats_add_old = StreamingStatsV440.add
+def _streaming_stats_add_v4760(self, rr: dict, tr: List[dict], sr: List[dict]):
+    _V4760_stats_add_old(self, rr, tr, sr)
+    if not hasattr(self, "_defense"):
+        self._defense = {}
+    last = tr[-1] if tr else {}
+    prof = str(rr.get("opponent_profile", "unknown"))
+    for key in (prof, "__all__"):
+        d = self._defense.setdefault(key, [0, 0.0, 0.0])
+        d[0] += 1
+        d[1] += float(last.get("damage_prevented_by_blockers_total", 0) or 0)
+        d[2] += float(last.get("blockers_lost_total", 0) or 0)
+
+
+StreamingStatsV440.add = _streaming_stats_add_v4760
+
+
+_V4760_summary_old = streaming_summary_v440
+def streaming_summary_v440(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy) -> dict:
+    data = _V4760_summary_old(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy)
+    d = getattr(stats, "_defense", {})
+    w = combat_defense._defense_weights()
+    allr = d.get("__all__", [0, 0.0, 0.0])
+    n = max(1, allr[0])
+    data["outcomes"]["avg_damage_prevented_by_blockers"] = allr[1] / n
+    data["outcomes"]["avg_blockers_lost"] = allr[2] / n
+    for prof, row in (data.get("opponent_breakdown") or {}).items():
+        r = d.get(prof)
+        if r and r[0]:
+            row["avg_damage_prevented_by_blockers"] = r[1] / r[0]
+            row["avg_blockers_lost"] = r[2] / r[0]
+    data.setdefault("simulation", {})["defense_model"] = (
+        "board-aware v1 (combat_model/defense.py; weights combat_interaction_weights.json -> defense)"
+        if w.get("enabled") else "off (board-independent pressure clock)"
+    )
+    return data
+
+
+# ---------------------------------------------------------------------------
+# v4.76.0 WP3: team effects (App/team_effects registry + keyword_library
+# "typed_pt_bonus" handler).
+#
+# Diagnosis (Lathril run, Docs/README.md v4.76.0):
+#   * Craterhoof Behemoth's ETB +X/+X was never applied (only trample parsed);
+#   * Ezuri's "+3/+3 to Elf creatures" pumped ALL creatures (generic
+#     team_pt_bonus), Elvish Warmaster's pump never ran (review);
+#   * tribal lords (Imperious Perfect, Elvish Champion) were ignored, while
+#     Elvish Archdruid's lord line pumped every creature including itself;
+#   * Finale of Devastation was never cast (no X-spell metrics);
+#   * Lathril's "{T}, Tap ten untapped Elves" fired with only {T} checked.
+# All of it is additive: cards without these Oracle shapes are untouched.
+# ---------------------------------------------------------------------------
+try:
+    from App import team_effects as _team_effects
+except ImportError:
+    import team_effects as _team_effects
+_TE = _team_effects.registry
+_TEL = _team_effects.logic
+
+
+def apply_team_pump_v4760(state: GameState, source_name: str, amount: float,
+                          keywords: List[str], kind: str = "creature") -> None:
+    _TEL.apply_team_pump(sys.modules[__name__], state, source_name, amount, keywords, kind)
+
+
+_V4760_parse_oracle_semantics_old = parse_oracle_semantics
+def parse_oracle_semantics(card: Card) -> List[SemanticAbility]:
+    abilities = _V4760_parse_oracle_semantics_old(card)
+    for a in abilities:
+        if getattr(a, "_v4760_team_effects", False):
+            continue
+        a._v4760_team_effects = True
+        low = strip_reminder_text(a.raw).lower().strip()
+        if a.ability_kind == "activated" and ":" in low:
+            pump = _TE.parse_pump(low.split(":", 1)[1])
+            if pump:
+                kind, n, kws, _other = pump
+                a.actions = [SemanticAction(kind="typed_pt_bonus", amount=n, keyword=",".join(kws),
+                                            target=kind, raw=a.raw)]
+                a.execution_mode = "exact"
+                a.confidence = max(a.confidence, 0.9)
+        elif a.ability_kind == "static" and _TE.parse_anthem(low):
+            # computed live by team_effects.logic.typed_power_bonus; the
+            # generic team_pt_bonus (which hit EVERY creature) is dropped so
+            # nothing is counted twice.
+            kind, n, kws, other = _TE.parse_anthem(low)
+            a.actions = [SemanticAction(kind="typed_anthem", amount=n, keyword=",".join(kws),
+                                        target=kind, token="other" if other else "", raw=a.raw)]
+            a.execution_mode = "exact"
+            a.confidence = max(a.confidence, 0.9)
+    return abilities
+
+
+_V4760_semantic_action_timing_old = semantic_action_timing
+def semantic_action_timing(action: SemanticAction) -> str:
+    if action.kind == "typed_pt_bonus":
+        return "precombat"
+    return _V4760_semantic_action_timing_old(action)
+
+
+_V4760_semantic_ability_score_old = semantic_ability_score
+def semantic_ability_score(ability: SemanticAbility, state: GameState, phase: str = "value") -> float:
+    typed = [a for a in ability.actions if a.kind == "typed_pt_bonus"]
+    if not typed:
+        return _V4760_semantic_ability_score_old(ability, state, phase)
+    if phase != "precombat":
+        return -999.0
+    # Heuristic, disclosed: a pump is worth its mana only if enough creatures
+    # of its type can still attack; value grows with (+N x attackers).
+    gain = sum(a.amount * _TEL.attackers_of_type(sys.modules[__name__], state, a.target or "creature") for a in typed)
+    if gain <= 0:
+        return -999.0
+    return 0.25 * gain - ability.mana_total * 0.35
+
+
+_V4760_creature_power_old = creature_power
+def creature_power(p: Permanent, state: GameState) -> float:
+    return max(0.0, _V4760_creature_power_old(p, state) + _TEL.typed_power_bonus(sys.modules[__name__], state, p))
+
+
+_V4760_token_group_power_old = token_group_power
+def token_group_power(g: TokenGroup, state: GameState) -> float:
+    return max(0.0, _V4760_token_group_power_old(g, state) + _TEL.typed_token_bonus(sys.modules[__name__], state, g))
+
+
+_V4760_effective_keywords_in_state_old = effective_keywords_in_state
+def effective_keywords_in_state(p: Permanent, state: GameState) -> Set[str]:
+    out = _V4760_effective_keywords_in_state_old(p, state)
+    out.update(_TEL.typed_keywords(sys.modules[__name__], state, p))
+    return out
+
+
+_V4760_permanent_enters_old = permanent_enters
+def permanent_enters(state: GameState, strategy: Strategy, card: Card):
+    _V4760_permanent_enters_old(state, strategy, card)
+    if card.is_creature and _TE.etb_team_pump(sys.modules[__name__], card.oracle_text):
+        x = _TEL.creature_count(state)
+        if x > 0:
+            apply_team_pump_v4760(state, card.name, x, ["trample"], "creature")
+            record_impact(state, card.name, "team_pump", x)
+            state.log(f"{card.name} ETB: creatures you control get +{x}/+{x} and trample until end of turn")
+
+
+# --- X creature tutors (Finale of Devastation, Green Sun's Zenith) ----------
+_V4760_best_x_plan_old = best_x_plan
+def best_x_plan(card: Card, state: GameState, strategy: Strategy) -> Optional[XPlan]:
+    info = _TE.x_creature_tutor(sys.modules[__name__], card.oracle_text)
+    if not info:
+        return _V4760_best_x_plan_old(card, state, strategy)
+    vm = strategy.value_model or ValueModel.load()
+    base, req = x_base_cost_and_req(card)
+    x_count = max(1, x_symbol_count(card))
+    max_x = max(0, (available_mana_value(state, strategy) - base) // x_count)
+    if max_x <= 0:
+        return None
+    ops = sys.modules[__name__]
+    pump_at = info.get("pump_at")
+    board = _TEL.attackers_of_type(ops, state, "creature")
+    # Go big when the X>=N team pump is affordable and there is a board to
+    # swing with; otherwise pay exactly the chosen target's mana value.
+    candidates = []
+    if pump_at and max_x >= pump_at and board >= 3:
+        candidates.append(max_x)
+    pick = _TEL.choose_tutor_target(ops, state, strategy, max_x, info)
+    if pick is None and not candidates:
+        return None
+    if pick is not None:
+        candidates.append(max(int(math.ceil(float(pick[0].mana_value))), 0))
+    for x in candidates:
+        total_cost = base + x_count * x
+        payment = find_payment(state, strategy, total_cost, req)
+        if not payment:
+            continue
+        target = _TEL.choose_tutor_target(ops, state, strategy, x, info)
+        metrics = Counter()
+        if target is not None:
+            metrics["tutor"] += 1
+            metrics["mana_discount"] += float(target[0].mana_value)
+        if pump_at and x >= pump_at:
+            metrics["combat_damage"] += float(x) * board
+        if not metrics:
+            continue
+        gross = vm.aggregate_value(metrics, strategy.archetypes, card.color_identity)
+        cost_value = total_cost * float(vm.values["mana_unit"]) + float(vm.values["x_card_opportunity_cost"])
+        plan = XPlan(x, total_cost, gross, gross - cost_value, gross / max(0.01, cost_value), metrics, payment)
+        plan.tutor_target = target[0].name if target else ""
+        if plan.net_value < float(vm.values["x_min_net_value"]):
+            continue
+        return plan
+    return None
+
+
+_V4760_resolve_x_spell_old = resolve_x_spell
+def resolve_x_spell(state: GameState, strategy: Strategy, card: Card, plan: XPlan):
+    info = _TE.x_creature_tutor(sys.modules[__name__], card.oracle_text)
+    if not info:
+        return _V4760_resolve_x_spell_old(state, strategy, card, plan)
+    ops = sys.modules[__name__]
+    pick = _TEL.choose_tutor_target(ops, state, strategy, int(plan.x), info)
+    if pick is not None:
+        target, zone = pick
+        pile = state.library if zone == "library" else state.graveyard
+        if target in pile:
+            pile.remove(target)
+            if zone == "library":
+                random.Random(state.turn * 7919 + len(state.library)).shuffle(state.library)
+            permanent_enters(state, strategy, target)
+            record_impact(state, card.name, "tutor", 1)
+            record_impact(state, card.name, "mana_discount", float(target.mana_value))
+            state.log(f"{card.name} X={plan.x}: put {target.name} onto the battlefield from the {zone}")
+    pump_at = info.get("pump_at")
+    if pump_at and int(plan.x) >= pump_at:
+        kw = info.get("pump_keyword") or "haste"
+        apply_team_pump_v4760(state, card.name, float(plan.x), [kw], "creature")
+        record_impact(state, card.name, "team_pump", float(plan.x))
+        state.log(f"{card.name} X={plan.x}: creatures you control get +{plan.x}/+{plan.x} and {kw}")
+
+
+# --- "Tap N untapped <Type> you control" activation costs (Lathril) ---------
+_V4760_execute_semantic_ability_old = execute_semantic_ability
+def execute_semantic_ability(state: GameState, strategy: Strategy, source: Permanent,
+                             ability: SemanticAbility, *, target: Optional[Permanent] = None,
+                             already_paid: bool = False) -> bool:
+    cost = _TE.tap_n_cost(strip_reminder_text(ability.raw))
+    if cost is None or already_paid:
+        return _V4760_execute_semantic_ability_old(state, strategy, source, ability,
+                                                   target=target, already_paid=already_paid)
+    n, kind = cost
+    is_type = _mana_scaling.handlers._is_type
+    attacked = getattr(state, "_v4760_attack_done_turn", None) == state.turn
+    perms = [q for q in state.battlefield
+             if q is not source and not q.tapped and is_type(q.card, kind)]
+    free_tokens = []
+    for g in state.creature_tokens:
+        if g.count <= 0 or not _TEL._token_matches(g, kind):
+            continue
+        if getattr(g, "_tapped_for_cost_turn", None) == state.turn:
+            continue
+        kws = {k.lower() for k in (g.keywords or set())}
+        if attacked and g.entered_turn != state.turn and "vigilance" not in kws:
+            continue  # this group attacked this turn -> tapped
+        free_tokens.append(g)
+    # Cost-tapping order (cheapest real loss first): summoning-sick creatures
+    # (could neither attack nor tap for mana), tokens, creatures without a
+    # mana ability, mana creatures last.
+    sick = [q for q in perms if q.entered_turn == state.turn]
+    ready = [q for q in perms if q.entered_turn != state.turn]
+    ready.sort(key=lambda q: bool(card_mana_options(q, state, strategy)))
+    units = [("perm", q) for q in sick]
+    units += [("token", g) for g in free_tokens for _ in range(int(g.count))]
+    units += [("perm", q) for q in ready]
+    if len(units) < n:
+        record_engine_metric(state, "tap_n_cost_unpayable", 1)
+        return False
+    chosen = units[:n]
+    use_perms = [ref for k, ref in chosen if k == "perm"]
+    token_take: Dict[int, int] = {}
+    for k, ref in chosen:
+        if k == "token":
+            token_take[id(ref)] = token_take.get(id(ref), 0) + 1
+    for q in use_perms:          # reserve before the mana solver runs
+        q.tapped = True
+    ok = _V4760_execute_semantic_ability_old(state, strategy, source, ability, target=target, already_paid=False)
+    if not ok:
+        for q in use_perms:
+            q.tapped = False
+        return False
+    # tokens used for the cost can neither attack nor block this turn: split
+    # them off into their own group marked as tapped for this turn
+    use_tokens = 0
+    for g in list(state.creature_tokens):
+        k = min(token_take.get(id(g), 0), int(g.count))
+        if k <= 0:
+            continue
+        g.count -= k
+        spent = TokenGroup(name=g.name, count=k, power=g.power, toughness=g.toughness,
+                           keywords=set(g.keywords), entered_turn=g.entered_turn)
+        spent._tapped_for_cost_turn = state.turn
+        state.creature_tokens.append(spent)
+        use_tokens += k
+    state.creature_tokens[:] = [g for g in state.creature_tokens if g.count > 0]
+    state.log(f"{source.card.name}: tapped {len(use_perms)} {kind} permanent(s) and {use_tokens} {kind} token(s) as cost")
+    return True
+
+
+_V4760_attack_phase_old = attack_phase
+def attack_phase(state: GameState, strategy: Strategy, rng: Optional[random.Random] = None):
+    """Token groups tapped for a cost this turn (see execute_semantic_ability
+    above) sit out of combat; everything else is the unchanged combat."""
+    spent = [g for g in state.creature_tokens if getattr(g, "_tapped_for_cost_turn", None) == state.turn]
+    if spent:
+        state.creature_tokens[:] = [g for g in state.creature_tokens if g not in spent]
+    try:
+        return _V4760_attack_phase_old(state, strategy, rng)
+    finally:
+        if spent:
+            state.creature_tokens.extend(spent)
+        state._v4760_attack_done_turn = state.turn
+
+
+_V4760_resolve_direct_spell_effects_old = resolve_direct_spell_effects
+def resolve_direct_spell_effects(state: GameState, strategy: Strategy, card: Card):
+    """Overrun-shaped pump spells ('Creatures you control get +3/+3 and gain
+    trample until end of turn'): the parser filed the line as a STATIC
+    ability of a card that goes straight to the graveyard, so it never
+    applied. Resolve it as a one-shot team pump for this turn."""
+    _V4760_resolve_direct_spell_effects_old(state, strategy, card)
+    if not (card.is_instant or card.is_sorcery):
+        return
+    hit = _TE.spell_pump(sys.modules[__name__], card.oracle_text)
+    if hit:
+        kind, n, kws, _other = hit
+        apply_team_pump_v4760(state, card.name, n, kws, kind)
+        record_impact(state, card.name, "team_pump", n)
+        state.log(f"{card.name}: {kind} creatures get +{n:g}/+{n:g}" + (f" and {', '.join(kws)}" if kws else "") + " until end of turn")
+
+
+def team_effects_note(card: Card) -> str:
+    notes = _TE.notes(sys.modules[__name__], card.oracle_text)
+    if not (card.is_instant or card.is_sorcery):
+        # spell_pump is only resolved for instants/sorceries
+        if _TE.spell_pump(sys.modules[__name__], card.oracle_text) and not any(
+            ":" in strip_reminder_text(l) and _TE.parse_pump(strip_reminder_text(l).lower().split(":", 1)[1])
+            for l in split_oracle_lines(card.oracle_text)
+        ):
+            notes = [n for n in notes if "typed_pump_until_eot" not in n]
+    return "; ".join(notes)
+
+
+# v4.76.0: registry-based resolvers (mana_scaling, WP1; finishers, WP3) show
+# up in card_model_coverage.csv like the name-keyed DEDICATED_RESOLVERS do,
+# so the coverage report (and the WP4 model-gap check built on it) never
+# calls a card "review only" that a registry now actually executes.
+_REGISTRY_NOTE_FUNCS = [mana_scaling_note, team_effects_note]
+
+
+def registry_resolver_note(card: Card) -> str:
+    return "; ".join(n for n in (f(card) for f in _REGISTRY_NOTE_FUNCS) if n)
+
+
+# ---------------------------------------------------------------------------
+# v4.80.0 "Runde 2" WP-B: generic modal "Choose one -"/"Choose two -" bullet
+# resolution (the single most-requested item, and by real-deck-usage survey
+# across this project's own decklists the highest-impact one: 21 of the ~365
+# cards across the 5 tested decks use this templating, vs. 0-2 each for the
+# other Runde-2 mechanics considered - see the delivery report).
+# ---------------------------------------------------------------------------
+_MODAL_HEADER_RE = re.compile(r"\bchoose (one|two)\b")
+
+
+def _modal_choice_blocks(oracle_text: str, header_ok=None):
+    """[(max_picks, [bullet_text, ...]), ...] for every modal block found.
+    `header_ok(low_header_line) -> bool` further restricts which "choose
+    one/two" lines count as a real modal header (used to require an
+    ETB-shaped trigger for permanents - see resolve_modal_choice_actions).
+    A repeating/tracked choice ("choose one that hasn't been chosen this
+    turn", Gala Greeters/The Vision) is deliberately never treated as a
+    block here - resolving it once would misrepresent a per-event choice as
+    a one-shot effect, and this engine has no "chosen this turn" bookkeeping
+    to do it properly."""
+    lines = split_oracle_lines(oracle_text or "")
+    blocks = []
+    i = 0
+    while i < len(lines):
+        header_low = strip_reminder_text(lines[i]).strip().lower()
+        if header_low.startswith("•"):
+            i += 1
+            continue
+        m = _MODAL_HEADER_RE.search(header_low)
+        if (
+            m
+            and "hasn't been chosen" not in header_low
+            and (header_ok is None or header_ok(header_low))
+        ):
+            max_picks = 2 if m.group(1) == "two" else 1
+            bullets = []
+            j = i + 1
+            while j < len(lines) and strip_reminder_text(lines[j]).strip().startswith("•"):
+                bullets.append(strip_reminder_text(lines[j]).strip().lstrip("•").strip())
+                j += 1
+            if bullets:
+                blocks.append((max_picks, bullets))
+            i = j
+        else:
+            i += 1
+    return blocks
+
+
+# Disclosed, fixed value-priority heuristic for choosing among resolvable
+# bullets - not a game-tree search. Unlisted action kinds default to 0.8.
+_MODAL_CHOICE_KIND_WEIGHT = {
+    "opponent_life_loss": 3.0,
+    "draw": 2.5,
+    "create_token": 2.0,
+    "plus1_counter": 1.8,
+    "team_pt_bonus": 1.6,
+    "grant_team_keyword": 1.5,
+    "grant_keyword_until_eot": 1.3,
+    "connive": 1.2,
+    "gain_life": 1.0,
+    "keyword_counter": 1.0,
+    "set_base_pt": 1.0,
+    "proliferate": 1.0,
+    "tap_target": 0.8,
+    "scry": 0.6,
+    "surveil": 0.6,
+}
+
+
+def _modal_bullet_score(actions: List[SemanticAction]) -> float:
+    return sum(
+        _MODAL_CHOICE_KIND_WEIGHT.get(a.kind, 0.8) * max(float(a.amount or 0), 1.0)
+        for a in actions
+    )
+
+
+def resolve_modal_choice_actions(oracle_text: str, header_ok=None) -> List[SemanticAction]:
+    """Generic "Choose one -"/"Choose two -" resolution. A bullet is only
+    ever "resolvable" if _parse_semantic_actions already recognizes at least
+    one action in its text - since that parser has no notion of "destroy"/
+    "exile"/"fight"/any other opposing-permanent interaction (this engine
+    models no opposing board at all, by design - see the opponent_life_loss
+    design comment elsewhere in this file), a removal-shaped bullet
+    (the overwhelming majority of real modal templating - Abrade, Cleansing
+    Nova, Austere Command, ...) naturally scores as unresolvable rather than
+    needing its own exclusion list here.
+
+    When a bullet mixes a recognized clause with an unrecognized one (e.g.
+    "Destroy target artifact. Create four Treasure tokens." - Megaton's
+    Fate's "Disarm" mode), only the recognized clause's action fires; this
+    is a disclosed, deliberate partial-credit approximation (this engine
+    could not have modeled the destroy half anyway), not a bug.
+
+    A "choose two" block only resolves when at least TWO distinct bullets
+    are independently resolvable (never falls back to executing just one -
+    that would misrepresent "choose two" as "choose one"). Returns []
+    (no-op, identical to pre-v4.80.0 behavior) whenever a block can't be
+    fully resolved this way, or the text has no modal block at all - this
+    is purely additive, never a regression for any card it can't help.
+    """
+    out: List[SemanticAction] = []
+    for max_picks, bullets in _modal_choice_blocks(oracle_text, header_ok=header_ok):
+        resolvable = []
+        for bullet in bullets:
+            acts = _parse_semantic_actions(bullet)
+            if acts:
+                resolvable.append((acts, _modal_bullet_score(acts)))
+        if len(resolvable) < max_picks:
+            continue
+        resolvable.sort(key=lambda t: -t[1])
+        for acts, _score in resolvable[:max_picks]:
+            out.extend(acts)
+    return out
+
+
+# ---------------------------------------------------------------------------
+# v4.87.3 Reliability-sweep-v1 follow-up WP-A: repeating tracked-choice
+# triggers ("whenever you cast a <filter> spell, choose one that hasn't been
+# chosen this turn - ..."). _modal_choice_blocks above deliberately never
+# treats this header shape as a one-shot modal block (see its own docstring,
+# "A repeating/tracked choice ... is deliberately never treated as a block
+# here") because resolving it once would misrepresent a per-event choice as
+# a single static effect - it genuinely needs per-turn "which mode already
+# fired this turn" bookkeeping (state.modal_chosen_this_turn, reset once per
+# turn in the main simulation loop's per-turn reset block, keyed by
+# permanent identity via id(source) so distinct sources track independently).
+# That bookkeeping now exists, so this is the real, tracked resolver.
+#
+# Real card that surfaced this gap: The Vision (MSH) - "Whenever you cast a
+# noncreature spell, choose one that hasn't been chosen this turn - Solar
+# Beam: The Vision gains double strike until end of turn. Density Control:
+# The Vision gains indestructible until end of turn. Technopathy: Draw a
+# card." - found via the reliability-sweep-v1 follow-up (Aziza V2 test run,
+# see Docs/README.md v4.87.3). Not hardcoded to that one card: any card using
+# this exact "whenever you cast a <filter> spell, choose one that hasn't been
+# chosen this turn" template is picked up generically by the regex below.
+# Deliberately scoped to only this one trigger shape ("whenever you cast");
+# a differently-triggered "hasn't been chosen" ability (e.g. "whenever you
+# attack") is a separate, not-yet-implemented case - same fail-closed
+# posture as the rest of this file's generic parsing (skip rather than
+# guess at an unrecognized shape).
+# ---------------------------------------------------------------------------
+_REPEATING_MODAL_TRIGGER_RE = re.compile(
+    r"whenever you cast (?:a |an )?(?P<filter>[a-z]+(?:\s+or\s+[a-z]+)?\s+)?spell,\s*"
+    r"choose one that hasn't been chosen this turn\b"
+)
+
+
+def _repeating_modal_blocks(oracle_text: str):
+    """[(filter_word_or_None, [bullet_text, ...]), ...] for every "whenever
+    you cast a <filter> spell, choose one that hasn't been chosen this turn"
+    header found. Mirrors _modal_choice_blocks' own bullet-collection loop,
+    just anchored to the header shape that function deliberately excludes -
+    this is the tracked-choice counterpart, not a duplicate/competing parse
+    of the same block (the two header patterns are mutually exclusive: one
+    requires "hasn't been chosen", the other explicitly rejects it)."""
+    lines = split_oracle_lines(oracle_text or "")
+    blocks = []
+    i = 0
+    while i < len(lines):
+        header_low = strip_reminder_text(lines[i]).strip().lower()
+        m = _REPEATING_MODAL_TRIGGER_RE.search(header_low)
+        if m:
+            filt = (m.group("filter") or "").strip() or None
+            bullets = []
+            j = i + 1
+            while j < len(lines) and strip_reminder_text(lines[j]).strip().startswith("•"):
+                bullets.append(strip_reminder_text(lines[j]).strip().lstrip("•").strip())
+                j += 1
+            if bullets:
+                blocks.append((filt, bullets))
+            i = j
+        else:
+            i += 1
+    return blocks
+
+
+def _spell_matches_repeating_trigger_filter(card: Card, filt: Optional[str]) -> bool:
+    if not filt:
+        return True
+    filt = filt.strip()
+    if filt == "noncreature":
+        return not card.is_creature
+    if filt == "creature":
+        return bool(card.is_creature)
+    if filt == "instant":
+        return bool(card.is_instant)
+    if filt == "sorcery":
+        return bool(card.is_sorcery)
+    if filt == "instant or sorcery":
+        return bool(card.is_instant or card.is_sorcery)
+    if filt == "artifact":
+        return bool(card.is_artifact)
+    if filt == "enchantment":
+        return bool(card.is_enchantment)
+    # Unrecognized filter word: fail closed (never apply) rather than guess.
+    return False
+
+
+def resolve_repeating_modal_trigger(state: GameState, strategy: Strategy, source: Permanent, cast_card: Card):
+    """Fires `source`'s own "whenever you cast a <filter> spell, choose one
+    that hasn't been chosen this turn" ability, if any, for `cast_card`
+    just having been cast. Only ever chooses among bullets NOT already
+    chosen THIS TURN by THIS permanent; if every resolvable bullet has
+    already fired this turn, correctly does nothing (matches the real
+    rule - no legal mode is left to choose), rather than either re-firing a
+    mode or silently falling back to a different one not actually offered
+    again. Same "only ever executes what _parse_semantic_actions already
+    recognizes" caution as resolve_modal_choice_actions - an unresolvable
+    bullet (e.g. one with a real opposing-permanent interaction this engine
+    has no model for) is simply never chosen, not guessed at."""
+    chosen_by_source = getattr(state, "modal_chosen_this_turn", None)
+    if chosen_by_source is None:
+        chosen_by_source = {}
+        state.modal_chosen_this_turn = chosen_by_source
+    for filt, bullets in _repeating_modal_blocks(source.card.oracle_text or ""):
+        if not _spell_matches_repeating_trigger_filter(cast_card, filt):
+            continue
+        chosen = chosen_by_source.setdefault(id(source), set())
+        candidates = []
+        for idx, bullet in enumerate(bullets):
+            if idx in chosen:
+                continue
+            acts = _parse_semantic_actions(bullet)
+            if acts:
+                candidates.append((idx, acts, _modal_bullet_score(acts)))
+        if not candidates:
+            continue
+        candidates.sort(key=lambda t: -t[2])
+        idx, acts, _score = candidates[0]
+        chosen.add(idx)
+        for act in acts:
+            execute_semantic_action(state, strategy, source, act)
+        record_impact(state, source.card.name, "repeating_modal_trigger", 1)
+        state.log(f"TRIGGER [repeating modal] {source.card.name}: {bullets[idx]}")
+
+
+def _strip_modal_bullet_lines(oracle_text: str) -> str:
+    """Remove every "•" bullet line that sits under a detected "Choose
+    one/two" header (whether or not THIS pass ends up resolving it), so the
+    OLDER per-line "blind" generic scanners inside resolve_direct_spell_effects'
+    base definition (fixed lifegain / Food-Treasure-Clue creation / opponent
+    life loss - each written before modal choice existed at all, and each
+    unconditional on any line that isn't itself gated behind "when "/
+    "whenever "/etc.) never see a bullet's own text at all. Without this, a
+    bullet whose text happens to match one of those blind patterns would
+    fire every time this card resolves, whether or not that mode was
+    (correctly) chosen this round - a real double-count for a chosen bullet
+    that resolve_modal_choice_actions ALSO executes, and a real "un-chosen
+    mode still happens anyway" bug for an unchosen one (e.g. Megaton's Fate's
+    "Destroy target artifact. Create four Treasure tokens." bullet, whether
+    or not "Disarm" is the mode actually picked). Non-bullet text, including
+    the header line itself, is left completely untouched."""
+    lines = split_oracle_lines(oracle_text or "")
+    drop = set()
+    i = 0
+    while i < len(lines):
+        header_low = strip_reminder_text(lines[i]).strip().lower()
+        if _MODAL_HEADER_RE.search(header_low) and "hasn't been chosen" not in header_low:
+            j = i + 1
+            while j < len(lines) and strip_reminder_text(lines[j]).strip().startswith("•"):
+                drop.add(j)
+                j += 1
+            i = j
+        else:
+            i += 1
+    if not drop:
+        return oracle_text or ""
+    return "\n".join(l for k, l in enumerate(lines) if k not in drop)
+
+
+_V4800_resolve_direct_spell_effects_old = resolve_direct_spell_effects
+def resolve_direct_spell_effects(state: GameState, strategy: Strategy, card: Card):
+    """v4.80.0: generic modal choice for instant/sorcery spells (any "Choose
+    one/two -" header anywhere in the spell's own text - an instant/sorcery
+    has no separate activated-ability text mixed in to accidentally catch).
+    Cards with their own DEDICATED_RESOLVERS entry are skipped outright -
+    trusted to already handle (or intentionally not handle) their own modal
+    logic, same guard every other generic pass in this file respects."""
+    if not (card.is_instant or card.is_sorcery) or has_dedicated_resolver(card):
+        _V4800_resolve_direct_spell_effects_old(state, strategy, card)
+        return
+    modal_actions = resolve_modal_choice_actions(card.oracle_text)
+    sanitized = _strip_modal_bullet_lines(card.oracle_text)
+    card_for_old = card if sanitized == card.oracle_text else replace(card, oracle_text=sanitized)
+    _V4800_resolve_direct_spell_effects_old(state, strategy, card_for_old)
+    for action in modal_actions:
+        execute_semantic_action(state, strategy, None, action)
+
+
+_V4800_own_etb_effects_old = own_etb_effects
+def own_etb_effects(state: GameState, strategy: Strategy, p: Permanent):
+    """v4.80.0: generic modal choice for a permanent's OWN "When ~ enters,
+    choose one -" trigger (White Widow, Free Agent-shaped). Deliberately
+    restricted to an ETB-shaped header (starts with when/whenever and
+    mentions "enters") - own_etb_effects only ever runs for the permanent
+    that just entered, so an unrelated modal ACTIVATED ability elsewhere in
+    the same card's text (a different cost/timing entirely, not yet paid at
+    ETB time) must never be swept in here."""
+    _V4800_own_etb_effects_old(state, strategy, p)
+    if has_dedicated_resolver(p.card):
+        return
+    for action in resolve_modal_choice_actions(
+        p.card.oracle_text,
+        header_ok=lambda low: low.startswith(("when ", "whenever ")) and "enters" in low,
+    ):
+        execute_semantic_action(state, strategy, p, action)
+
+
+def modal_choice_note(card: Card) -> str:
+    if has_dedicated_resolver(card):
+        return ""
+    header_ok = None if (card.is_instant or card.is_sorcery) else (
+        lambda low: low.startswith(("when ", "whenever ")) and "enters" in low
+    )
+    if not resolve_modal_choice_actions(card.oracle_text, header_ok=header_ok):
+        return ""
+    return "modal_choice:resolved (v4.80.0, simplified)"
+
+
+_REGISTRY_NOTE_FUNCS.append(modal_choice_note)
+
+
+_V4760_card_model_coverage_rows_old = card_model_coverage_rows
+def card_model_coverage_rows(deck: List[Card], *args, **kwargs) -> List[dict]:
+    rows = _V4760_card_model_coverage_rows_old(deck, *args, **kwargs)
+    by_name = {c.name: c for c in deck}
+    for row in rows:
+        card = by_name.get(row.get("Name"))
+        if card is None:
+            continue
+        note = registry_resolver_note(card)
+        if not note:
+            continue
+        row["Dedicated resolver"] = "yes"
+        prev = row.get("Dedicated resolver note") or ""
+        row["Dedicated resolver note"] = (prev + "; " if prev else "") + note
+    return rows
+
+
+# ---------------------------------------------------------------------------
+# v4.76.0 WP4: model-gap diagnostic (model_gaps.json + summary["model_gaps"]).
+#
+# The Lathril run showed the problem: its Craterhoof/Finale/elf-mana engine was
+# not (or only partly) executed, and the analysis still presented clean-looking
+# win/loss numbers with no hint that the deck's own key cards never did
+# anything. This check lists KEY cards (commander; finisher/engine/ramp/tutor/
+# token roles; cards named in a configured win condition) that were
+#   * seen often but never cast (e.g. an X spell the engine can't evaluate), or
+#   * cast repeatedly with (almost) no modeled effect while their Oracle text
+#     contains abilities the parser only marks for review.
+# Reactive cards (interaction/protection/board wipes) are excluded: holding
+# them in goldfish is intended. Pure diagnostic -- no simulation behavior is
+# affected. Thresholds are first estimates, disclosed in the output.
+# ---------------------------------------------------------------------------
+_MODEL_GAP_KEY_ROLES = {"finisher", "engine", "ramp", "tutor", "draw_engine", "token"}
+_MODEL_GAP_REACTIVE_ROLES = {"interaction", "protection", "boardwipe"}
+MODEL_GAP_THRESHOLDS = {
+    "min_seen_share_never_cast": 0.05,     # seen in >= 5 % of games ...
+    "min_seen_never_cast": 10,             # ... and at least 10 times, never cast
+    "min_casts_no_effect": 5,              # cast >= 5 times ...
+    "max_value_per_cast_no_effect": 0.5,   # ... with < 0.5 mana-equivalents of modeled value per cast
+}
+
+
+def _scenario_card_names(strategy) -> Set[str]:
+    names: Set[str] = set()
+    for sc in (getattr(strategy, "scenarios", None) or []):
+        if not sc.get("enabled", True):
+            continue
+        for r in sc.get("requirements", []) or []:
+            if r.get("card"):
+                names.add(r["card"])
+        for pk in (sc.get("packages", []) or []):
+            for m in (pk.get("members", []) or []):
+                names.add(m.get("card") if isinstance(m, dict) else m)
+    return {n for n in names if n}
+
+
+def compute_model_gaps(deck: List[Card], impact_rows: List[dict], coverage_rows: List[dict],
+                       runs: int, strategy=None) -> List[dict]:
+    th = MODEL_GAP_THRESHOLDS
+    by_card = {c.name: c for c in deck}
+    cov = {r.get("Name"): r for r in coverage_rows}
+    wc_cards = _scenario_card_names(strategy)
+    out = []
+    for row in impact_rows:
+        name = row.get("Name")
+        card = by_card.get(name)
+        if card is None or card.is_land:
+            continue
+        roles = set(card.roles or set())
+        key = bool(card.commander) or bool(roles & _MODEL_GAP_KEY_ROLES) or name in wc_cards
+        if not key or (roles and roles <= _MODEL_GAP_REACTIVE_ROLES):
+            continue
+        seen = float(row.get("Seen", 0) or 0)
+        cast = float(row.get("Cast", 0) or 0)
+        vpc = float(row.get("Estimated value / cast", 0) or 0)
+        c = cov.get(name, {})
+        mix = str(c.get("Semantic execution mix", ""))
+        dedicated = str(c.get("Dedicated resolver", "no")) == "yes"
+        reason = detail = None
+        if cast == 0 and seen >= max(th["min_seen_never_cast"], th["min_seen_share_never_cast"] * runs):
+            reason = "never_cast"
+            detail = (f"seen {int(seen)}x in {runs} games, never cast -- the engine found no castable/"
+                      f"valuable line for it (e.g. unsupported X spell or cost)")
+        elif (cast >= th["min_casts_no_effect"] and vpc < th["max_value_per_cast_no_effect"]
+              and "review" in mix and not dedicated):
+            reason = "no_modeled_effect"
+            detail = (f"cast {int(cast)}x, modeled value {vpc:.2f}/cast; ability text only marked for review "
+                      f"({mix}) -- its real effect is (mostly) missing from the simulation")
+        if reason:
+            out.append({
+                "name": name, "reason": reason, "detail": detail,
+                "seen": int(seen), "cast": int(cast), "value_per_cast": round(vpc, 3),
+                "roles": sorted(roles), "commander": bool(card.commander),
+                "in_win_condition": name in wc_cards,
+            })
+    out.sort(key=lambda g: (not g["commander"], not g["in_win_condition"], "finisher" not in g["roles"], -g["seen"]))
+    return out
+
+
+_V4760_pipeline_old = run_pipeline_v440
+def run_pipeline_v440(*args, **kwargs):
+    result = _V4760_pipeline_old(*args, **kwargs)
+    try:
+        summary = result.get("summary") or {}
+        deck = result.get("deck") or []
+        runs = int((summary.get("simulation") or {}).get("runs", 0) or 0)
+        gaps = compute_model_gaps(deck, result.get("impact_rows") or [], card_model_coverage_rows(deck),
+                                  runs, result.get("strategy"))
+        total = len(gaps)
+        gaps = gaps[:12]
+        summary["model_gaps"] = gaps
+        summary["model_gaps_total"] = total
+        summary["model_gap_thresholds"] = dict(MODEL_GAP_THRESHOLDS)
+        result_dir = Path(result["result_dir"])
+        (result_dir / "model_gaps.json").write_text(
+            json.dumps({"thresholds": MODEL_GAP_THRESHOLDS, "total": total, "gaps": gaps}, ensure_ascii=False, indent=2),
+            encoding="utf-8")
+        # keep summary.json on disk in sync (the web UI reads recorded runs from it)
+        sp = result_dir / "summary.json"
+        if sp.exists():
+            data = json.loads(sp.read_text(encoding="utf-8"))
+            data["model_gaps"] = gaps
+            data["model_gaps_total"] = total
+            data["model_gap_thresholds"] = dict(MODEL_GAP_THRESHOLDS)
+            sp.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+        zp = result.get("zip_path")
+        if zp:
+            import zipfile as _zf
+            with _zf.ZipFile(zp, "w", compression=_zf.ZIP_DEFLATED) as zf:
+                for f in result_dir.rglob("*"):
+                    if f.is_file():
+                        zf.write(f, arcname=f.relative_to(result_dir))
+    except Exception as exc:  # diagnostics must never break result delivery
+        try:
+            (Path(result["result_dir"]) / "model_gaps_error.txt").write_text(repr(exc), encoding="utf-8")
+        except Exception:
+            pass
+    return result
+
+
+# ---------------------------------------------------------------------------
+# v4.77.0 WP-A: deck-wide play style (App/combat_model/playstyle.py, weights:
+# combat_interaction_weights.json -> "playstyle"; the block-side half lives
+# in combat_model/defense.py, already threaded through strategy.playstyle
+# there -- see apply_playstyle_override above run_pipeline_v440). Additive
+# outer wrapper around attack_phase: BEFORE delegating to the existing,
+# UNMODIFIED attack decision logic, it holds back "weak" ordinary creatures
+# (below the attacker_selection strength bar, and only when this isn't an
+# alpha-strike turn) using the exact same pre-tap/hide trick
+# scenario_preserve_untapped (top of the base attack_phase) and the WP3
+# token-group wrapper directly below it already use. Nothing about the
+# wrapped function's own logic is touched -- playstyle=={} (the default)
+# takes the fast path below and is byte-identical to pre-v4.77.0 behavior.
+# ---------------------------------------------------------------------------
+try:
+    from App.combat_model import playstyle as combat_playstyle
+except ImportError:
+    from combat_model import playstyle as combat_playstyle
+
+
+def _v477_ordinary_attack_candidates(state: GameState):
+    """Untapped, attack-eligible, NON-gated permanents -- the exact same
+    filter as attack_phase's own `candidate_creatures`/`always_attack` split
+    (commander_posture._ENGINE_ROLES via combat_playstyle.is_gated),
+    duplicated read-only here so this stays a purely additive wrapper
+    around the unmodified original attack_phase."""
+    out = []
+    for p in state.creatures():
+        if p.tapped or combat_playstyle.is_gated(p):
+            continue
+        kws = effective_keywords_in_state(p, state)
+        if "defender" in kws:
+            continue
+        if p.entered_turn == state.turn and "haste" not in kws:
+            continue
+        power = creature_power(p, state)
+        if power <= 0:
+            continue
+        out.append((p, kws, power, set(p.card.roles or set())))
+    return out
+
+
+def _v477_token_attack_candidates(state: GameState):
+    """Same eligibility filter as attack_phase's token-group loop; token
+    groups have no commander/engine-role gate in the original (only
+    permanents can be tagged that way), so every eligible group is in
+    scope for playstyle. `power` is PER TOKEN (token_group_power + the flat
+    team bonus, matching how the original scales it by g.count only when
+    actually committing) -- what attacker_strength_threshold compares
+    against, same scale as a single permanent's power."""
+    out = []
+    global_kws = team_modifier_keywords(state)
+    global_bonus = team_modifier_bonus(state)
+    for g in state.creature_tokens:
+        kws = set(g.keywords) | global_kws
+        if g.count <= 0 or (g.entered_turn == state.turn and "haste" not in kws):
+            continue
+        if getattr(g, "_tapped_for_cost_turn", None) == state.turn:
+            continue
+        power = token_group_power(g, state) + global_bonus
+        if power <= 0:
+            continue
+        out.append((g, kws, power, set()))
+    return out
+
+
+def _v477_gated_attack_power(state: GameState) -> float:
+    """Potential power of commander/engine-role creatures that COULD attack
+    this turn (commander_posture -- unaffected by playstyle -- decides
+    whether each actually does), counted toward the alpha-strike check
+    below so a lethal swing leaning on the commander is never missed just
+    because playstyle doesn't itself control that creature."""
+    total = 0.0
+    for p in state.creatures():
+        if p.tapped or not combat_playstyle.is_gated(p):
+            continue
+        kws = effective_keywords_in_state(p, state)
+        if "defender" in kws or (p.entered_turn == state.turn and "haste" not in kws):
+            continue
+        total += creature_power(p, state)
+    return total
+
+
+_V477_attack_phase_old = attack_phase
+def attack_phase(state: GameState, strategy: Strategy, rng: Optional[random.Random] = None):
+    ps = combat_playstyle.get(strategy)
+    if ps["aggression"] >= 100.0 and ps["attacker_selection"] >= 100.0:
+        # Default sliders: nothing is ever held back -- skip straight to the
+        # unmodified original (byte-identical pre-v4.77.0 behavior, and no
+        # extra board scan on the common case of a deck with no playstyle
+        # configured at all).
+        return _V477_attack_phase_old(state, strategy, rng)
+    if rng is None:
+        rng = random.Random()
+
+    ordinary = _v477_ordinary_attack_candidates(state)
+    tokens = _v477_token_attack_candidates(state)
+    alpha_strike = team_modifier_bonus(state) > 0
+    if not alpha_strike and state.opponents:
+        total_power = (
+            sum(power for _, _, power, _ in ordinary)
+            + sum(power * g.count for g, _, power, _ in tokens)
+            + _v477_gated_attack_power(state)
+        )
+        alpha_strike = total_power >= min(state.opponents)
+
+    held_permanents = []
+    for p, kws, power, roles in ordinary:
+        if not combat_playstyle.should_ordinary_creature_attack(rng, ps, power, kws, roles, alpha_strike):
+            p.tapped = True
+            held_permanents.append(p)
+
+    held_groups = []
+    for g, kws, power, roles in tokens:
+        if not combat_playstyle.should_ordinary_creature_attack(rng, ps, power, kws, roles, alpha_strike):
+            held_groups.append(g)
+    if held_groups:
+        state.creature_tokens[:] = [g for g in state.creature_tokens if g not in held_groups]
+
+    try:
+        return _V477_attack_phase_old(state, strategy, rng)
+    finally:
+        for p in held_permanents:
+            if p in state.battlefield:
+                p.tapped = False
+        if held_groups:
+            state.creature_tokens.extend(held_groups)
+
+
+_V477_summary_old = streaming_summary_v440
+def streaming_summary_v440(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy) -> dict:
+    data = _V477_summary_old(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy)
+    data.setdefault("simulation", {})["playstyle"] = combat_playstyle.get(strategy)
+    return data
+
+
+# ---------------------------------------------------------------------------
+# v4.77.0 WP-B: connect the advanced multi-seat opponent model's own board
+# state to the block rate our OWN attacks face.
+#
+# Diagnosis: `query_combat_state` (App/opponent_model/state_equation.py) has
+# existed since v4.38.0 and was never called from anywhere. Worse, the block
+# rate for our attacks (attack_phase -> combat_interaction.
+# resolve_combat_interaction) always used strategy.opponent_profile as the
+# lookup key into Data/Models/combat_interaction_weights.json -> "profiles"
+# -- but with advanced_opponent_model on, opponent_profile is typically
+# "random"/"?" (the web UI's own default), which is NOT a registered key
+# there (only goldfish/aggro/midrange/control/horde are). _profile_weights
+# silently fell back to "goldfish" (block_rate_base 0.0) in that case, so
+# our attacks were NEVER blocked at all in the common advanced+random
+# configuration -- independent of, and in addition to, the "always the
+# random RUN profile, never the actual seats" gap already disclosed in
+# Docs/README.md when the web checkbox was first wired (v4.76.0).
+#
+# Fix, additive: a new attack_phase wrapper computes, from the SAME
+# per-seat table _apply_advanced_multi_opponent_phase already builds/grows
+# (_get_advanced_opponent_table), (a) a representative profile name -- the
+# most common actual seat strategy, a real "profiles" key -- and (b) a
+# combined block_chance_multiplier from query_combat_state(seat) averaged
+# across seats (this engine resolves one attacker against one abstract
+# opponent chosen AFTER blocking, so there is no per-seat "who defends this
+# attack" rule to allocate by -- an equal blend is the least-speculative
+# combination available, disclosed, not tuned to any outcome). Both are
+# threaded into a single call of combat_interaction.resolve_combat_
+# interaction via a temporary, restored scaling of that profile's
+# block_rate_base -- reusing block_rate_for's existing turn-ramp/wide-board/
+# evasion/commander-bias math unchanged, rather than duplicating it.
+# Non-advanced runs (the common case) take a fast, unmodified path.
+# ---------------------------------------------------------------------------
+_COMBAT_INTERACTION_PROFILE_KEYS = ("aggro", "midrange", "control", "horde")
+
+
+def _v477b_advanced_block_context(state: GameState, strategy: Strategy):
+    """(representative_profile_or_None, combined_block_chance_multiplier)."""
+    if not getattr(strategy, "advanced_opponent_model", False) or not getattr(strategy, "advanced_opponent_seats", None):
+        return None, 1.0
+    table = _get_advanced_opponent_table(state, strategy)
+    if not table:
+        return None, 1.0
+    strategies: List[str] = []
+    mults: List[float] = []
+    for profile, opp_state in table:
+        strat = getattr(profile, "strategy", None)
+        if strat in _COMBAT_INTERACTION_PROFILE_KEYS:
+            strategies.append(strat)
+        mults.append(_opp_model_query_combat(opp_state).block_chance_multiplier)
+    representative = max(set(strategies), key=strategies.count) if strategies else None
+    combined_mult = (sum(mults) / len(mults)) if mults else 1.0
+    return representative, combined_mult
+
+
+_V477B_attack_phase_old = attack_phase
+def attack_phase(state: GameState, strategy: Strategy, rng: Optional[random.Random] = None):
+    ctx = _v477b_advanced_block_context(state, strategy)
+    if ctx[0] is None and ctx[1] == 1.0:
+        return _V477B_attack_phase_old(state, strategy, rng)
+    state._v477b_block_context = ctx
+    try:
+        return _V477B_attack_phase_old(state, strategy, rng)
+    finally:
+        state._v477b_block_context = None
+
+
+_V477B_resolve_combat_interaction_old = combat_interaction.resolve_combat_interaction
+def _v477b_resolve_combat_interaction(profile_name, turn, attackers, rng, *, state=None):
+    ctx = getattr(state, "_v477b_block_context", None) if state is not None else None
+    if not ctx:
+        return _V477B_resolve_combat_interaction_old(profile_name, turn, attackers, rng, state=state)
+    representative, mult = ctx
+    effective_profile = representative or profile_name
+    profiles = combat_interaction._WEIGHTS.get("profiles", {})
+    entry = profiles.get(effective_profile)
+    if entry is None or mult == 1.0:
+        return _V477B_resolve_combat_interaction_old(effective_profile, turn, attackers, rng, state=state)
+    saved = dict(entry)
+    try:
+        entry["block_rate_base"] = min(1.0, float(entry.get("block_rate_base", 0.0)) * mult)
+        return _V477B_resolve_combat_interaction_old(effective_profile, turn, attackers, rng, state=state)
+    finally:
+        entry.clear()
+        entry.update(saved)
+
+
+combat_interaction.resolve_combat_interaction = _v477b_resolve_combat_interaction
+
+
+# ---------------------------------------------------------------------------
+# v4.81.0 "Runde 3": vollstaendige Keyword-Recherche + Proxy-Implementierungen.
+#
+# Kontext (siehe Docs/README.md v4.81.0 fuer die vollstaendige Keyword-
+# Datenbank/Uebersicht): der Nutzer hat explizit zurueckgewiesen, Amass,
+# Monarch, Support und City's Blessing/Ascend als "zu wenig ROI" dauerhaft
+# auszulassen - fuer ein Tool, das BELIEBIGE hochgeladene Decks pruefen soll,
+# muss ein etabliertes Keyword in irgendeiner (auch vereinfachten) Form
+# ausfuehrbar sein, statt nur erkannt und ignoriert zu werden. Dieser Block
+# liefert generische, namensunabhaengige Proxy-Resolver fuer neun Keyword-
+# Aktionen (Amass, Mill [echter Bugfix - siehe unten], Explore, Bolster,
+# Fabricate, Monstrosity, Populate, Support, Discover), fuer Monarch
+# (bewusst vereinfachte, befristete Variante statt eines unsimulierbaren
+# "bis eine gegnerische Kreatur trifft"-Flags) und fuer City's Blessing/
+# Ascend (Zustands-Flag + Hilfsfunktion; kartenspezifische Auszahlungen
+# bleiben - wie bei jedem anderen komplexen Karteneffekt - Sache eines
+# DEDICATED_RESOLVERS-Eintrags). Dazu ein neues wiederverwendbares
+# App/hand_evaluation-Modul (generalisiert discard_score fuer beliebige
+# "waehle Karte(n) aus der Hand"-Effekte) und dessen erster Verbraucher,
+# eine generische "Discard a card"/"Discard N cards"-EFFEKT-Aktion (bisher
+# nur als Kosten-Zahlung via Connive/Aktivierungskosten abgedeckt, siehe
+# Docs/README.md).
+# ---------------------------------------------------------------------------
+try:
+    from App import hand_evaluation as _hand_eval
+except ImportError:
+    import hand_evaluation as _hand_eval
+
+
+def choose_worst_hand_cards(state: GameState, count: int, *, exclude=None) -> List[Card]:
+    return _hand_eval.choose_worst_hand_cards(state, count, exclude=exclude)
+
+
+def amass(state: GameState, strategy: Strategy, subtype: str = "Zombie", n: int = 1,
+          source: str = "Amass") -> bool:
+    """Amass [Type] N: "Put N +1/+1 counters on an Army you control. If you
+    don't control one, create a 0/0 black Army creature token first." This
+    engine tracks tokens as an aggregate TokenGroup(power, toughness, count)
+    rather than individual Permanents with a counters field (see
+    TokenGroup), so - a disclosed simplification - an Army's counters are
+    folded directly into its tracked power/toughness instead of a separate
+    counter count. Any existing Army TokenGroup is grown in place
+    regardless of which Amass variant's extra creature subtype originally
+    created it (the real rule keys off the creature TYPE "Army" alone, not
+    the additional subtype some versions add) - only creates a new one if
+    none exists yet."""
+    if n <= 0:
+        return False
+    n_applied = n * 2 if state.has("Doubling Season") else n
+    group = next((g for g in state.creature_tokens if "army" in g.name.lower()), None)
+    if group is None:
+        group = TokenGroup(name=f"{subtype} Army", count=1, power=0.0, toughness=0.0,
+                            keywords=set(), entered_turn=state.turn)
+        state.creature_tokens.append(group)
+    group.power += n_applied
+    group.toughness += n_applied
+    record_impact(state, source, "amass_counters", n_applied)
+    state.log(f"AMASS ({source}): Army now {int(group.power)}/{int(group.toughness)}")
+    return True
+
+
+def mill_library(state: GameState, strategy: Strategy, n: int, *, target: str = "self",
+                  source: str = "Mill") -> int:
+    """Real library -> graveyard state mutation for "Mill N cards" effects -
+    fixes a real pre-existing gap: engine.py already tracked a "mill" VALUE
+    metric (x_effect_metrics/resolve_x_spell) but no code anywhere actually
+    moved a single card from library to graveyard. Only the SELF-mill case
+    is simulated: an opponent's library isn't modeled at all in this
+    goldfish-only engine (no opposing GameState exists to mill from), so
+    "target opponent mills..."/"each opponent mills..." intentionally stays
+    a documented no-op here - the same opposing-board scope boundary this
+    file already applies to Fight/Goad/real combat."""
+    if n <= 0 or target != "self":
+        return 0
+    n = min(int(n), len(state.library))
+    for _ in range(n):
+        state.graveyard.append(state.library.pop(0))
+    if n:
+        record_impact(state, source, "milled", n)
+        state.log(f"MILL ({source}): {n} card(s) library -> graveyard")
+    return n
+
+
+def explore(state: GameState, strategy: Strategy, p: Optional[Permanent],
+            source: str = "Explore") -> bool:
+    """Explore: reveal the top card of the library; a land goes to hand,
+    otherwise the exploring creature gets a +1/+1 counter and the revealed
+    card either stays on top or goes to the graveyard. Real Explore lets
+    the controller choose freely; this simulation applies a disclosed,
+    fixed heuristic instead of a full look-ahead: a nonland card worth
+    seeing again (a tutor/draw/engine/finisher role, or already castable
+    within +2 of the current land count) stays on top, everything else goes
+    to the graveyard - the same "protect high-value, dump the rest"
+    philosophy as discard_score/hand_card_score elsewhere in this project."""
+    if not state.library:
+        return False
+    revealed = state.library.pop(0)
+    if revealed.is_land:
+        state.hand.append(revealed)
+        record_impact(state, source, "explore_land_to_hand", 1)
+        state.log(f"EXPLORE ({source}): revealed land {revealed.name} -> hand")
+        return True
+    if p is not None:
+        p.counters += 2 if state.has("Doubling Season") else 1
+    keep_on_top = (
+        bool(revealed.roles & {"tutor", "draw", "draw_engine", "engine", "finisher"})
+        or revealed.min_cost <= len(state.lands()) + 2
+    )
+    if keep_on_top:
+        state.library.insert(0, revealed)
+        state.log(f"EXPLORE ({source}): +1/+1 counter, kept {revealed.name} on top")
+    else:
+        state.graveyard.append(revealed)
+        state.log(f"EXPLORE ({source}): +1/+1 counter, {revealed.name} -> graveyard")
+    record_impact(state, source, "explore_counters", 1)
+    return True
+
+
+def bolster(state: GameState, strategy: Strategy, n: int, source: str = "Bolster") -> bool:
+    """Bolster N: put N +1/+1 counters on the creature you control with the
+    least toughness (ties broken deterministically by current effective
+    toughness including counters already on it)."""
+    creatures = state.creatures()
+    if not creatures or n <= 0:
+        return False
+    n_applied = n * 2 if state.has("Doubling Season") else n
+    target = min(creatures, key=lambda p: (p.card.toughness or 0) + p.counters)
+    target.counters += n_applied
+    record_impact(state, source, "bolster_counters", n_applied)
+    state.log(f"BOLSTER ({source}): +{n_applied} on {target.card.name}")
+    return True
+
+
+def fabricate(state: GameState, strategy: Strategy, n: int, p: Optional[Permanent],
+              source: str = "Fabricate") -> bool:
+    """Fabricate N: real templating is a choice (N +1/+1 counters on this
+    creature, OR N 1/1 Servo tokens) - simplified to always choose counters
+    on the creature itself, a disclosed baseline rather than a genuine
+    value judgement between the two branches."""
+    if p is None or n <= 0:
+        return False
+    n_applied = n * 2 if state.has("Doubling Season") else n
+    p.counters += n_applied
+    record_impact(state, source, "fabricate_counters", n_applied)
+    state.log(f"FABRICATE ({source}): +{n_applied} on {p.card.name}")
+    return True
+
+
+def monstrosity(state: GameState, strategy: Strategy, n: int, p: Optional[Permanent],
+                source: str = "Monstrosity") -> bool:
+    """Monstrosity N: "If this creature isn't monstrous, put N +1/+1
+    counters on it and it becomes monstrous." Real rule is once-per-
+    permanent-lifetime; tracked via a named "monstrous" counter used purely
+    as a boolean flag (never displayed/scaled like a real counter count)."""
+    if p is None or n <= 0 or p.named_counters.get("monstrous", 0) > 0:
+        return False
+    n_applied = n * 2 if state.has("Doubling Season") else n
+    p.counters += n_applied
+    p.named_counters["monstrous"] = 1
+    record_impact(state, source, "monstrosity_counters", n_applied)
+    state.log(f"MONSTROSITY ({source}): +{n_applied} on {p.card.name}, now monstrous")
+    return True
+
+
+def populate(state: GameState, strategy: Strategy, source: str = "Populate") -> bool:
+    """Populate: create a token copy of a creature token you control.
+    Simplified target choice: the single existing creature TokenGroup with
+    the highest combined power+toughness (a disclosed "copy the best one"
+    default rather than genuine multi-token strategic judgement)."""
+    groups = [g for g in state.creature_tokens if g.count > 0]
+    if not groups:
+        return False
+    best = max(groups, key=lambda g: g.power + g.toughness)
+    n_applied = 2 if state.has("Doubling Season") else 1
+    best.count += n_applied
+    record_impact(state, source, "populate_tokens", n_applied)
+    state.log(f"POPULATE ({source}): +{n_applied} {best.name} token(s)")
+    return True
+
+
+def support(state: GameState, strategy: Strategy, n: int, source: str = "Support") -> bool:
+    """Support N: real templating puts exactly one +1/+1 counter on each of
+    up to N OTHER target creatures (controller's choice of targets, not
+    restricted to creatures you control). Simplified - no opposing board
+    exists in this engine - to spreading one counter each across up to N of
+    your own creatures, weakest-toughness first (the same priority Bolster
+    already uses, extended to multiple targets instead of just one)."""
+    creatures = state.creatures()
+    if not creatures or n <= 0:
+        return False
+    ordered = sorted(creatures, key=lambda p: (p.card.toughness or 0) + p.counters)
+    chosen = ordered[:int(n)]
+    per = 2 if state.has("Doubling Season") else 1
+    for p in chosen:
+        p.counters += per
+    if chosen:
+        record_impact(state, source, "support_counters", per * len(chosen))
+        state.log(f"SUPPORT ({source}): +1/+1 on {', '.join(p.card.name for p in chosen)}")
+    return bool(chosen)
+
+
+def discover(state: GameState, strategy: Strategy, n: int, source: str = "Discover") -> bool:
+    """Discover N: real rule exiles cards from the top of the library until
+    a nonland card with mana value less than N is found, then lets the
+    caster cast it for free OR put it into hand (everything skipped along
+    the way goes to the graveyard). This engine has no notion of "cast a
+    spell for free mid-search", so the simplified version always takes the
+    safer, always-legal branch: the first qualifying card goes straight to
+    hand instead, and everything skipped over is milled to the graveyard
+    exactly as the real rule already disposes of it - a disclosed
+    simplification of the free-cast branch only, not of the search itself."""
+    if n <= 0 or not state.library:
+        return False
+    skipped = []
+    found = None
+    for _ in range(len(state.library)):
+        c = state.library.pop(0)
+        if (not c.is_land) and c.min_cost < n:
+            found = c
+            break
+        skipped.append(c)
+    state.graveyard.extend(skipped)
+    if found is None:
+        return False
+    state.hand.append(found)
+    record_impact(state, source, "discover_hits", 1)
+    state.log(f"DISCOVER {int(n)} ({source}): found {found.name}, {len(skipped)} card(s) milled")
+    return True
+
+
+def become_monarch(state: GameState, strategy: Strategy, source: str = "Monarch") -> bool:
+    """"You become the monarch": real rule is a persistent designation lost
+    only when another player deals combat damage to the monarch -
+    unsimulable here (this engine has no opposing creatures/combat against
+    the player at all - the same scope boundary as Fight/Goad). Modeled
+    instead as a fixed, disclosed one-shot bonus: 2 extra card draws (this
+    end step and the next one), a deliberately bounded stand-in for a
+    plausibly short average monarch duration in a real multiplayer pod,
+    rather than an unbounded (and clearly too strong) infinite-draw
+    engine."""
+    state.monarch_draws_remaining = int(getattr(state, "monarch_draws_remaining", 0)) + 2
+    record_impact(state, source, "became_monarch", 1)
+    state.log(f"MONARCH ({source}): became the monarch (2 bonus draws modeled)")
+    return True
+
+
+def has_city_blessing(state: GameState) -> bool:
+    """Ascend / "the city's blessing": a real, permanent-once-earned
+    designation gained the moment a player controls 10+ permanents, kept
+    for the rest of the game even if that count later drops. Tracked here
+    as a monotonic GameState flag (see the end_step wrapper below, which
+    checks and latches it once per turn - that's sufficient for a flag that
+    can only ever turn on, never off). This function only exposes the flag
+    itself; a specific card's payoff text beyond "you have the city's
+    blessing" still needs its own DEDICATED_RESOLVERS entry, exactly like
+    any other bespoke card effect in this file."""
+    return bool(getattr(state, "has_city_blessing_flag", False))
+
+
+_V4810_end_step_old = end_step
+def end_step(state: GameState, strategy: Strategy):
+    """v4.81.0: (1) pays out any Monarch-modeled bonus draws still owed
+    (see become_monarch); (2) latches has_city_blessing_flag once 10+
+    permanents have been controlled at any end step (see
+    has_city_blessing)."""
+    remaining = int(getattr(state, "monarch_draws_remaining", 0))
+    if remaining > 0:
+        draw_cards(state, 1, draw_step=False, reason="monarch")
+        state.monarch_draws_remaining = remaining - 1
+    if not getattr(state, "has_city_blessing_flag", False) and len(state.battlefield) >= 10:
+        state.has_city_blessing_flag = True
+        state.log("ASCEND: you have the city's blessing")
+    _V4810_end_step_old(state, strategy)
+
+
+# ---------------------------------------------------------------------------
+# _parse_semantic_actions wrapper: recognizes the nine new keyword actions
+# above, plus a generic bare "discard a card"/"discard N cards" EFFECT
+# (never a cost - activation-cost discards are already captured separately
+# via SemanticAbility.discard_count, well before this function ever sees
+# that text) using the new App/hand_evaluation module. Every new pattern is
+# scoped to unambiguous, self-directed phrasing (no "target"/"opponent"/
+# "each player" qualifier) so a card that actually discards/mills an
+# opponent's hand/library - which this engine cannot simulate at all, same
+# as every other opposing-board interaction - is left exactly as
+# unresolved as it was before this wrapper, rather than silently
+# misapplied to the caster instead.
+# ---------------------------------------------------------------------------
+_V4810_parse_semantic_actions_old = _parse_semantic_actions
+def _parse_semantic_actions(effect: str) -> List[SemanticAction]:
+    actions = _V4810_parse_semantic_actions_old(effect)
+    low = strip_reminder_text(effect).lower()
+    self_directed = not any(w in low for w in ("target opponent", "each opponent", "target player", "that player", "each player"))
+
+    if not any(a.kind == "discard_hand" for a in actions) and self_directed:
+        m = re.search(r"\bdiscards? (a|an|one|two|three|four|five|\d+) cards?\b", low)
+        if m:
+            actions.append(SemanticAction(kind="discard_hand", amount=float(parse_number_token(m.group(1))), raw=effect))
+
+    if not any(a.kind == "mill" for a in actions) and self_directed:
+        m = re.search(r"\bmills? (a|an|one|two|three|four|five|\d+)\b", low)
+        if m:
+            actions.append(SemanticAction(kind="mill", amount=float(parse_number_token(m.group(1))), target="self", raw=effect))
+
+    if not any(a.kind == "amass" for a in actions):
+        m = re.search(r"\bamass\s+(?:([a-z]+)\s+)?(\d+)\b", low)
+        if m:
+            actions.append(SemanticAction(kind="amass", amount=float(m.group(2)),
+                                           token=(m.group(1) or "").capitalize(), raw=effect))
+
+    if not any(a.kind == "explore" for a in actions) and re.search(r"\bexplores?\b", low):
+        actions.append(SemanticAction(kind="explore", raw=effect))
+
+    if not any(a.kind == "bolster" for a in actions):
+        m = re.search(r"\bbolster (\d+)\b", low)
+        if m:
+            actions.append(SemanticAction(kind="bolster", amount=float(m.group(1)), raw=effect))
+
+    if not any(a.kind == "fabricate" for a in actions):
+        m = re.search(r"\bfabricate (\d+)\b", low)
+        if m:
+            actions.append(SemanticAction(kind="fabricate", amount=float(m.group(1)), raw=effect))
+
+    if not any(a.kind == "monstrosity" for a in actions):
+        m = re.search(r"\bmonstrosity (\d+)\b", low)
+        if m:
+            actions.append(SemanticAction(kind="monstrosity", amount=float(m.group(1)), raw=effect))
+
+    if not any(a.kind == "populate" for a in actions) and re.search(r"\bpopulate\b", low):
+        actions.append(SemanticAction(kind="populate", raw=effect))
+
+    if not any(a.kind == "support" for a in actions):
+        m = re.search(r"\bsupport (\d+)\b", low)
+        if m:
+            actions.append(SemanticAction(kind="support", amount=float(m.group(1)), raw=effect))
+
+    if not any(a.kind == "discover" for a in actions):
+        m = re.search(r"\bdiscover (\d+)\b", low)
+        if m:
+            actions.append(SemanticAction(kind="discover", amount=float(m.group(1)), raw=effect))
+
+    if not any(a.kind == "monarch" for a in actions) and re.search(r"\bbecomes? the monarch\b", low):
+        actions.append(SemanticAction(kind="monarch", raw=effect))
+
+    return actions
+
+
+# ---------------------------------------------------------------------------
+# v4.82.0 "Runde 4": farbabhaengiges Keyword-Kampfmodell.
+#
+# Nutzer-Idee (Docs/README.md v4.82.0): Keywords, die ohne echtes Gegner-Board
+# nicht direkt wirken koennen (Flying, Deathtouch, Reach, Menace, ...), werden
+# als Wahrscheinlichkeits-Verschiebungen bzw. (abklingende) Buffs/Debuffs auf
+# die bestehende abstrakte Kampf- und Gegnerfunktion abgebildet - gespeist aus
+# den echten Decklisten jeder Farbidentitaet (Data/Models/
+# color_keyword_profile.json, App/combat_model/keyword_effects.py):
+#   * eigene Angriffe: farbabhaengige Blockchance (Flying, Menace, Fear,
+#     Intimidate, Protection, Shadow, Horsemanship, Landwalk), Trample-
+#     Ueberschuss, Flanking/Bushido/Rampage, Afflict, Frenzy, Toxic, Exalted,
+#     Battle cry, Training, Mentor, Annihilator, Lifelink auch beim Block;
+#   * gegnerischer Druck: fliegender/Menace-/Deathtouch-/First-Strike-/
+#     Trample-Anteil nach Gegnerfarbe gegen eigene Reach/Flying/Deathtouch/
+#     First-Strike/Lifelink-Blocker (combat_model/defense.py);
+#   * "Deathtouch = Removal": jeder durch Deathtouch/Wither/Infect (oder
+#     Fight/Annihilator) getoetete Gegner-Angreifer ist Attrition - im
+#     Advanced-Modell sinkt board_presence des Sitzplatzes wie nach einem
+#     Removal (die Zustandsgleichung waechst von dort aus nach), bei einfachen
+#     Profilen (kein Gegner-Board) wirkt er als ABKLINGENDER Druck-Debuff auf
+#     die naechsten Gegnerrunden;
+#   * Goad/Detain: temporaere Druck-Unterdrueckung fuer genau eine Runde;
+#   * Shroud schuetzt jetzt wie Hexproof vor gegnerischem Removal, Protection
+#     from X (Advanced) vor dem Removal eines X-farbigen Sitzplatzes, Flash-
+#     Kreaturen weichen im Zug ihres Erscheinens Wipes/Removal aus.
+# "keyword_effects.enabled": false in combat_interaction_weights.json stellt
+# das Verhalten vor v4.82.0 bytegleich wieder her.
+# ---------------------------------------------------------------------------
+try:
+    from App.combat_model import keyword_effects as combat_keyword_effects
+except ImportError:
+    from combat_model import keyword_effects as combat_keyword_effects
+
+_KW_ACTIVE_SEAT_COLORS: Optional[Set[str]] = None
+
+
+def _kw_seat_colors(state: GameState, strategy: Strategy) -> Optional[List[Set[str]]]:
+    if getattr(strategy, "advanced_opponent_model", False) and getattr(strategy, "advanced_opponent_seats", None):
+        table = _get_advanced_opponent_table(state, strategy)
+        return [set(profile.colors) for profile, _opp in table] or None
+    return None
+
+
+def _kw_context_for(state: GameState, strategy: Strategy):
+    """KeywordCombatContext fuer die aktuellen Gegner, oder None (Modell aus
+    oder reines Goldfish ohne Gegner)."""
+    if not combat_keyword_effects.enabled():
+        return None
+    advanced = getattr(strategy, "advanced_opponent_model", False) and getattr(strategy, "advanced_opponent_seats", None)
+    if not advanced and getattr(strategy, "opponent_profile", "goldfish") == "goldfish":
+        return None
+    return combat_keyword_effects.build_context(_kw_seat_colors(state, strategy))
+
+
+def record_opponent_attrition(state: GameState, strategy: Strategy, rng: Optional[random.Random],
+                              kills: float, source: str = "") -> None:
+    """Ein (erwartungsgewichteter) Verlust gegnerischer Kreaturen durch eigene
+    Keyword-Effekte - 'die Wirkung eines Removals'. Advanced-Modell: senkt
+    board_presence eines Sitzplatzes (gewichtet nach dessen board_presence
+    gewaehlt; ohne rng der Sitzplatz mit der groessten Praesenz). Einfache
+    Profile: wird als abklingender Druck-Debuff vorgemerkt und in der naechsten
+    Gegnerrunde verrechnet (siehe apply_abstract_opponent_phase-Wrapper unten)."""
+    kills = float(kills or 0.0)
+    if kills <= 0:
+        return
+    state.kw_attrition_total = float(getattr(state, "kw_attrition_total", 0.0)) + kills
+    record_impact(state, source, "opponent_creatures_killed", kills)
+    seats = _kw_seat_colors(state, strategy)
+    if seats:
+        table = [t for t in _get_advanced_opponent_table(state, strategy) if t[1].board_presence > 0]
+        if not table:
+            return
+        if rng is not None:
+            total = sum(t[1].board_presence for t in table)
+            roll = rng.random() * total
+            acc = 0.0
+            chosen = table[-1]
+            for t in table:
+                acc += t[1].board_presence
+                if roll <= acc:
+                    chosen = t
+                    break
+        else:
+            chosen = max(table, key=lambda t: t[1].board_presence)
+        profile, opp_state = chosen
+        before = opp_state.board_presence
+        opp_state.board_presence = max(0.0, before - kills)
+        state.log(f"ATTRITION ({source}): {profile.strategy}/{''.join(sorted(profile.colors)) or 'C'} "
+                  f"board_presence {before:.2f} -> {opp_state.board_presence:.2f}")
+    else:
+        state.kw_kill_units = float(getattr(state, "kw_kill_units", 0.0)) + kills
+        state.log(f"ATTRITION ({source}): {kills:.2f} opposing creature(s) removed "
+                  f"(pressure debuff pending: {state.kw_kill_units:.2f})")
+
+
+def suppress_opponent_pressure(state: GameState, units: float, source: str = "") -> None:
+    """Goad/Detain: temporaere Unterdrueckung von `units` gegnerischen
+    Angreifern fuer GENAU die naechste Gegnerrunde (danach verfaellt sie)."""
+    if units <= 0:
+        return
+    state.kw_suppression_units = float(getattr(state, "kw_suppression_units", 0.0)) + float(units)
+    record_impact(state, source, "opponent_pressure_suppressed", units)
+    state.log(f"SUPPRESS ({source}): {units:g} opposing attacker(s) kept off us next round")
+
+
+def fight_opponent_creature(state: GameState, strategy: Strategy, fighter: Optional[Permanent],
+                            *, bite: bool = False, source: str = "Fight") -> bool:
+    """Fight / 'deals damage equal to its power to target creature' gegen eine
+    abstrakte gegnerische Kreatur mit der typischen Power/Toughness der
+    Gegnerfarbe(n). Kill-Wahrscheinlichkeit = eigene Power / typische
+    Toughness (Deathtouch = sicher), als Attrition gutgeschrieben; bei echtem
+    Fight (nicht 'bite') stirbt der eigene Kaempfer, wenn die typische
+    gegnerische Power seine Toughness erreicht (ausser indestructible)."""
+    ctx = _kw_context_for(state, strategy) or combat_keyword_effects.build_context(None)
+    if ctx is None or fighter is None or not fighter.card.is_creature:
+        return False
+    kws = effective_keywords_in_state(fighter, state)
+    power = float(creature_power(fighter, state))
+    if power <= 0:
+        return False
+    credit = 1.0 if "deathtouch" in kws else min(1.0, power / max(1.0, ctx.mean("mean_toughness", 3.0)))
+    record_opponent_attrition(state, strategy, getattr(state, "_current_opponent_rng", None), credit, source)
+    if not bite and "indestructible" not in kws:
+        toughness = float(fighter.card.toughness or 0) + (power - float(fighter.card.power or 0))
+        if ctx.mean("mean_power", 2.5) >= toughness:
+            move_permanent_to_zone(state, strategy, fighter, "graveyard", reason=f"died fighting ({source})")
+            record_impact(state, fighter.card.name, "died_fighting", 1)
+    return True
+
+
+def _kw_best_fighter(state: GameState, source: Optional[Permanent], raw: str) -> Optional[Permanent]:
+    low = strip_reminder_text(raw or "").lower()
+    if source is not None and source.card.is_creature and (
+        text_references_source(source.card, raw) or re.search(r"\b(it|this creature) fights\b", low)
+    ):
+        return source
+    creatures = state.creatures()
+    return max(creatures, key=lambda p: creature_power(p, state)) if creatures else None
+
+
+_V4820_parse_semantic_actions_old = _parse_semantic_actions
+def _parse_semantic_actions(effect: str) -> List[SemanticAction]:
+    actions = _V4820_parse_semantic_actions_old(effect)
+    low = strip_reminder_text(effect).lower()
+
+    def _count(text: str) -> float:
+        m = re.search(r"up to (one|two|three|four|five|\d+)", text)
+        return float(parse_number_token(m.group(1))) if m else 1.0
+
+    if not any(a.kind == "goad" for a in actions) and re.search(r"\bgoads?\b", low):
+        # amount: -1 = alle gegnerischen Kreaturen, -2 = alle Kreaturen EINES
+        # Spielers, sonst Anzahl einzeln gegoadeter Kreaturen.
+        if re.search(r"goad (?:each|all) creatures? (?:your opponents control|each opponent controls)", low):
+            amount = -1.0
+        elif re.search(r"goad (?:each|all) creatures?", low):
+            amount = -2.0
+        else:
+            amount = _count(low)
+        actions.append(SemanticAction(kind="goad", amount=amount, raw=effect))
+    if not any(a.kind == "detain" for a in actions) and re.search(r"\bdetains?\b", low):
+        actions.append(SemanticAction(kind="detain", amount=_count(low), raw=effect))
+    if not any(a.kind == "fight" for a in actions):
+        if re.search(r"\bfights?\b", low) and "you control" not in low.split("fight", 1)[-1][:40].replace("you don't control", ""):
+            actions.append(SemanticAction(kind="fight", raw=effect))
+        elif re.search(r"deals? damage equal to (?:its|their) power to (?:another |up to one )?target creature", low) \
+                and "you control" not in low.split("power to", 1)[-1][:60].replace("you don't control", ""):
+            actions.append(SemanticAction(kind="fight", token="bite", raw=effect))
+    return actions
+
+
+# --- eigene Angriffe: Vor-/Nachverarbeitung um resolve_combat_interaction ---
+_V4820_resolve_combat_interaction_old = combat_interaction.resolve_combat_interaction
+def _v4820_resolve_combat_interaction(profile_name, turn, attackers, rng, *, state=None):
+    strategy = getattr(state, "_kw_strategy", None) if state is not None else None
+    ctx = _kw_context_for(state, strategy) if (state is not None and strategy is not None) else None
+    if ctx is None:
+        return _V4820_resolve_combat_interaction_old(profile_name, turn, attackers, rng, state=state)
+    kwe = combat_keyword_effects
+    for a in attackers:
+        if a.source_kind == "permanent" and a.source_ref is not None:
+            a.colors = set(getattr(a.source_ref.card, "color_identity", set()) or set())
+            a.combat_extras = dict(kwe.parse_combat_keywords(a.source_ref.card.oracle_text or ""))
+    # Exalted: greift genau EINE Kreatur allein an, +1/+1 je Exalted-Instanz.
+    exalted = sum(int(kwe.parse_combat_keywords(p.card.oracle_text or "").get("exalted", 0)) for p in state.battlefield)
+    if exalted and len(attackers) == 1 and float(attackers[0].attack_weight) <= 1.0:
+        attackers[0].power += exalted
+        state.log(f"EXALTED: {attackers[0].name} +{exalted}/+{exalted} attacking alone")
+    # Battle cry: jeder andere Angreifer +1/+0 je Battle-cry-Angreifer.
+    cries = [a for a in attackers if a.combat_extras.get("battle cry")]
+    if cries:
+        for a in attackers:
+            others = sum(int(c.combat_extras["battle cry"]) for c in cries if c is not a)
+            if others:
+                a.power += others * float(a.attack_weight or 1.0)
+    state._kw_combat_ctx = ctx
+    try:
+        outcomes = _V4820_resolve_combat_interaction_old(profile_name, turn, attackers, rng, state=state)
+    finally:
+        state._kw_combat_ctx = None
+    kills = 0.0
+    for a, o in zip(attackers, outcomes):
+        ex = a.combat_extras or {}
+        if ex.get("annihilator"):
+            kills += float(ex["annihilator"]) * float(kwe._kw_weights().get("annihilator_creature_share", 0.5))
+        if o.blocked:
+            kills += kwe.attrition_credit(a.keywords, a.power, ctx)
+            if ex.get("afflict"):
+                lose_target_opponent(state, float(ex["afflict"]), f"{a.name} afflict")
+            if a.lifelink:
+                blocker_part = max(0.0, float(a.power) - float(o.damage_dealt))
+                if blocker_part > 0:
+                    gain_life(state, blocker_part, f"{a.name} lifelink (blocked)")
+        elif ex.get("frenzy"):
+            o.damage_dealt += float(ex["frenzy"])
+            if a.lifelink:
+                o.lifelink_gain += float(ex["frenzy"])
+        if ex.get("toxic") and o.damage_dealt > 0 and state.opponents:
+            i = _combat_damage_target_index(state)
+            state.poison_counters[i] += int(ex["toxic"])
+            record_impact(state, a.name, "poison_counters", float(ex["toxic"]))
+            if state.poison_counters[i] >= 10:
+                state.opponents[i] = 0.0
+                state.log(f"POISON: opponent {i} reached {state.poison_counters[i]} poison counters (toxic)")
+    # Training / Mentor: +1/+1-Counter auf echten Permanents.
+    perm_attackers = [a for a in attackers if a.source_kind == "permanent" and a.source_ref is not None]
+    per = 2 if state.has("Doubling Season") else 1
+    for a in perm_attackers:
+        ex = a.combat_extras or {}
+        if ex.get("training") and any(b.power > a.power for b in attackers if b is not a):
+            a.source_ref.counters += per
+            state.log(f"TRAINING: {a.name} +{per} counter")
+        if ex.get("mentor"):
+            smaller = [b for b in perm_attackers if b is not a and b.power < a.power]
+            if smaller:
+                tgt = max(smaller, key=lambda b: b.power)
+                tgt.source_ref.counters += per
+                state.log(f"MENTOR: {a.name} -> +{per} counter on {tgt.name}")
+    if kills > 0:
+        record_opponent_attrition(state, strategy, rng, kills, "combat (deathtouch/wither/infect/annihilator)")
+    return outcomes
+
+
+combat_interaction.resolve_combat_interaction = _v4820_resolve_combat_interaction
+
+_V4820_attack_phase_old = attack_phase
+def attack_phase(state: GameState, strategy: Strategy, rng: Optional[random.Random] = None):
+    state._kw_strategy = strategy
+    try:
+        return _V4820_attack_phase_old(state, strategy, rng)
+    finally:
+        state._kw_strategy = None
+
+
+# --- gegnerische Runde: Defense-Kontext, Sitzplatz-Farben, Debuff-Verrechnung ---
+_V4820_opp_model_advance_old = _opp_model_advance
+def _opp_model_advance(opp_state, profile, rng, **kwargs):
+    global _KW_ACTIVE_SEAT_COLORS
+    _KW_ACTIVE_SEAT_COLORS = set(getattr(profile, "colors", set()) or set())
+    return _V4820_opp_model_advance_old(opp_state, profile, rng, **kwargs)
+
+
+_V4820_apply_opponent_old = apply_abstract_opponent_phase
+def apply_abstract_opponent_phase(state: GameState, strategy: Strategy, rng: random.Random):
+    global _KW_ACTIVE_SEAT_COLORS
+    ctx = _kw_context_for(state, strategy)
+    if ctx is None:
+        return _V4820_apply_opponent_old(state, strategy, rng)
+    advanced = bool(_kw_seat_colors(state, strategy))
+    pending_kills = 0.0 if advanced else float(getattr(state, "kw_kill_units", 0.0))
+    suppression = float(getattr(state, "kw_suppression_units", 0.0))
+    dmg_before = float(state.damage_taken)
+    lost_before = state.lost_turn
+    state._kw_defense_ctx = ctx
+    try:
+        _V4820_apply_opponent_old(state, strategy, rng)
+    finally:
+        state._kw_defense_ctx = None
+        _KW_ACTIVE_SEAT_COLORS = None
+    dealt = float(state.damage_taken) - dmg_before
+    units = pending_kills + suppression
+    if dealt > 0 and units > 0:
+        if advanced:
+            unit_damage = _ADVANCED_OPPONENT_COMBAT_DAMAGE_PER_BOARD_UNIT
+        else:
+            powers = combat_defense._defense_weights().get("avg_attacker_power", {})
+            unit_damage = float(powers.get(strategy.opponent_profile, powers.get("midrange", 4.0)))
+        refund = min(dealt, units * unit_damage)
+        state.life += refund
+        state.damage_taken -= refund
+        state.kw_pressure_refunded = float(getattr(state, "kw_pressure_refunded", 0.0)) + refund
+        state.log(f"KEYWORD DEBUFF: {units:.2f} opposing attacker(s) missing -> {refund:.1f} damage not dealt")
+        if lost_before is None and state.lost_turn == state.turn and state.life > 0:
+            state.lost_turn = None
+    state.kw_suppression_units = 0.0
+    if not advanced:
+        new_kills = float(getattr(state, "kw_kill_units", 0.0)) - pending_kills
+        kw = combat_keyword_effects._kw_weights()
+        h = float(kw.get("attrition_decay_half_life_turns", 1.0))
+        carried = pending_kills * (0.5 ** (1.0 / h)) if h > 0 else 0.0
+        if carried < float(kw.get("attrition_min_units", 0.05)):
+            carried = 0.0
+        state.kw_kill_units = carried + max(0.0, new_kills)
+
+
+# --- Shroud wie Hexproof; Protection from X gegen einen X-farbigen Sitzplatz ---
+_V4820_effective_keywords_in_state_old = effective_keywords_in_state
+def effective_keywords_in_state(p: Permanent, state: GameState) -> Set[str]:
+    out = _V4820_effective_keywords_in_state_old(p, state)
+    if not combat_keyword_effects.enabled():
+        return out
+    if "shroud" in out:
+        out.add("hexproof")
+    if _KW_ACTIVE_SEAT_COLORS and "hexproof" not in out:
+        prot = combat_keyword_effects.parse_combat_keywords(p.card.oracle_text or "").get("protection_from") or set()
+        if "*" in prot:
+            out.add("hexproof")
+        elif prot:
+            row = combat_keyword_effects.identity_row(_KW_ACTIVE_SEAT_COLORS)
+            thr = float(combat_keyword_effects._kw_weights().get("protection_removal_share_threshold", 0.5))
+            if any(c in _KW_ACTIVE_SEAT_COLORS and float(row.get(f"spell_color_{c}", 0.0)) >= thr for c in prot):
+                out.add("hexproof")
+    return out
+
+
+# --- Flash: im Zug des Erscheinens gegnerischem Removal/Wipe ausweichen ------
+def _kw_flash_dodges(state: GameState, p: Permanent) -> bool:
+    return (
+        combat_keyword_effects.enabled()
+        and p.card.is_creature
+        and "flash" in {str(k).lower() for k in (p.card.keywords or set())}
+        and p.entered_turn == state.turn
+    )
+
+
+_V4820_choose_removal_target_old = combat_importance.choose_removal_target
+def _v4820_choose_removal_target(ops, state, strategy, targets, rng):
+    targets = list(targets)
+    kept = [t for t in targets if not _kw_flash_dodges(state, t)]
+    return _V4820_choose_removal_target_old(ops, state, strategy, kept or targets, rng)
+
+
+combat_importance.choose_removal_target = _v4820_choose_removal_target
+
+_V4820_move_permanent_to_zone_old = move_permanent_to_zone
+def move_permanent_to_zone(state: GameState, strategy: Strategy, permanent: Permanent, destination: str, *,
+                           reason: str = "", rng: Optional[random.Random] = None):
+    if "boardwipe" in (reason or "") and _kw_flash_dodges(state, permanent):
+        state.log(f"FLASH: {permanent.card.name} was held back and dodged the {reason}")
+        record_impact(state, permanent.card.name, "flash_dodged_wipe", 1)
+        return
+    return _V4820_move_permanent_to_zone_old(state, strategy, permanent, destination, reason=reason, rng=rng)
+
+
+# ===========================================================================
+# v4.83.0 "Siegquoten-Debug" (Docs/README.md v4.83.0).
+#
+# Befund (Nutzer: drei Testdecks, 0 % Siege; Erwartung ~25 % bei Decks in
+# Trainingsdaten-Guete). Ein eigener Benchmark mit 40 ECHTEN EDHREC-
+# Trainingsdecks gegen denselben Tisch ergab 0,6 % Siege und ~6 Schaden
+# pro Partie gegen die Gegner (bei ~40 erlittenem) - das Problem lag also
+# nicht an den Testdecks, sondern systemisch in der Engine:
+#   (1) Tisch-Asymmetrie: Gegner-Sitze griffen nur den Spieler an, nie
+#       einander; niemand ausser dem Spieler konnte einen Gegner toeten;
+#       tote Gegner handelten weiter; Interaktion/Wipes der Sitze wurden nie
+#       verbraucht; Wipes trafen nur das Brett des Spielers.
+#   (2) Ausgeloeste Faehigkeiten ("Whenever you cast ...", "Whenever another
+#       creature enters ...", Landfall, Upkeep/Endschritt, Tod, Kampfschaden
+#       ...) wurden zwar als 'exact' geparst, aber von keinem generischen
+#       Dispatcher ausgefuehrt.
+#   (3) Erreichte Win-Condition-Szenarien wurden nie ausgefuehrt.
+#   (4) Eigene Removal/Wipes/Counterspells wurden nie gewirkt.
+#   (5) Schaden wurde auf den Gegner mit dem MEISTEN Leben verteilt.
+# Alles additiv und per Data/Models/table_dynamics.json abschaltbar.
+# ===========================================================================
+try:
+    from App import trigger_bus as _TB
+except ImportError:  # pragma: no cover - bare-module fallback like the other packages
+    import trigger_bus as _TB
+
+_TD_PATH = Path(__file__).resolve().parent.parent / "Data" / "Models" / "table_dynamics.json"
+
+
+def _load_table_dynamics() -> dict:
+    try:
+        return json.loads(_TD_PATH.read_text(encoding="utf-8"))
+    except Exception:
+        return {"enabled": False}
+
+
+TABLE_DYNAMICS = _load_table_dynamics()
+
+
+def _td(key: str, default=None, section: Optional[str] = None):
+    src = TABLE_DYNAMICS.get(section, {}) if section else TABLE_DYNAMICS
+    if not isinstance(src, dict):
+        return default
+    return src.get(key, default)
+
+
+def _td_on(section: Optional[str] = None) -> bool:
+    if not TABLE_DYNAMICS.get("enabled", False):
+        return False
+    if section is None:
+        return True
+    return bool(_td("enabled", True, section))
+
+
+def _advanced_active(strategy) -> bool:
+    return bool(getattr(strategy, "advanced_opponent_model", False)) and \
+        getattr(strategy, "opponent_profile", "goldfish") != "goldfish"
+
+
+def _alive_opponent_indices(state: GameState) -> List[int]:
+    return [i for i, x in enumerate(state.opponents) if x > 0]
+
+
+def _combat_damage_target_index(state: GameState) -> int:
+    """v4.83.0: Zielwahl fuer Kampfschaden und 'target opponent'-Effekte.
+    Fokus-Modus (Advanced-Tisch): waehrend eines eigenen Kampfs der dafuer
+    gewaehlte Sitz (_attack_target_seat, siehe _choose_attack_target_seat),
+    sonst der lebende Gegner mit dem NIEDRIGSTEN Leben (Gegner ausschalten
+    statt Schaden verschmieren). Ohne Fokus altes Verhalten (hoechstes Leben)."""
+    if not state.opponents:
+        return 0
+    alive = _alive_opponent_indices(state) or list(range(len(state.opponents)))
+    if getattr(state, "_focus_targeting", False):
+        seat = getattr(state, "_attack_target_seat", None)
+        if seat is not None and seat in alive:
+            return seat
+        return min(alive, key=lambda j: state.opponents[j])
+    return max(range(len(state.opponents)), key=lambda j: state.opponents[j])
+
+
+_V4830_lose_target_opponent_old = lose_target_opponent
+
+
+def lose_target_opponent(state: GameState, amount: float, source: str = ""):
+    if amount <= 0 or not state.opponents:
+        return
+    i = _combat_damage_target_index(state)
+    actual = min(state.opponents[i], amount)
+    state.opponents[i] = max(0.0, state.opponents[i] - amount)
+    record_impact(state, source, "opponent_life_loss", actual)
+    if source:
+        state.log(f"{source}: target opponent -{amount:g}")
+    check_win(state)
+
+
+def _player_board_units(state: GameState) -> float:
+    return float(len(state.creatures())) + float(sum(max(0, g.count) for g in state.creature_tokens))
+
+
+# ---------------------------------------------------------------------------
+# (A) Symmetrischer Tisch: ersetzt _apply_advanced_multi_opponent_phase
+# ---------------------------------------------------------------------------
+_V4830_advanced_phase_old = _apply_advanced_multi_opponent_phase
+
+
+def _seat_label(profile) -> str:
+    return f"{profile.strategy}/{''.join(sorted(profile.colors)) or 'C'}"
+
+
+def _player_counterspell(state: GameState, strategy: Strategy, *, what: str, spell_type: str = "sorcery") -> bool:
+    """Kontert einen gegnerischen Zauber mit einer Counterspell-Handkarte,
+    falls ungetapptes Mana reicht. Liefert True bei Erfolg."""
+    if not _td_on("player_interaction") or not _td("counterspell_enabled", True, "player_interaction"):
+        return False
+    for card in list(state.hand):
+        low = strip_reminder_text(card.oracle_text).lower()
+        m = re.search(r"counter target (spell|noncreature spell|instant or sorcery spell|sorcery spell|instant spell)", low)
+        if not m:
+            continue
+        kind = m.group(1)
+        if kind == "instant spell" or (kind == "sorcery spell" and spell_type != "sorcery"):
+            continue
+        if not (card.is_instant or "flash" in card.keywords):
+            continue
+        payment = find_payment(state, strategy, card.min_cost, card.color_requirements)
+        if not payment:
+            continue
+        apply_payment(state, payment, strategy)
+        state.hand.remove(card)
+        state.graveyard.append(card)
+        record_impact(state, card.name, "cast", 1)
+        record_impact(state, card.name, "countered_opponent_spell", 1)
+        state.log(f"COUNTER: {card.name} counters the opponent's {what}")
+        return True
+    return False
+
+
+def _advanced_removal_on_player(state, strategy, rng, profile, seat_label) -> None:
+    targets = [p for p in state.battlefield if not p.card.is_land and p.card.is_permanent]
+    if not targets:
+        return
+    target = combat_importance.choose_removal_target(sys.modules[__name__], state, strategy, targets, rng)
+    removal_type = choose_removal_type(profile.strategy, rng, wide=False)
+    kws = effective_keywords_in_state(target, state)
+    important = bool(target.card.commander) or bool((getattr(target.card, "roles", set()) or set()) & {"engine", "finisher", "draw_engine"})
+    if "hexproof" in kws:
+        state.log(f"ADVANCED {removal_type} failed: {target.card.name} has hexproof")
+    elif "ward" in kws and rng.random() < 0.35:
+        state.log(f"ADVANCED {removal_type} declined/failed into ward on {target.card.name}")
+    elif important and _player_counterspell(state, strategy, what=f"{removal_type} on {target.card.name}", spell_type="instant"):
+        pass
+    elif try_reactive_protection(state, strategy, wide=False, removal_type=removal_type, target=target):
+        pass
+    elif removal_type == "destroy" and "indestructible" in kws:
+        state.log(f"ADVANCED destroy failed: {target.card.name} is indestructible")
+    elif removal_type == "destroy" and try_semantic_board_protection(state, strategy, target):
+        pass
+    else:
+        _spot_remove_target(state, strategy, target, removal_type)
+        record_impact(state, target.card.name, "removed_by_opponent", 1)
+        state.log(f"ADVANCED {removal_type} ({seat_label}): {target.card.name}")
+
+
+def _advanced_wipe_on_player(state, strategy, rng, profile, seat_label) -> None:
+    removal_type = choose_removal_type(profile.strategy, rng, wide=True)
+    if len(state.creatures()) + len(state.creature_tokens) >= 2 and \
+            _player_counterspell(state, strategy, what=f"{removal_type} boardwipe", spell_type="sorcery"):
+        return
+    if try_reactive_protection(state, strategy, wide=True, removal_type=removal_type):
+        if removal_type != "destroy" or any(
+            "exile any number of target creatures you control" in strip_reminder_text(c.oracle_text).lower()
+            for c in state.graveyard[-1:]
+        ):
+            return
+    survivors = set()
+    if removal_type == "destroy":
+        for p in sorted(list(state.creatures()), key=lambda p: generic_tutor_score(p.card, strategy.tutor_priority), reverse=True):
+            if "indestructible" in effective_keywords_in_state(p, state):
+                survivors.add(id(p))
+                continue
+            if try_semantic_board_protection(state, strategy, p):
+                survivors.add(id(p))
+    affected = []
+    destination = _wipe_destination(removal_type)
+    for p in list(state.battlefield):
+        if not p.card.is_creature:
+            continue
+        if removal_type == "destroy" and (id(p) in survivors or "indestructible" in effective_keywords_in_state(p, state)):
+            continue
+        affected.append(p.card.name)
+        record_impact(state, p.card.name, "wiped_by_opponent", 1)
+        move_permanent_to_zone(state, strategy, p, destination, reason=f"{removal_type} boardwipe (advanced/{seat_label})")
+    # v4.83.0: ein Wipe raeumt auch die Kreatur-Token des Spielers ab
+    tokens_lost = sum(g.count for g in state.creature_tokens if g.count > 0)
+    if tokens_lost and removal_type in ("destroy", "exile", "shrink"):
+        state.creature_tokens = []
+        affected.append(f"{tokens_lost} creature token(s)")
+    if affected:
+        state.log(f"ADVANCED {removal_type} boardwipe ({seat_label}): " + ", ".join(affected))
+
+
+def _seat_wants_wipe(i: int, seats, state: GameState) -> bool:
+    if not _td("seat_wipe_only_when_behind", True):
+        return True
+    own = seats[i][1].board_presence
+    others = [seats[j][1].board_presence for j in _alive_opponent_indices(state) if j != i and j < len(seats)]
+    others.append(_player_board_units(state))
+    return own < max(others)
+
+
+def _eliminate_seat(state: GameState, seats, j: int, by: str) -> None:
+    if j < len(seats):
+        seats[j][1].board_presence = 0.0
+        seats[j][1].interaction_availability = 0.0
+        seats[j][1].wipe_readiness = 0.0
+    state.log(f"TABLE: opponent {j + 1} ({_seat_label(seats[j][0]) if j < len(seats) else '?'}) eliminated by {by}")
+
+
+def _sync_opponents_to_seats(state: GameState, seats) -> None:
+    """v4.83.0: state.opponents (Lebenspunkte) und die Advanced-Sitzplaetze
+    muessen 1:1 zusammenpassen - vorher war state.opponents fest [40]*3,
+    unabhaengig von der konfigurierten Sitzzahl (1 Sitz = 2 'Geister'-
+    Gegner, die nie handelten und trotzdem getoetet werden mussten)."""
+    if getattr(state, "_td_synced", False):
+        return
+    n = len(seats)
+    if n and len(state.opponents) != n:
+        start = 40.0
+        if len(state.opponents) < n:
+            state.opponents = list(state.opponents) + [start] * (n - len(state.opponents))
+        else:
+            state.opponents = list(state.opponents)[:n]
+    state._td_synced = True
+
+
+def _apply_advanced_multi_opponent_phase(state: GameState, strategy: Strategy, rng: random.Random) -> None:
+    if not _td_on():
+        return _V4830_advanced_phase_old(state, strategy, rng)
+    seats = _get_advanced_opponent_table(state, strategy)
+    _sync_opponents_to_seats(state, seats)
+    n_seats = min(len(seats), len(state.opponents))
+    state.virtual_opponent_graveyard += max(1, int(0.8 + state.turn * 0.25))
+    try_probabilistic_semantics(state, strategy, rng)
+    unit_dmg = float(_td("combat_damage_per_board_unit", _ADVANCED_OPPONENT_COMBAT_DAMAGE_PER_BOARD_UNIT))
+    ovo = float(_td("opp_vs_opp_damage_factor", 0.75))
+    ovo_attr = float(_td("opp_vs_opp_attrition_units", 0.35))
+    ia_consume = float(_td("interaction_consume", 1.0))
+    wr_consume = float(_td("wipe_consume", 1.0))
+    survival = float(_td("wipe_board_survival", 0.25))
+
+    for i in range(n_seats):
+        if state.opponents[i] <= 0 or state.lost_turn is not None or state.win_turn is not None:
+            continue
+        profile, opp_state = seats[i]
+        alive = _alive_opponent_indices(state)
+        _opp_model_advance(opp_state, profile, rng, table_size=len(alive) + 1)
+        for _ in range(int(_td("opponent_draws_per_turn", 1))):
+            _tb_emit_opponent_draws(state, strategy, i)
+        if state.opponents[i] <= 0:
+            _eliminate_seat(state, seats, i, "own draw step triggers")
+            continue
+        cq = _opp_model_query_castable(opp_state, rng)
+        label = _seat_label(profile)
+        targets = ["player"] + [j for j in _alive_opponent_indices(state) if j != i and j < n_seats]
+
+        # --- Kampf-/Praesenzdruck --------------------------------------------
+        if opp_state.board_presence > 0:
+            # v4.86.0/v4.87.0: gewichtete Zielwahl statt Gleichverteilung -
+            # siehe _kingmaking_target/table_politics (Rache, Tischfuehrung,
+            # Gruppenhug-Malus; nur bei table_politics.enabled=false komplett
+            # das Alt-Verhalten).
+            t = (_kingmaking_target(state, strategy, seats, i, targets, rng)
+                 if _td_on("table_politics") else rng.choice(targets))
+            damage = opp_state.board_presence * unit_dmg * rng.uniform(0.70, 1.30)
+            if t == "player":
+                state.life -= damage
+                state.damage_taken += damage
+                state.log(f"ADVANCED {label}: took {damage:.1f} combat/pressure damage (targeted, 1/{len(targets)} chance)")
+                if state.life <= 0 and state.lost_turn is None:
+                    state.lost_turn = state.turn
+            else:
+                dealt = damage * ovo
+                state.opponents[t] = max(0.0, state.opponents[t] - dealt)
+                opp_state.board_presence = max(0.0, opp_state.board_presence - ovo_attr)
+                seats[t][1].board_presence = max(0.0, seats[t][1].board_presence - ovo_attr)
+                _record_seat_damage(state, t, i, dealt)
+                state.log(f"TABLE: {label} attacks opponent {t + 1} for {dealt:.1f} (now {state.opponents[t]:.1f})")
+                if state.opponents[t] <= 0:
+                    _eliminate_seat(state, seats, t, label)
+
+        # --- Gezielte Entfernung -----------------------------------------------
+        if cq.has_interaction:
+            targets = ["player"] + [j for j in _alive_opponent_indices(state) if j != i and j < n_seats]
+            t = rng.choice(targets)
+            opp_state.interaction_availability = max(0.0, opp_state.interaction_availability - ia_consume)
+            if t == "player":
+                _advanced_removal_on_player(state, strategy, rng, profile, label)
+            else:
+                seats[t][1].board_presence = max(0.0, seats[t][1].board_presence - 1.0)
+
+        # --- Board-Wipe: trifft ALLE Bretter -----------------------------------
+        if cq.has_wipe and _seat_wants_wipe(i, seats, state):
+            opp_state.wipe_readiness = max(0.0, opp_state.wipe_readiness - wr_consume)
+            _advanced_wipe_on_player(state, strategy, rng, profile, label)
+            for k in _alive_opponent_indices(state):
+                if k < n_seats:
+                    seats[k][1].board_presence *= survival
+            state.log(f"TABLE: {label} wipe - every seat's board x{survival:g}")
+        guard_resource_invariants(state, "advanced multi-opponent phase")
+
+    apply_commander_zone_state_based_actions(state, strategy)
+    guard_resource_invariants(state, "advanced multi-opponent phase")
+    if state.lost_turn is None:
+        check_win(state)
+
+
+# Opponent draw triggers for the non-advanced models (advanced handles them per seat above).
+_V4830_apply_opponent_old = apply_abstract_opponent_phase
+
+
+def apply_abstract_opponent_phase(state: GameState, strategy: Strategy, rng: random.Random):
+    state._wc_rng = rng
+    state._focus_targeting = _advanced_active(strategy) and bool(_td("focus_targeting", True)) and _td_on()
+    if not _advanced_active(strategy) and _td_on("trigger_bus"):
+        for i in _alive_opponent_indices(state):
+            for _ in range(int(_td("opponent_draws_per_turn", 1))):
+                _tb_emit_opponent_draws(state, strategy, i)
+    return _V4830_apply_opponent_old(state, strategy, rng)
+
+
+# Kampf-Attrition gezielt auf den angegriffenen Sitz lenken.
+_V4830_record_attrition_old = record_opponent_attrition
+
+
+def record_opponent_attrition(state: GameState, strategy: Strategy, rng: Optional[random.Random],
+                              kills: float, source: str = "", seat_index: Optional[int] = None) -> None:
+    if seat_index is None:
+        seat_index = getattr(state, "_attack_target_seat", None)
+    if seat_index is not None and _advanced_active(strategy) and _td_on() and float(kills or 0) > 0:
+        table = _get_advanced_opponent_table(state, strategy)
+        if 0 <= seat_index < len(table) and seat_index < len(state.opponents) and state.opponents[seat_index] > 0:
+            profile, opp_state = table[seat_index]
+            kills = float(kills)
+            state.kw_attrition_total = float(getattr(state, "kw_attrition_total", 0.0)) + kills
+            record_impact(state, source, "opponent_creatures_killed", kills)
+            before = opp_state.board_presence
+            opp_state.board_presence = max(0.0, before - kills)
+            state.log(f"ATTRITION ({source}): opponent {seat_index + 1} {_seat_label(profile)} "
+                      f"board_presence {before:.2f} -> {opp_state.board_presence:.2f}")
+            return
+    return _V4830_record_attrition_old(state, strategy, rng, kills, source)
+
+
+# ---------------------------------------------------------------------------
+# (B) Eigene Interaktion gegen die Sitze nutzen
+# ---------------------------------------------------------------------------
+_REMOVAL_TEXT_RE = re.compile(
+    r"(destroy|exile) target (?:(?:nonland|nontoken|attacking|tapped|creature or planeswalker|artifact or creature|"
+    r"artifact or enchantment|creature or enchantment)\s*)*(creature|permanent|nonland permanent|artifact|enchantment|planeswalker)"
+    r"|target creature gets -\d+/-\d+|target opponent sacrifices|deals? \d+ damage to (?:target|any target|up to one target) creature"
+)
+_WIPE_TEXT_RE = re.compile(
+    r"destroy all (?:other |non[a-z]+ )?creatures|exile all (?:other |non[a-z]+ )?creatures|all (?:other )?creatures get -\d+/-\d+"
+    r"|deals? (?:\d+|x) damage to each creature|each player sacrifices (?:all|three|two) creatures|return all (?:other )?creatures to their owners"
+)
+
+
+def _is_player_removal(card: Card) -> bool:
+    if card.is_land or card.is_creature:
+        return False
+    low = strip_reminder_text(card.oracle_text).lower()
+    if "you control" in low.split("target", 1)[-1][:40] and "don't control" not in low:
+        return False
+    return bool(_REMOVAL_TEXT_RE.search(low)) and not _WIPE_TEXT_RE.search(low)
+
+
+def _is_player_creature_wipe(card: Card) -> bool:
+    if card.is_land or card.is_creature:
+        return False
+    return bool(_WIPE_TEXT_RE.search(strip_reminder_text(card.oracle_text).lower()))
+
+
+_V4830_is_reactive_only_old = is_reactive_only
+
+
+def is_reactive_only(card: Card, strategy: Strategy) -> bool:
+    """v4.83.0: _use_player_interaction gibt eine Removal-/Wipe-Karte gezielt
+    frei (strategy._v4830_allow_reactive = diese Karte), sonst unveraendert."""
+    if getattr(strategy, "_v4830_allow_reactive", None) is card:
+        return False
+    return _V4830_is_reactive_only_old(card, strategy)
+
+
+def _cast_reactive_card(state: GameState, strategy: Strategy, card: Card) -> bool:
+    strategy._v4830_allow_reactive = card
+    try:
+        opt = cast_option(card, state, strategy)
+        return bool(opt is not None and try_cast_option(state, strategy, opt))
+    finally:
+        strategy._v4830_allow_reactive = None
+
+
+def _use_player_interaction(state: GameState, strategy: Strategy, phase: str = "main") -> None:
+    if not (_advanced_active(strategy) and _td_on("player_interaction")) or state.win_turn is not None:
+        return
+    seats = _get_advanced_opponent_table(state, strategy)
+    alive = [i for i in _alive_opponent_indices(state) if i < len(seats)]
+    if not alive:
+        return
+    # Kreatur-Wipe zuerst (wenn wir deutlich hinten liegen).
+    table_units = sum(seats[i][1].board_presence for i in alive)
+    if table_units >= float(_td("wipe_min_table_units", 7.0, "player_interaction")) and \
+            _player_board_units(state) <= float(_td("wipe_max_own_units", 2, "player_interaction")):
+        for card in [c for c in state.hand if _is_player_creature_wipe(c)]:
+            if _cast_reactive_card(state, strategy, card):
+                survival = float(_td("wipe_board_survival", 0.25))
+                for i in alive:
+                    seats[i][1].board_presence *= survival
+                for p in list(state.creatures()):
+                    if "indestructible" not in effective_keywords_in_state(p, state):
+                        move_permanent_to_zone(state, strategy, p, "graveyard", reason="own boardwipe")
+                state.creature_tokens = []
+                record_impact(state, card.name, "opponent_creatures_killed", table_units * (1 - survival))
+                state.log(f"OWN WIPE: {card.name} - every opponent's board x{survival:g} (table had {table_units:.1f} units)")
+                break
+    # Gezielte Entfernung auf den bedrohlichsten Sitz.
+    min_units = float(_td("removal_min_seat_units", 2.0, "player_interaction"))
+    for card in sorted([c for c in state.hand if _is_player_removal(c)], key=lambda c: c.min_cost):
+        alive = [i for i in _alive_opponent_indices(state) if i < len(seats)]
+        if not alive:
+            break
+        j = max(alive, key=lambda k: seats[k][1].board_presence)
+        if seats[j][1].board_presence < min_units:
+            break
+        if _cast_reactive_card(state, strategy, card):
+            record_opponent_attrition(state, strategy, None, 1.0, card.name, seat_index=j)
+
+
+_V4830_maybe_use_food_old = maybe_use_food_before_combat
+
+
+def maybe_use_food_before_combat(state: GameState, strategy: Strategy):
+    _use_player_interaction(state, strategy, "precombat")
+    return _V4830_maybe_use_food_old(state, strategy)
+
+
+# ---------------------------------------------------------------------------
+# (C) Win-Condition-Szenarien ausfuehren
+# ---------------------------------------------------------------------------
+_V4830_maybe_execute_wc_old = maybe_execute_focused_win_condition
+
+
+def _wc_disrupted(state: GameState, strategy: Strategy, rng: random.Random, name: str) -> bool:
+    share = float(_td("disruption_use_share", 0.5, "win_condition_execution"))
+    if getattr(strategy, "opponent_profile", "goldfish") == "goldfish":
+        return False
+    if _advanced_active(strategy):
+        seats = _get_advanced_opponent_table(state, strategy)
+        for i in _alive_opponent_indices(state):
+            if i >= len(seats):
+                continue
+            profile, opp_state = seats[i]
+            if rng.random() < min(1.0, opp_state.interaction_availability) * share:
+                opp_state.interaction_availability = max(0.0, opp_state.interaction_availability - float(_td("interaction_consume", 1.0)))
+                state.log(f"WIN CONDITION DISRUPTED: {name} - answered by opponent {i + 1} ({_seat_label(profile)})")
+                return True
+        return False
+    prof = OPPONENT_PROFILES.get(getattr(strategy, "opponent_profile", ""), {})
+    if rng.random() < float(prof.get("removal", 0.0)) * share * max(1, len(_alive_opponent_indices(state))):
+        state.log(f"WIN CONDITION DISRUPTED: {name} - answered by the table")
+        return True
+    return False
+
+
+def _wc_disruption_cost(state: GameState, strategy: Strategy, sc: dict) -> None:
+    for r in sc.get("requirements", []) or []:
+        name = r.get("card")
+        if "battlefield" in (r.get("zones") or []):
+            p = next((q for q in state.battlefield if q.card.name == name and not q.card.commander and not q.card.is_land), None)
+            if p is not None:
+                move_permanent_to_zone(state, strategy, p, "graveyard", reason="win condition disrupted")
+                return
+    for r in sc.get("requirements", []) or []:
+        name = r.get("card")
+        c = next((x for x in state.hand if x.name == name), None)
+        if c is not None:
+            state.hand.remove(c)
+            state.graveyard.append(c)
+            state.log(f"WIN CONDITION DISRUPTED: {name} countered")
+            return
+
+
+def maybe_execute_focused_win_condition(state: GameState, strategy) -> bool:
+    res = _V4830_maybe_execute_wc_old(state, strategy)
+    if res or state.win_turn is not None or not _td_on("win_condition_execution"):
+        return res
+    tried = getattr(state, "_wc_tried", None)
+    if tried is None or tried[0] != state.turn:
+        tried = (state.turn, set())
+        state._wc_tried = tried
+    rng = getattr(state, "_wc_rng", None)
+    if rng is None:
+        # Fallback vor dem ersten Kampf/der ersten Gegnerrunde: aus dem
+        # (je Partie gemischten) Bibliothekszustand abgeleitet - nicht nur aus
+        # Zug/Handgroesse, sonst wuerfeln alle Partien identisch.
+        top = "|".join(c.name for c in state.library[-7:])
+        rng = random.Random(zlib.crc32(f"{state.turn}|{top}|{len(state.hand)}".encode("utf-8")))
+    for sc in (getattr(strategy, "scenarios", None) or []):
+        if not sc.get("enabled", True) or sc.get("kind") != "Win Condition":
+            continue
+        if any(r.get("card") == BILBO_NAME for r in sc.get("requirements", []) or []):
+            continue  # Bilbo hat seinen eigenen, exakt modellierten Executor
+        key = sc.get("id") or sc.get("name")
+        if key in tried[1]:
+            continue
+        try:
+            st = scenario_status(state, strategy, sc)
+        except Exception:
+            continue
+        if not st.get("reached"):
+            continue
+        tried[1].add(key)
+        name = sc.get("name", "Win Condition")
+        if _wc_disrupted(state, strategy, rng, name):
+            _wc_disruption_cost(state, strategy, sc)
+            continue
+        scope = _wc_scenario_target_scope(sc)
+        if scope == "any":
+            i = _combat_damage_target_index(state)
+            state.log(f"WIN CONDITION EXECUTED: {name} (single target) - opponent {i + 1} eliminated")
+            state.opponents[i] = 0.0
+            state.wc_executed = name
+            check_win(state)
+            return True
+        state.log(f"WIN CONDITION EXECUTED: {name} - all opponents eliminated")
+        state.wc_executed = name
+        state.opponents = [0.0 for _ in state.opponents]
+        check_win(state)
+        return True
+    return False
+
+
+# ---------------------------------------------------------------------------
+# (D) Generischer Trigger-Bus
+# ---------------------------------------------------------------------------
+def _tb_collect_legacy_names() -> Set[str]:
+    """Kartennamen, die irgendwo in engine.py namentlich behandelt werden -
+    deren Ausloeser laufen weiter ausschliesslich ueber den alten Code
+    (keine Doppel-Ausfuehrung)."""
+    try:
+        src = Path(__file__).read_text(encoding="utf-8")
+    except Exception:
+        return set()
+    names = set(re.findall(r'state\.has\("([^"]+)"\)', src))
+    names |= set(re.findall(r'\.name ==\s*"([^"]+)"', src))
+    names |= set(re.findall(r'\.name !=\s*"([^"]+)"', src))
+    for blk in re.findall(r'\.name in \{([^}]*)\}', src) + re.findall(r'\.name in \(([^)]*)\)', src) \
+            + re.findall(r'\.name in \[([^\]]*)\]', src):
+        names |= set(re.findall(r'"([^"]+)"', blk))
+    names |= set(re.findall(r'^[A-Z_]+_NAME\s*=\s*"([^"]+)"', src, re.M))
+    for blk in re.findall(r'preferred = \(\s*\[([^\]]*)\]', src):
+        names |= set(re.findall(r'"([^"]+)"', blk))
+    return names
+
+
+_TB_LEGACY_NAMES = _tb_collect_legacy_names()
+_TB_CACHE: Dict[Tuple[str, str], list] = {}
+_TB_LEGACY_OWN_ETB_KINDS = {"draw", "scry", "surveil", "connive"}
+_TB_LEGACY_ATTACK_KINDS = {"draw", "scry", "surveil", "connive"}
+
+
+def _tb_front_face_text(card: Card) -> str:
+    """Nur die Vorderseite: die Engine kennt kein In-Game-Transformieren
+    (siehe card_from_scryfall), Rueckseiten-Ausloeser (Mayor of Avabruck ->
+    Howlpack Alpha) duerfen also nicht feuern."""
+    return (card.oracle_text or "").split("\n//\n", 1)[0]
+
+
+def _tb_entries(card: Card) -> list:
+    key = (card.name, card.oracle_text or "")
+    got = _TB_CACHE.get(key)
+    if got is not None:
+        return got
+    out = []
+    front = _tb_front_face_text(card)
+    try:
+        abilities = [a for a in parse_oracle_semantics(card) if a.raw.strip() and a.raw.strip() in front]
+    except Exception:
+        abilities = []
+    for a in abilities:
+        if a.ability_kind == "activated" or not a.actions:
+            continue
+        if a.execution_mode not in ("exact", "simplified"):
+            continue
+        spec = _TB.parse_trigger(strip_reminder_text(a.raw), card.name)
+        if spec is None or not spec.supported:
+            continue
+        out.append((spec, a))
+    _TB_CACHE[key] = out
+    return out
+
+
+def _tb_source_ok(p: Permanent) -> bool:
+    return p.card.name not in _TB_LEGACY_NAMES and not has_dedicated_resolver(p.card)
+
+
+def _tb_fire(state: GameState, strategy: Strategy, source: Permanent, spec, ability, *,
+             event: str, exclude_kinds: Set[str] = frozenset(), times: int = 1) -> int:
+    if not _td_on("trigger_bus"):
+        return 0
+    depth = int(getattr(state, "_tb_depth", 0))
+    if depth >= int(_td("max_depth", 2, "trigger_bus")):
+        return 0
+    counts = getattr(state, "_tb_counts", None)
+    if counts is None or counts[0] != state.turn:
+        counts = (state.turn, Counter())
+        state._tb_counts = counts
+    k = (id(source), ability.raw)
+    cap = int(_td("max_fires_per_ability_per_turn", 8, "trigger_bus"))
+    if spec.once_per_turn:
+        cap = 1
+    fired = 0
+    actions = [a for a in ability.actions if a.kind not in exclude_kinds]
+    if not actions:
+        return 0
+    for _ in range(max(0, times)):
+        if counts[1][k] >= cap or state.win_turn is not None:
+            break
+        counts[1][k] += 1
+        state._tb_depth = depth + 1
+        try:
+            for action in actions:
+                execute_semantic_action(state, strategy, source, action)
+        finally:
+            state._tb_depth = depth
+        fired += 1
+    if fired:
+        state.tb_fires_total = int(getattr(state, "tb_fires_total", 0)) + fired
+        record_impact(state, source.card.name, "trigger_bus_fires", fired)
+        state.log(f"TRIGGER [{event}] {source.card.name}{' x' + str(fired) if fired > 1 else ''}: {ability.raw[:70]}")
+    return fired
+
+
+def _tb_colors(card: Card) -> int:
+    return len(set(re.findall(r"\{([WUBRG])", card.mana_cost or "")))
+
+
+def _tb_emit(state: GameState, strategy: Strategy, event: str, *, card: Optional[Card] = None,
+             perm: Optional[Permanent] = None, is_token: bool = False, count: int = 1,
+             type_line: Optional[str] = None) -> None:
+    if not _td_on("trigger_bus") or state.win_turn is not None:
+        return
+    cap = int(_td("per_event_cap", 5, "trigger_bus"))
+    count = max(1, min(cap, int(count)))
+    tl = type_line if type_line is not None else (card.type_line if card is not None else "")
+    mv = float(card.mana_value) if card is not None else 0.0
+    colors = _tb_colors(card) if card is not None else 0
+    # eigene "When this ... enters/dies"-Ausloeser des Objekts selbst
+    if perm is not None and event in ("enters", "dies") and _tb_source_ok(perm):
+        for spec, ability in _tb_entries(perm.card):
+            if spec.event == event and spec.subject in ("self", "self_or_other"):
+                excl = set()
+                if event == "enters" and strip_reminder_text(ability.raw).lower().startswith("when "):
+                    excl = set(_TB_LEGACY_OWN_ETB_KINDS)
+                    if _TE.etb_team_pump(sys.modules[__name__], perm.card.oracle_text):
+                        excl |= {"team_pt_bonus", "typed_pt_bonus", "grant_team_keyword"}
+                _tb_fire(state, strategy, perm, spec, ability, event=event, exclude_kinds=excl)
+    for src in list(state.battlefield):
+        if src is perm or not _tb_source_ok(src):
+            continue
+        if event == "cast" and card is not None and src.card is card:
+            continue
+        for spec, ability in _tb_entries(src.card):
+            if spec.event != event:
+                continue
+            if event in ("enters", "dies", "cast", "land_enters") and spec.subject == "self":
+                continue
+            if event in ("enters", "dies") and spec.subject not in ("other", "any", "self_or_other"):
+                continue
+            if tl and (spec.types or spec.subtypes or spec.min_mv is not None):
+                if not _TB.card_matches(spec, type_line=tl, mana_value=mv, is_token=is_token, colors=colors):
+                    continue
+            times = 1 if spec.batch else count
+            _tb_fire(state, strategy, src, spec, ability, event=event, times=times)
+
+
+def _tb_emit_steps(state: GameState, strategy: Strategy, event: str) -> None:
+    if not _td_on("trigger_bus") or state.win_turn is not None:
+        return
+    mult = 1 + len(_alive_opponent_indices(state))
+    for src in list(state.battlefield):
+        if not _tb_source_ok(src):
+            continue
+        for spec, ability in _tb_entries(src.card):
+            if spec.event == event:
+                _tb_fire(state, strategy, src, spec, ability, event=event, times=mult if spec.each_player else 1)
+
+
+_TB_OPP_LOSS_RE = re.compile(r"(?:they|that player|that opponent|the player) loses? (\d+) life")
+_TB_OPP_DMG_RE = re.compile(r"deals? (\d+) damage to (?:them|that player|that opponent)")
+_TB_GAIN_RE = re.compile(r"you gain (\d+) life")
+
+
+def _tb_emit_opponent_draws(state: GameState, strategy: Strategy, seat: int) -> None:
+    if not _td_on("trigger_bus") or state.win_turn is not None or not (0 <= seat < len(state.opponents)):
+        return
+    for src in list(state.battlefield):
+        if not _tb_source_ok(src):
+            continue
+        for line in split_oracle_lines(_tb_front_face_text(src.card)):
+            spec = _TB.parse_trigger(strip_reminder_text(line), src.card.name)
+            if spec is None or spec.event != "opponent_draws" or not spec.supported:
+                continue
+            eff = spec.effect
+            n = 0
+            m = _TB_OPP_LOSS_RE.search(eff) or _TB_OPP_DMG_RE.search(eff)
+            if m:
+                n = int(m.group(1))
+                before = state.opponents[seat]
+                state.opponents[seat] = max(0.0, before - n)
+                record_impact(state, src.card.name, "opponent_life_loss", min(before, n))
+            g = _TB_GAIN_RE.search(eff)
+            if g:
+                gain_life(state, float(g.group(1)), src.card.name)
+            if m or g:
+                state.tb_fires_total = int(getattr(state, "tb_fires_total", 0)) + 1
+                record_impact(state, src.card.name, "trigger_bus_fires", 1)
+                state.log(f"TRIGGER [opponent draws] {src.card.name}: opponent {seat + 1} -{n}")
+    check_win(state)
+
+
+# --- Hooks ------------------------------------------------------------------
+_V4830_try_cast_option_old = try_cast_option
+
+
+def try_cast_option(state: GameState, strategy: Strategy, opt: CastOption) -> bool:
+    ok = _V4830_try_cast_option_old(state, strategy, opt)
+    if ok:
+        state.spells_cast_this_turn = int(getattr(state, "spells_cast_this_turn", 0)) + 1
+        _tb_emit(state, strategy, "cast", card=opt.card)
+    return ok
+
+
+_V4830_permanent_enters_old = permanent_enters
+
+
+def permanent_enters(state: GameState, strategy: Strategy, card: Card):
+    before = len(state.battlefield)
+    _V4830_permanent_enters_old(state, strategy, card)
+    perm = next((p for p in state.battlefield[before:] if p.card is card), None)
+    if perm is None:
+        perm = next((p for p in reversed(state.battlefield) if p.card is card), None)
+    if perm is not None:
+        _tb_emit(state, strategy, "enters", card=card, perm=perm)
+
+
+_V4830_batch_enter_old = batch_creatures_enter
+
+
+def batch_creatures_enter(state: GameState, strategy: Strategy, cards: List[Card]):
+    before = len(state.battlefield)
+    _V4830_batch_enter_old(state, strategy, cards)
+    for p in list(state.battlefield[before:]):
+        _tb_emit(state, strategy, "enters", card=p.card, perm=p)
+
+
+_V4830_create_tokens_old = create_tokens
+
+
+def create_tokens(state: GameState, strategy: Strategy, token_type: str, n: int, **kwargs):
+    before = sum(max(0, g.count) for g in state.creature_tokens)
+    res = _V4830_create_tokens_old(state, strategy, token_type, n, **kwargs)
+    made = sum(max(0, g.count) for g in state.creature_tokens) - before
+    if made > 0 and kwargs.get("creature"):
+        _tb_emit(state, strategy, "enters", is_token=True, count=made,
+                 type_line=f"Token Creature — {token_type}")
+    return res
+
+
+_V4830_land_enters_old = land_enters
+
+
+def land_enters(state: GameState, strategy: Strategy, card: Card):
+    res = _V4830_land_enters_old(state, strategy, card)
+    _tb_emit(state, strategy, "land_enters", card=card)
+    return res
+
+
+_V4830_put_basic_old = put_basic_from_library
+
+
+def put_basic_from_library(state, strategy, allowed, tapped=True, source="ramp") -> bool:
+    ok = _V4830_put_basic_old(state, strategy, allowed, tapped=tapped, source=source)
+    if ok and state.battlefield:
+        _tb_emit(state, strategy, "land_enters", card=state.battlefield[-1].card)
+    return ok
+
+
+_V4830_move_old = move_permanent_to_zone
+
+
+def move_permanent_to_zone(state: GameState, strategy: Strategy, permanent: Permanent, destination: str, *,
+                           reason: str = "", rng: Optional[random.Random] = None):
+    was_creature = permanent in state.battlefield and permanent.card.is_creature
+    res = _V4830_move_old(state, strategy, permanent, destination, reason=reason, rng=rng)
+    if was_creature and destination == "graveyard" and permanent not in state.battlefield:
+        _tb_emit(state, strategy, "dies", card=permanent.card, perm=permanent)
+    return res
+
+
+_V4830_draw_cards_old = draw_cards
+
+
+def draw_cards(state: GameState, n: int, *, draw_step: bool = False, reason: str = "draw"):
+    before = int(state.cards_drawn_total)
+    res = _V4830_draw_cards_old(state, n, draw_step=draw_step, reason=reason)
+    drawn = int(state.cards_drawn_total) - before
+    if drawn > 0 and _td_on("trigger_bus") and int(getattr(state, "_tb_depth", 0)) == 0:
+        dt = getattr(state, "_draws_this_turn", None)
+        if dt is None or dt[0] != state.turn:
+            dt = [state.turn, 0]
+        prev = dt[1]
+        dt[1] = prev + drawn
+        state._draws_this_turn = dt
+        for src in list(state.battlefield):
+            if not _tb_source_ok(src):
+                continue
+            for spec, ability in _tb_entries(src.card):
+                if spec.event == "draw":
+                    _tb_fire(state, strategy_for_state(state), src, spec, ability, event="draw",
+                             exclude_kinds={"draw"}, times=min(drawn, int(_td("per_event_cap", 5, "trigger_bus"))))
+                elif spec.event == "draw_nth" and prev < spec.nth <= prev + drawn:
+                    _tb_fire(state, strategy_for_state(state), src, spec, ability, event="draw_nth", exclude_kinds={"draw"})
+    return res
+
+
+def strategy_for_state(state: GameState):
+    s = getattr(state, "_tb_strategy", None)
+    return s if s is not None else Strategy()
+
+
+_V4830_mycoloth_old = mycoloth_upkeep_trigger
+
+
+def mycoloth_upkeep_trigger(state: GameState, strategy: Strategy):
+    if _advanced_active(strategy) and _td_on():
+        _sync_opponents_to_seats(state, _get_advanced_opponent_table(state, strategy))
+    state._tb_strategy = strategy
+    state._focus_targeting = _advanced_active(strategy) and bool(_td("focus_targeting", True)) and _td_on()
+    state.spells_cast_this_turn = 0
+    res = _V4830_mycoloth_old(state, strategy)
+    _tb_emit_steps(state, strategy, "upkeep")
+    return res
+
+
+_V4830_end_step_old = end_step
+
+
+def end_step(state: GameState, strategy: Strategy):
+    _use_player_interaction(state, strategy, "end")
+    res = _V4830_end_step_old(state, strategy)
+    _tb_emit_steps(state, strategy, "end_step")
+    return res
+
+
+_V4830_attack_phase_old = attack_phase
+
+
+def attack_phase(state: GameState, strategy: Strategy, rng: Optional[random.Random] = None):
+    state._tb_strategy = strategy
+    if rng is not None:
+        state._wc_rng = rng
+    state._focus_targeting = _advanced_active(strategy) and bool(_td("focus_targeting", True)) and _td_on()
+    _tb_emit_steps(state, strategy, "begin_combat")
+    state._attack_target_seat = None
+    if state._focus_targeting and state.opponents:
+        state._attack_target_seat = _choose_attack_target_seat(state, strategy)
+    try:
+        return _V4830_attack_phase_old(state, strategy, rng)
+    finally:
+        state._attack_target_seat = None
+        combat_interaction._V4830_BLOCK_MULT = 1.0
+
+
+def _seat_board(state: GameState, strategy: Strategy, i: int) -> float:
+    seats = _get_advanced_opponent_table(state, strategy)
+    return float(seats[i][1].board_presence) if 0 <= i < len(seats) else 0.0
+
+
+def _choose_attack_target_seat(state: GameState, strategy: Strategy) -> Optional[int]:
+    """Mehrspieler-Angriffswahl: der Spieler greift den lebenden Gegner an,
+    bei dem Lebensstand UND offene Verteidigung zusammen am guenstigsten
+    sind (Score = Leben + attack_target_board_weight * board_presence) -
+    wie am echten Tisch wird eher der Spieler mit wenig Blockern und wenig
+    Leben angegriffen. Setzt zugleich den Block-Multiplikator dieses Kampfs
+    (board_presence des Ziels relativ zu block_reference_units)."""
+    alive = [i for i in _alive_opponent_indices(state) if i < len(_get_advanced_opponent_table(state, strategy))]
+    if not alive:
+        return None
+    w = float(_td("attack_target_board_weight", 3.0))
+    seat = min(alive, key=lambda i: state.opponents[i] + w * _seat_board(state, strategy, i))
+    ref = max(0.1, float(_td("block_reference_units", 3.0)))
+    lo, hi = _td("block_multiplier_range", [0.2, 1.4])
+    combat_interaction._V4830_BLOCK_MULT = max(float(lo), min(float(hi), _seat_board(state, strategy, seat) / ref))
+    return seat
+
+
+_V4830_resolve_combat_old = combat_interaction.resolve_combat_interaction
+
+
+def _v4830_resolve_combat_interaction(profile_name, turn, attackers, rng, *, state=None):
+    outcomes = _V4830_resolve_combat_old(profile_name, turn, attackers, rng, state=state)
+    if state is None or not _td_on("trigger_bus") or not attackers:
+        return outcomes
+    strategy = getattr(state, "_kw_strategy", None) or getattr(state, "_tb_strategy", None) or Strategy()
+    cap = int(_td("per_event_cap", 5, "trigger_bus"))
+    # Angriffs-Ausloeser
+    perms = [a.source_ref for a in attackers if a.source_kind == "permanent" and a.source_ref is not None]
+    token_groups = [a for a in attackers if a.source_kind == "token_group"]
+    for p in perms:
+        if not _tb_source_ok(p):
+            continue
+        for spec, ability in _tb_entries(p.card):
+            if (spec.event == "attacks" and spec.subject == "self") or (spec.event == "enters" and spec.also_attacks):
+                excl = set(_TB_LEGACY_ATTACK_KINDS) if strip_reminder_text(ability.raw).lower().startswith("whenever") else set()
+                _tb_fire(state, strategy, p, spec, ability, event="attacks", exclude_kinds=excl)
+    for src in list(state.battlefield):
+        if not _tb_source_ok(src):
+            continue
+        for spec, ability in _tb_entries(src.card):
+            if spec.event == "you_attack":
+                _tb_fire(state, strategy, src, spec, ability, event="you_attack")
+            elif spec.event == "attacks" and spec.subject in ("any", "other"):
+                n = 0
+                for p in perms:
+                    if spec.subject == "other" and p is src:
+                        continue
+                    if _TB.card_matches(spec, type_line=p.card.type_line, mana_value=p.card.mana_value):
+                        n += 1
+                for a in token_groups:
+                    if _TB.card_matches(spec, type_line=f"Token Creature — {a.name}", is_token=True):
+                        n += int(max(1, a.attack_weight))
+                if n:
+                    _tb_fire(state, strategy, src, spec, ability, event="attacks", times=1 if spec.batch else min(n, cap))
+    # Kampfschaden-Ausloeser
+    hit_perms = [o.source_ref for o in outcomes if o.damage_dealt > 0 and o.source_kind == "permanent" and o.source_ref is not None]
+    hit_tokens = [o for o in outcomes if o.damage_dealt > 0 and o.source_kind == "token_group"]
+    for p in hit_perms:
+        if not _tb_source_ok(p):
+            continue
+        for spec, ability in _tb_entries(p.card):
+            if spec.event == "combat_damage" and spec.subject == "self":
+                _tb_fire(state, strategy, p, spec, ability, event="combat damage")
+    for src in list(state.battlefield):
+        if not _tb_source_ok(src):
+            continue
+        for spec, ability in _tb_entries(src.card):
+            if spec.event not in ("combat_damage", "combat_damage_batch") or spec.subject in ("self", "attached"):
+                continue
+            n = sum(1 for p in hit_perms if (spec.subject != "other" or p is not src)
+                    and _TB.card_matches(spec, type_line=p.card.type_line, mana_value=p.card.mana_value))
+            n += sum(1 for o in hit_tokens if _TB.card_matches(spec, type_line=f"Token Creature — {o.name}", is_token=True))
+            if n:
+                _tb_fire(state, strategy, src, spec, ability, event="combat damage",
+                         times=1 if (spec.batch or spec.event == "combat_damage_batch") else min(n, cap))
+    return outcomes
+
+
+combat_interaction.resolve_combat_interaction = _v4830_resolve_combat_interaction
+
+combat_interaction._V4830_BLOCK_MULT = 1.0
+_V4830_block_rate_for_old = combat_interaction.block_rate_for
+
+
+def _v4830_block_rate_for(*args, **kwargs):
+    """Blockrate x (board_presence des angegriffenen Sitzes / Referenz) -
+    nur im Advanced-Tisch gesetzt (siehe _choose_attack_target_seat), sonst 1.0."""
+    rate = _V4830_block_rate_for_old(*args, **kwargs)
+    return max(0.0, min(1.0, rate * float(getattr(combat_interaction, "_V4830_BLOCK_MULT", 1.0))))
+
+
+combat_interaction.block_rate_for = _v4830_block_rate_for
+
+_V4830_should_attack_old = commander_posture.creature_should_attack
+
+
+def _v4830_creature_should_attack(ops, state, strategy, p, *, other_attacker_count: int = 0) -> bool:
+    """Advanced-Tisch: ein Commander/Engine-Wesen mit 'balanced'-Haltung
+    greift zusaetzlich an, wenn der gewaehlte Ziel-Sitz praktisch offen ist
+    (board_presence <= open_board_units) - kein Risiko, keine Blocker.
+    'passive' bleibt passiv, 'aggressive' greift ohnehin an."""
+    if _V4830_should_attack_old(ops, state, strategy, p, other_attacker_count=other_attacker_count):
+        return True
+    seat = getattr(state, "_attack_target_seat", None)
+    if seat is None or not _advanced_active(strategy):
+        return False
+    posture = (getattr(strategy, "commander_posture", "auto") or "auto").lower()
+    if posture == "auto":
+        posture = commander_posture.infer_auto_posture(p.card)
+    if posture != "balanced":
+        return False
+    return _seat_board(state, strategy, seat) <= float(_td("open_board_units", 1.0))
+
+
+commander_posture.creature_should_attack = _v4830_creature_should_attack
+commander_posture.commander_should_attack = _v4830_creature_should_attack
+
+
+_V4830_commander_cast_old = cast_one_commander_v41
+
+
+def cast_one_commander_v41(state: GameState, strategy) -> Optional[str]:
+    name = _V4830_commander_cast_old(state, strategy)
+    if name:
+        card = next((p.card for p in state.battlefield if p.card.name == name), None)
+        if card is not None:
+            state.spells_cast_this_turn = int(getattr(state, "spells_cast_this_turn", 0)) + 1
+            _tb_emit(state, strategy, "cast", card=card)
+    return name
+
+
+# ---------------------------------------------------------------------------
+# (E) Kennzahlen: Siege ueber Win-Conditions, Trigger-Bus-Aktivitaet
+# ---------------------------------------------------------------------------
+_V4830_stats_add_old = StreamingStatsV440.add
+
+
+def _streaming_stats_add_v4830(self, rr: dict, tr: List[dict], sr: List[dict]):
+    _V4830_stats_add_old(self, rr, tr, sr)
+    self._v4830_runs = getattr(self, "_v4830_runs", 0) + 1
+    events = " ".join(str(r.get("events", "")) for r in tr)
+    if "WIN CONDITION EXECUTED" in events and str(rr.get("win_turn", "")).strip():
+        self._v4830_wc_wins = getattr(self, "_v4830_wc_wins", 0) + 1
+    if "WIN CONDITION DISRUPTED" in events:
+        self._v4830_wc_disrupted = getattr(self, "_v4830_wc_disrupted", 0) + 1
+    self._v4830_trigger_fires = getattr(self, "_v4830_trigger_fires", 0) + events.count("TRIGGER [")
+    self._v4830_elims = getattr(self, "_v4830_elims", 0) + (3 - int(rr.get("opponents_remaining", 3) or 0))
+    last = tr[-1] if tr else {}
+    try:
+        opp = [max(0.0, float(x)) for x in str(last.get("opponent_life", "")).split("|") if x.strip()]
+        self._v4830_dealt = getattr(self, "_v4830_dealt", 0.0) + sum(40.0 - x for x in opp)
+    except ValueError:
+        pass
+
+
+StreamingStatsV440.add = _streaming_stats_add_v4830
+
+_V4830_summary_old = streaming_summary_v440
+
+
+def streaming_summary_v440(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy) -> dict:
+    data = _V4830_summary_old(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy)
+    n = max(1, getattr(stats, "_v4830_runs", 0))
+    o = data.setdefault("outcomes", {})
+    o["win_via_win_condition_pct"] = 100.0 * getattr(stats, "_v4830_wc_wins", 0) / n
+    o["win_condition_disrupted_pct"] = 100.0 * getattr(stats, "_v4830_wc_disrupted", 0) / n
+    o["avg_trigger_bus_fires"] = getattr(stats, "_v4830_trigger_fires", 0) / n
+    o["avg_opponents_eliminated"] = getattr(stats, "_v4830_elims", 0) / n
+    o["avg_opponent_life_lost_total"] = getattr(stats, "_v4830_dealt", 0.0) / n
+    o["active_at_turn_limit_pct"] = max(0.0, 100.0 - float(o.get("win_by_turn_limit_pct", 0) or 0)
+                                        - float(o.get("loss_by_turn_limit_pct", 0) or 0))
+    # Abdeckung der ausgeloesten Zeilen im Deck (ehrliche Luecken-Anzeige)
+    sup, unsup, reasons = 0, 0, Counter()
+    for card in deck:
+        for line in split_oracle_lines(card.oracle_text):
+            spec = _TB.parse_trigger(strip_reminder_text(line), card.name)
+            if spec is None:
+                continue
+            if spec.supported and (card.name not in _TB_LEGACY_NAMES):
+                sup += 1
+            else:
+                unsup += 1
+                reasons[spec.reason or "legacy_card_specific"] += 1
+    data.setdefault("simulation", {})["trigger_bus"] = {
+        "triggered_lines_in_deck": sup + unsup,
+        "dispatched_generically": sup,
+        "not_dispatched": unsup,
+        "not_dispatched_reasons": dict(reasons.most_common()),
+        "note": "v4.83.0: ausgeloeste Faehigkeiten laufen ueber App/trigger_bus; 'not_dispatched' = Zeilen mit "
+                "Zwischen-if/optionalen Kosten/unbekannter Bedingung oder namentlich im Altcode behandelte Karten.",
+    }
+    data["simulation"]["table_model"] = (
+        "symmetric 4-player table v1 (Data/Models/table_dynamics.json)" if _td_on() else "legacy (asymmetric)"
+    )
+    return data
+
+
+
+# ---------------------------------------------------------------------------
+# (F) Zwei haeufige Aktions-Parserluecken, die der Trigger-Bus sichtbar machte:
+#   "target player loses N life" (Blood Artist & Co. - Aristokraten-Kern) und
+#   "each opponent loses X life, where X is your devotion to <Farbe>"
+#   (Gray Merchant of Asphodel & Co.).
+# ---------------------------------------------------------------------------
+_V4830_parse_semantic_actions_old = _parse_semantic_actions
+
+
+def _parse_semantic_actions(effect: str) -> List[SemanticAction]:
+    actions = _V4830_parse_semantic_actions_old(effect)
+    low = strip_reminder_text(effect).lower()
+    # "target opponent draws a card" ist KEIN eigenes Ziehen (Ms. Bumbleflower,
+    # Kwain & Co.) - vorher zog der Spieler selbst. "each player draws" bleibt.
+    if re.search(r"\b(?:target opponent|each opponent|an opponent|that opponent|its controller) draws?\b", low) \
+            and not re.search(r"\byou (?:may )?draw\b|\bdraw (?:a|one|two|three|\d+) cards?\b(?!.*\bdraws\b)", low.split("draws", 1)[0]):
+        actions = [a for a in actions if a.kind != "draw"]
+    if not any(a.kind == "opponent_life_loss" for a in actions):
+        m = re.search(r"target player loses (a|one|two|three|\d+) life", low)
+        if m:
+            actions.append(SemanticAction(kind="opponent_life_loss", amount=float(parse_number_token(m.group(1))),
+                                          target="target opponent", raw=effect))
+    m = re.search(r"each opponent loses x life, where x is your devotion to (white|blue|black|red|green)", low)
+    if m and not any(a.kind == "devotion_drain" for a in actions):
+        color = {"white": "W", "blue": "U", "black": "B", "red": "R", "green": "G"}[m.group(1)]
+        actions.append(SemanticAction(kind="devotion_drain", keyword=color,
+                                      token="gain" if "you gain life equal to the life lost" in low else "", raw=effect))
+    return actions
+
+
+def devotion_to(state: GameState, color: str) -> int:
+    """Anzahl der Mana-Symbole einer Farbe in den Manakosten eigener Permanents
+    (Hybrid zaehlt fuer beide Farben)."""
+    total = 0
+    for p in state.battlefield:
+        for sym in re.findall(r"\{([^}]+)\}", p.card.mana_cost or ""):
+            if color in sym.upper().split("/"):
+                total += 1
+    return total
+
+
+# ===========================================================================
+# v4.84.0 Block A: Deck-Spiel / Mechaniken (offene Punkte aus v4.83.0)
+#   A1 statische Animation ("each ... you control is a 4/4 creature", Bello,
+#      March of the Machines, Opalescence-artig)
+#   A2 "If this is the second/third time this ability has resolved this turn"
+#   A3 Trigger-Bus: variable Mengen (for each / equal to the number of),
+#      Vorab-Teil verzoegerter Trigger, sterbende Token, Opfern, Ressourcen-
+#      Token-ETB, Gegner-Zauber (inkl. "a player casts"), Rhystic-Steuer
+#   A4 ehrliche Trigger-Spalte in card_model_coverage.csv
+# ===========================================================================
+from dataclasses import replace as _dc_replace
+from functools import lru_cache
+
+_V4840_KEYWORDS = ("flying", "haste", "indestructible", "trample", "vigilance", "lifelink", "deathtouch",
+                   "menace", "first strike", "double strike", "reach", "hexproof", "ward")
+_ANIM_RE = re.compile(
+    r"^(?P<during>during your turn, )?(?:each|all) (?P<filter>[a-z ,'’-]+?)(?P<yc> you control)?"
+    r"(?: with mana value (?P<mv>\d+) or greater)? (?:is|are) (?:a |an )?(?:(?P<p>\d+)/(?P<t>\d+) )?"
+    r"(?P<types>[a-z ]*?)creatures?\b(?P<rest>.*)$"
+)
+
+
+def _anim_parse_filter(text: str):
+    """'non-equipment artifact and non-aura enchantment' -> ({artifact, enchantment}, {equipment, aura}, other)"""
+    other = bool(re.search(r"\bother\b", text))
+    text = re.sub(r"\bother\b", "", text)
+    include, exclude = set(), set()
+    for tok in re.split(r"\s+(?:and|or)\s+|,\s*", text.strip()):
+        tok = tok.strip()
+        if not tok:
+            continue
+        words = tok.split()
+        for w in words:
+            m = re.match(r"^non-?([a-z]+)$", w)
+            if m:
+                exclude.add(m.group(1).rstrip("s"))
+            elif w.rstrip("s") in ("artifact", "enchantment", "land", "permanent", "planeswalker"):
+                include.add(w.rstrip("s"))
+    if not include:
+        return None
+    return include, exclude, other
+
+
+@lru_cache(maxsize=4096)
+def _anim_specs_for_text(text: str) -> tuple:
+    out = []
+    for line in split_oracle_lines(text):
+        low = strip_reminder_text(line).lower().strip()
+        if "until end of turn" in low or "as long as" in low or low.startswith(("when", "at the beginning", "{")):
+            continue
+        m = _ANIM_RE.match(low)
+        if not m:
+            continue
+        flt = _anim_parse_filter(m.group("filter"))
+        if not flt:
+            continue
+        include, exclude, other = flt
+        rest = m.group("rest") or ""
+        pt_mv = "equal to its mana value" in rest or "each equal to its mana value" in rest
+        p = int(m.group("p")) if m.group("p") else None
+        t = int(m.group("t")) if m.group("t") else None
+        if p is None and not pt_mv:
+            continue
+        kws = frozenset(k for k in _V4840_KEYWORDS if re.search(rf"\b{k}\b", rest.split('"')[0]))
+        out.append({
+            "include": frozenset(include), "exclude": frozenset(exclude), "other": other,
+            "mv": int(m.group("mv")) if m.group("mv") else None, "p": p, "t": t, "pt_mv": pt_mv,
+            "keywords": kws, "draw_on_damage": "deals combat damage to a player, draw a card" in rest,
+            "during": bool(m.group("during")), "you_control": bool(m.group("yc")),
+        })
+    return tuple(out)
+
+
+def _anim_matches(spec: dict, card: Card) -> bool:
+    tl = card.type_line.lower()
+    if card.is_creature:
+        return False
+    if not any(t in tl for t in spec["include"]) and "permanent" not in spec["include"]:
+        return False
+    if any(x in tl for x in spec["exclude"]):
+        return False
+    if spec["mv"] is not None and card.mana_value < spec["mv"]:
+        return False
+    if "land" not in spec["include"] and card.is_land:
+        return False
+    return True
+
+
+def _apply_animation(state: GameState) -> Dict[int, Tuple[Permanent, Card]]:
+    """Macht passende Nicht-Kreatur-Permanents fuer den eigenen Kampf zu
+    Kreaturen (Kopie der Card mit Kreatur-Typ, P/T, Keywords). Rueckgabe:
+    id(Permanent) -> (Permanent, Original-Card) zum Zuruecksetzen."""
+    changed: Dict[int, Tuple[Permanent, Card]] = {}
+    specs = []
+    for src in state.battlefield:
+        if has_dedicated_resolver(src.card):
+            continue
+        for sp in _anim_specs_for_text(_tb_front_face_text(src.card)):
+            specs.append((src, sp))
+    if not specs:
+        return changed
+    draw_ids = set()
+    for p in list(state.battlefield):
+        if id(p) in changed:
+            continue
+        for src, sp in specs:
+            if sp["other"] and p is src:
+                continue
+            if not _anim_matches(sp, p.card):
+                continue
+            pw = float(p.card.mana_value) if sp["pt_mv"] else float(sp["p"])
+            tg = float(p.card.mana_value) if sp["pt_mv"] else float(sp["t"] or sp["p"])
+            orig = p.card
+            p.card = _dc_replace(orig, type_line=orig.type_line + " Creature — Elemental", power=pw, toughness=tg,
+                                 keywords=set(orig.keywords) | set(sp["keywords"]))
+            changed[id(p)] = (p, orig)
+            if sp["draw_on_damage"]:
+                draw_ids.add(id(p))
+            break
+    state._anim_draw_ids = draw_ids
+    if changed:
+        state.log("ANIMATE: " + ", ".join(orig.name for _p, orig in changed.values()) + " attack as creatures this turn")
+    return changed
+
+
+def _restore_animation(state: GameState, changed: Dict[int, Tuple[Permanent, Card]]) -> None:
+    for p, orig in changed.values():
+        copy = p.card
+        p.card = orig
+        for zone in (state.graveyard, state.exile, state.hand, state.library, state.command_zone):
+            for i, c in enumerate(zone):
+                if c is copy:
+                    zone[i] = orig
+    state._anim_draw_ids = set()
+
+
+# --- A3: Token-Tode (Diff-Messung um Phasen, in denen Token sterben) ---------
+def _token_snapshot(state: GameState) -> Dict[int, Tuple[TokenGroup, int]]:
+    return {id(g): (g, int(g.count)) for g in state.creature_tokens}
+
+
+def _emit_token_deaths(state: GameState, strategy: Strategy, snap) -> None:
+    now = {id(g): int(g.count) for g in state.creature_tokens}
+    for gid, (g, before) in snap.items():
+        lost = before - now.get(gid, 0)
+        if lost > 0:
+            _tb_emit(state, strategy, "dies", is_token=True, count=lost, type_line=f"Token Creature — {g.name}")
+
+
+_V4840_attack_phase_old = attack_phase
+
+
+def attack_phase(state: GameState, strategy: Strategy, rng: Optional[random.Random] = None):
+    changed = _apply_animation(state) if _td_on("trigger_bus") else {}
+    snap = _token_snapshot(state)
+    try:
+        return _V4840_attack_phase_old(state, strategy, rng)
+    finally:
+        _restore_animation(state, changed)
+        _emit_token_deaths(state, strategy, snap)
+
+
+_V4840_apply_opponent_old = apply_abstract_opponent_phase
+
+
+def apply_abstract_opponent_phase(state: GameState, strategy: Strategy, rng: random.Random):
+    snap = _token_snapshot(state)
+    try:
+        return _V4840_apply_opponent_old(state, strategy, rng)
+    finally:
+        _emit_token_deaths(state, strategy, snap)
+
+
+# --- A1b: "draw a card" bei Kampfschaden animierter Permanents ---------------
+_V4840_resolve_old = combat_interaction.resolve_combat_interaction
+
+
+def _v4840_resolve_combat_interaction(profile_name, turn, attackers, rng, *, state=None):
+    outcomes = _V4840_resolve_old(profile_name, turn, attackers, rng, state=state)
+    ids = getattr(state, "_anim_draw_ids", None) if state is not None else None
+    if ids:
+        for o in outcomes:
+            if o.damage_dealt > 0 and o.source_kind == "permanent" and id(o.source_ref) in ids:
+                draw_cards(state, 1, reason=f"{o.name} (animated) combat damage")
+    return outcomes
+
+
+combat_interaction.resolve_combat_interaction = _v4840_resolve_combat_interaction
+
+
+# --- A3: variable Mengen und Vorab-Teil verzoegerter Trigger ----------------
+_TB_TYPE_WORDS = ("creature", "artifact", "enchantment", "land", "planeswalker", "permanent", "token")
+
+
+def _tb_count_expr(state: GameState, text: str, source: Optional[Permanent]) -> Optional[int]:
+    """Loest 'for each X' / 'equal to the number of X' / 'where X is the
+    number of X' fuer einfache, sicher zaehlbare Mengen auf. None = unbekannt
+    (dann wird die Zeile weiterhin NICHT ausgefuehrt)."""
+    t = text.lower()
+    if re.search(r"for each opponent(?! who| that)", t):
+        return len(_alive_opponent_indices(state))
+    if re.search(r"for each card in your hand|equal to the number of cards in your hand", t):
+        return len(state.hand)
+    m = re.search(r"(?:for each|equal to the number of|where x is the number of) (other )?([a-z' -]+?)s? you control", t)
+    if not m:
+        return None
+    other = bool(m.group(1))
+    noun = m.group(2).strip().split()[-1].rstrip("s")
+    n = 0
+    for p in state.battlefield:
+        tl = p.card.type_line.lower()
+        if noun in _TB_TYPE_WORDS:
+            ok = noun == "permanent" or noun in tl
+        else:
+            ok = bool(re.search(rf"\b{re.escape(noun)}s?\b", tl))
+        if ok and not (other and p is source):
+            n += 1
+    if noun in ("creature", "token") or noun not in _TB_TYPE_WORDS:
+        for g in state.creature_tokens:
+            if noun in ("creature", "token") or re.search(rf"\b{re.escape(noun)}s?\b", g.name.lower()):
+                n += max(0, int(g.count))
+    return n
+
+
+def _tb_unit_text(effect: str) -> str:
+    """Schreibt eine variable Menge auf 1 um, damit der Aktions-Parser die
+    Aktion erkennt ('gain life equal to the number of ...' -> 'gain 1 life');
+    der Multiplikator wird beim Ausloesen berechnet (_tb_count_expr)."""
+    t = re.sub(r"\b(gain|gains|lose|loses) life equal to [^.,]*", r"\1 1 life", effect)
+    t = re.sub(r"\bdraw cards equal to [^.,]*", "draw a card", t)
+    t = re.sub(r"\bx\b", "1", t)
+    t = re.sub(r"\bthat many\b", "1", t)
+    t = re.sub(r",? where 1 is [^.]*", "", t)
+    return t
+
+
+_V4840_tb_entries_old = _tb_entries
+
+
+def _tb_entries(card: Card) -> list:
+    key = ("v4840", card.name, card.oracle_text or "")
+    got = _TB_CACHE.get(key)
+    if got is not None:
+        return got
+    out = list(_V4840_tb_entries_old(card))
+    front = _tb_front_face_text(card)
+    try:
+        abilities = [a for a in parse_oracle_semantics(card) if a.raw.strip() and a.raw.strip() in front]
+    except Exception:
+        abilities = []
+    for a in abilities:
+        if a.ability_kind == "activated":
+            continue
+        spec = _TB.parse_trigger(strip_reminder_text(a.raw), card.name)
+        if spec is None or spec.supported or spec.event == "other":
+            continue
+        if spec.reason == "variable_amount" and not re.search(r"this turn|for each opponent (?:who|that)", spec.effect):
+            acts = a.actions or _parse_semantic_actions(_tb_unit_text(spec.effect))
+            if not acts:
+                continue
+            derived = _dc_replace(a, actions=list(acts))
+            derived._tb_mult_text = spec.effect
+            out.append((_dc_replace(spec, supported=True, reason="variable_amount_resolved"), derived))
+        elif spec.reason == "delayed_trigger":
+            pre = re.split(r"\bwhen (?:it|that creature|that token|this creature|they) (?:dies|die|leaves)\b|at the beginning of the next",
+                           spec.effect)[0].strip()
+            acts = [x for x in _parse_semantic_actions(pre) if x.kind != "create_token"] if pre else []
+            if acts:
+                out.append((_dc_replace(spec, supported=True, reason="delayed_pre_part"), _dc_replace(a, actions=acts)))
+    _TB_CACHE[key] = out
+    return out
+
+
+_V4840_tb_fire_old = _tb_fire
+_RESOLVED_NTH_RE = re.compile(r"if this is the (second|third) time this ability has resolved this turn, (.+)$")
+
+
+def _tb_fire(state: GameState, strategy: Strategy, source: Permanent, spec, ability, *,
+             event: str, exclude_kinds: Set[str] = frozenset(), times: int = 1) -> int:
+    mult_text = getattr(ability, "_tb_mult_text", None)
+    if mult_text:
+        n = _tb_count_expr(state, mult_text, source)
+        if not n:
+            return 0
+        scaled = [_dc_replace(x, amount=(float(x.amount) * n if float(x.amount or 0) > 0 else float(n))) for x in ability.actions]
+        ability = _dc_replace(ability, actions=scaled)
+    fired = _V4840_tb_fire_old(state, strategy, source, spec, ability, event=event, exclude_kinds=exclude_kinds, times=times)
+    if fired:
+        m = _RESOLVED_NTH_RE.search(strip_reminder_text(ability.raw).lower())
+        if m:
+            nth = 2 if m.group(1) == "second" else 3
+            counts = getattr(state, "_tb_counts", (None, Counter()))[1]
+            total = counts[(id(source), ability.raw)]
+            if total - fired < nth <= total:
+                for action in _parse_semantic_actions(m.group(2)):
+                    execute_semantic_action(state, strategy, source, action)
+                state.log(f"TRIGGER [{event}] {source.card.name}: {m.group(1)} resolution this turn -> {m.group(2)[:50]}")
+    return fired
+
+
+# Das "target opponent draws" -Filter aus v4.83.0 entfernte auch das
+# bedingte "you draw two cards" - die bedingte Aktion wird jetzt oben separat
+# geparst (A2), damit sie nicht doppelt ausgefuehrt wird, wird sie aus der
+# Haupt-Aktionsliste herausgehalten.
+_V4840_parse_semantic_actions_old = _parse_semantic_actions
+
+
+def _parse_semantic_actions(effect: str) -> List[SemanticAction]:
+    low = strip_reminder_text(effect).lower()
+    m = _RESOLVED_NTH_RE.search(low)
+    if m:
+        return _V4840_parse_semantic_actions_old(effect[:m.start()] if m.start() > 0 else "")
+    return _V4840_parse_semantic_actions_old(effect)
+
+
+# --- A3: Opfern und Ressourcen-Token --------------------------------------
+_V4840_token_sacrificed_old = token_sacrificed
+
+
+def token_sacrificed(state: GameState, token_type: str, n: int = 1, strategy: Optional[Strategy] = None):
+    res = _V4840_token_sacrificed_old(state, token_type, n, strategy)
+    if n > 0:
+        _tb_emit(state, strategy or strategy_for_state(state), "sacrifice", is_token=True, count=n,
+                 type_line=f"Token Artifact — {token_type}")
+    return res
+
+
+_V4840_create_tokens_old = create_tokens
+
+
+def create_tokens(state: GameState, strategy: Strategy, token_type: str, n: int, **kwargs):
+    before = int(state.food) + int(state.treasure) + int(state.clues)
+    res = _V4840_create_tokens_old(state, strategy, token_type, n, **kwargs)
+    made = int(state.food) + int(state.treasure) + int(state.clues) - before
+    if made > 0 and not kwargs.get("creature"):
+        _tb_emit(state, strategy, "enters", is_token=True, count=made, type_line=f"Token Artifact — {token_type}")
+    return res
+
+
+# --- A3: Zauber der Gegner (inkl. "a player casts") -------------------------
+_OPP_SPELL_TYPES = (("Creature", 0.35), ("Instant", 0.2), ("Sorcery", 0.15), ("Artifact", 0.18), ("Enchantment", 0.12))
+
+
+def _tb_emit_opponent_cast(state: GameState, strategy: Strategy, seat: int, rng: random.Random) -> None:
+    if not _td_on("trigger_bus") or state.win_turn is not None or not (0 <= seat < len(state.opponents)):
+        return
+    per_turn = float(_td("opponent_spells_per_turn", 1.5, "trigger_bus"))
+    n = int(per_turn) + (1 if rng.random() < per_turn - int(per_turn) else 0)
+    for _ in range(n):
+        roll, acc, tl = rng.random(), 0.0, "Sorcery"
+        for t, w in _OPP_SPELL_TYPES:
+            acc += w
+            if roll <= acc:
+                tl = t
+                break
+        for src in list(state.battlefield):
+            if not _tb_source_ok(src):
+                continue
+            for line in split_oracle_lines(_tb_front_face_text(src.card)):
+                raw = strip_reminder_text(line)
+                spec = _TB.parse_trigger(raw, src.card.name)
+                if spec is None or not spec.supported:
+                    continue
+                if not (spec.event == "opponent_cast" or (spec.event == "cast" and spec.any_player)):
+                    continue
+                if (spec.types or spec.subtypes) and not _TB.card_matches(spec, type_line=tl, mana_value=3.0):
+                    continue
+                if spec.tax and rng.random() < float(_td("opponent_pays_tax_share", 0.5, "trigger_bus")):
+                    continue
+                eff = spec.effect
+                m = _TB_OPP_LOSS_RE.search(eff) or _TB_OPP_DMG_RE.search(eff)
+                if m:
+                    before = state.opponents[seat]
+                    state.opponents[seat] = max(0.0, before - int(m.group(1)))
+                    record_impact(state, src.card.name, "opponent_life_loss", min(before, int(m.group(1))))
+                    state.log(f"TRIGGER [opponent cast] {src.card.name}: opponent {seat + 1} -{m.group(1)}")
+                    continue
+                eff_clean = re.sub(r"unless that player pays \{[^}]+\}(?:\{[^}]+\})*", "", eff)
+                acts = _parse_semantic_actions(eff_clean)
+                if acts:
+                    ability = SemanticAbility(source=src.card.name, raw=line, ability_kind="triggered",
+                                              trigger="opponent_cast", actions=acts, execution_mode="simplified")
+                    _tb_fire(state, strategy, src, spec, ability, event="opponent cast")
+    check_win(state)
+
+
+# Einbindung: einmal je lebendem Sitz und Gegnerzug (beide Gegnermodelle).
+_V4840_apply_opponent_old2 = apply_abstract_opponent_phase
+
+
+def apply_abstract_opponent_phase(state: GameState, strategy: Strategy, rng: random.Random):
+    if _td_on("trigger_bus") and getattr(strategy, "opponent_profile", "goldfish") != "goldfish":
+        for i in _alive_opponent_indices(state):
+            _tb_emit_opponent_cast(state, strategy, i, rng)
+    return _V4840_apply_opponent_old2(state, strategy, rng)
+
+
+# --- A4: ehrliche Trigger-Spalte in card_model_coverage.csv ----------------
+_V4840_coverage_rows_old = card_model_coverage_rows
+
+
+def card_model_coverage_rows(deck: List[Card], *args, **kwargs) -> List[dict]:
+    rows = _V4840_coverage_rows_old(deck, *args, **kwargs)
+    by_name = {c.name: c for c in deck}
+    for row in rows:
+        row.setdefault("Trigger im Spielpfad (v4.84)", "")
+        card = by_name.get(row.get("Name"))
+        if card is None:
+            continue
+        lines, ok, reasons = 0, 0, Counter()
+        for line in split_oracle_lines(_tb_front_face_text(card)):
+            spec = _TB.parse_trigger(strip_reminder_text(line), card.name)
+            if spec is None:
+                continue
+            lines += 1
+            if card.name in _TB_LEGACY_NAMES or has_dedicated_resolver(card):
+                ok += 1
+                reasons["karten-spezifisch"] += 1
+            elif spec.supported:
+                ok += 1
+            elif spec.reason == "legacy_lifegain":
+                ok += 1
+                reasons["Altcode (Lebensgewinn)"] += 1
+            elif spec.reason in ("variable_amount", "delayed_trigger") and any(
+                    s.reason in ("variable_amount_resolved", "delayed_pre_part") for s, _a in _tb_entries(card)):
+                ok += 1
+                reasons["teilweise/" + spec.reason] += 1
+            else:
+                reasons[spec.reason or "unbekannt"] += 1
+        anim = bool(_anim_specs_for_text(_tb_front_face_text(card)))
+        if lines or anim:
+            txt = f"{ok}/{lines} ausgeloeste Zeilen laufen im Spiel"
+            if reasons:
+                txt += " (" + ", ".join(f"{k}: {v}" for k, v in reasons.items()) + ")"
+            if anim:
+                txt += "; statische Animation im eigenen Kampf (v4.84.0)"
+            row["Trigger im Spielpfad (v4.84)"] = txt
+            if lines and ok < lines and "executable/approximable" in str(row.get("Generic semantic runtime coverage", "")):
+                row["Generic semantic runtime coverage"] = str(row["Generic semantic runtime coverage"]) + \
+                    f" - ACHTUNG: {lines - ok} ausgeloeste Zeile(n) laufen nicht (siehe Trigger-Spalte)"
+    return rows
+
+
+
+# --- A3: "Whenever you gain life, ..." (ausser den 3 Altcode-Mustern) -------
+_V4840_gain_life_old = gain_life
+
+
+def gain_life(state: GameState, base: float, source: str = "", *args, **kwargs):
+    amount = _V4840_gain_life_old(state, base, source, *args, **kwargs)
+    if (amount or 0) > 0 and int(getattr(state, "_tb_depth", 0)) == 0:
+        _tb_emit(state, strategy_for_state(state), "life_gain")
+    return amount
+
+
+
+# --- A: Land-Suche (Ramp) als generische Aktion ------------------------------
+# Befund: Nature's Lore, Three Visits, Cultivate, Kodama's Reach, Wood Elves ...
+# taten nichts (nur Farseek/Rampant Growth waren namentlich verdrahtet).
+_LAND_SEARCH_RE = re.compile(
+    r"search your library for (a|an|one|two|up to two|three|up to three) "
+    r"((?:basic )?(?:land|forest|plains|island|swamp|mountain)(?:,? (?:or|and) (?:basic )?(?:forest|plains|island|swamp|mountain))*) cards?"
+    r"(?P<mid>[^.]*?)(?:,|and|then)? ?put (?P<what>it|them|that card|those cards|one of (?:them|those cards)|one) onto the battlefield(?P<tapped> tapped)?"
+    r"(?P<rest>[^.]*)"
+)
+_NUMW = {"a": 1, "an": 1, "one": 1, "two": 2, "up to two": 2, "three": 3, "up to three": 3}
+
+
+def _land_search_actions(effect: str) -> List[SemanticAction]:
+    low = strip_reminder_text(effect).lower()
+    m = _LAND_SEARCH_RE.search(low)
+    if not m:
+        return []
+    n = _NUMW.get(m.group(1), 1)
+    kinds = m.group(2)
+    allowed = sorted({b for b in ("Forest", "Plains", "Island", "Swamp", "Mountain") if b.lower() in kinds})
+    to_bf = n
+    to_hand = 0
+    if m.group("what").startswith("one"):
+        to_bf = 1
+        if "into your hand" in (m.group("rest") or "") and n >= 2:
+            to_hand = n - 1
+    return [SemanticAction(kind="land_search", amount=float(to_bf), keyword=",".join(allowed),
+                           token="tapped" if m.group("tapped") else "untapped", target=f"hand:{to_hand}", raw=effect)]
+
+
+_V4840b_parse_old = _parse_semantic_actions
+
+
+def _parse_semantic_actions(effect: str) -> List[SemanticAction]:
+    actions = _V4840b_parse_old(effect)
+    if not any(a.kind == "land_search" for a in actions):
+        actions = actions + _land_search_actions(effect)
+    return actions
+
+
+def land_search(state: GameState, strategy: Strategy, n: int, allowed: Set[str], tapped: bool,
+                to_hand: int = 0, source: str = "land search") -> int:
+    got = 0
+    for _ in range(max(0, int(n))):
+        if put_basic_from_library(state, strategy, set(allowed), tapped=tapped, source=source):
+            got += 1
+    for _ in range(max(0, int(to_hand))):
+        c = find_basic_for_fetch(state, set(allowed), strategy)
+        if c is None:
+            break
+        state.library.remove(c)
+        state.hand.append(c)
+        state.log(f"{source}: {c.name} -> hand")
+    if got:
+        record_impact(state, source, "ramp_lands", got)
+    return got
+
+
+_V4840_role_set_old = role_set
+
+
+def role_set(card: Card) -> Set[str]:
+    roles = set(_V4840_role_set_old(card))
+    if not card.is_land and _land_search_actions(card.oracle_text or ""):
+        roles.add("ramp")
+    return roles
+
+
+# --- A: generische Wirkung von Spontan-/Hexereizaubern ----------------------
+# Die alte Aufloesung deckt ziehen, Leben, Drain, Scry/Surveil, Ressourcen-
+# Token und Team-Pump ab. Alles andere, was der Parser erkennt (Kreatur-Token,
+# +1/+1-Marken, Proliferieren, Amass, Mill, Abwerfen, Keyword-Vergabe,
+# Land-Suche, Fight ...), wurde nie ausgefuehrt. Storm kopiert jetzt echt.
+_SPELL_LEGACY_KINDS = {"draw", "opponent_life_loss", "gain_life", "scry", "surveil", "connive",
+                       "team_pt_bonus", "typed_pt_bonus", "devotion_drain"}
+_V4840_resolve_spell_old = resolve_direct_spell_effects
+
+
+def _generic_spell_actions(card: Card) -> List[SemanticAction]:
+    out = []
+    for line in split_oracle_lines(_tb_front_face_text(card)):
+        low = strip_reminder_text(line).lower().strip()
+        if not low or low.startswith(("•", "choose ", "flashback", "storm", "buyback", "kicker", "overload",
+                                       "as an additional cost", "this spell costs", "{", "when ", "whenever ", "at the beginning")):
+            continue
+        for a in _parse_semantic_actions(line):
+            if a.kind in _SPELL_LEGACY_KINDS:
+                continue
+            if a.kind == "create_token" and (a.token or "").strip().lower() in ("food", "treasure", "clue"):
+                continue
+            out.append(a)
+    return out
+
+
+def resolve_direct_spell_effects(state: GameState, strategy: Strategy, card: Card):
+    copies = 1
+    if "storm" in {k.lower() for k in card.keywords} and _td_on("trigger_bus"):
+        # spells_cast_this_turn zaehlt erst NACH der Aufloesung hoch -> = Zauber vor diesem
+        copies += max(0, min(8, int(getattr(state, "spells_cast_this_turn", 0))))
+    for i in range(copies):
+        _V4840_resolve_spell_old(state, strategy, card)
+        if _td_on("trigger_bus") and (card.is_instant or card.is_sorcery) and not has_dedicated_resolver(card) \
+                and card.name not in _TB_LEGACY_NAMES:
+            for action in _generic_spell_actions(card):
+                execute_semantic_action(state, strategy, None, action)
+        if i:
+            state.log(f"STORM: copy {i} of {card.name} resolved")
+
+
+
+# --- A: Rueckseiten doppelseitiger Karten wirken nicht ------------------------
+# Die Engine kennt kein Transformieren (card_from_scryfall nimmt Typ/P/T der
+# Vorderseite); Faehigkeiten der Rueckseite liefen trotzdem ueber den
+# probabilistischen Semantik-Laeufer (z. B. Tovolar, the Midnight Scourge).
+_V4840_parse_oracle_semantics_old = parse_oracle_semantics
+
+
+def parse_oracle_semantics(card: Card) -> List[SemanticAbility]:
+    abilities = _V4840_parse_oracle_semantics_old(card)
+    text = card.oracle_text or ""
+    if "\n//\n" not in text or card.is_instant or card.is_sorcery:
+        return abilities
+    front = text.split("\n//\n", 1)[0]
+    return [a for a in abilities if not a.raw.strip() or a.raw.strip() in front]
+
+
+
+# ===========================================================================
+# v4.84.0 Block B: Gegner und Tisch
+#   B1 einfache Gegnerprofile laufen ueber denselben symmetrischen Tisch
+#   B2 datenbasierte Parameter (Anteil Removal vs. Protection, Sofort-
+#      Tempo-Anteil fuer Kombo-Stoerung) - siehe table_dynamics.json
+#   B3 Wirkung von passive_value / sac_drain / disruption_lockout der Sitze
+#   B4 Commander-Schaden durch Gegner
+# ===========================================================================
+_V4840_pipeline_old = run_pipeline_v440
+
+
+def run_pipeline_v440(*args, **kwargs):
+    prof = kwargs.get("opponent_profile", "goldfish") or "goldfish"
+    if (_td_on() and _td("simple_profiles_use_table", True) and prof != "goldfish"
+            and not kwargs.get("advanced_opponent_model")):
+        strat = "?" if prof == "random" else prof
+        kwargs["advanced_opponent_model"] = True
+        kwargs["advanced_opponent_seats"] = [{"strategy": strat, "colors": "?", "bracket": 3} for _ in range(3)]
+        kwargs["_v4840_mapped_simple_profile"] = prof
+    mapped = kwargs.pop("_v4840_mapped_simple_profile", None)
+    result = _V4840_pipeline_old(*args, **kwargs)
+    if mapped:
+        try:
+            result["summary"].setdefault("simulation", {})["simple_profile_mapped_to_table"] = (
+                f"'{mapped}' laeuft seit v4.84.0 als 3 Bracket-3-Sitze ({mapped if mapped != 'random' else 'zufaellige Strategie'}, "
+                "zufaellige Farben) am symmetrischen Tisch; Altmodell: table_dynamics.json simple_profiles_use_table=false")
+        except Exception:
+            pass
+    return result
+
+
+# --- B3: Bestands-Wirkungen der Sitze ----------------------------------------
+def _apply_seat_stocks(state: GameState, strategy: Strategy, seat: int, opp_state, rng: random.Random, label: str) -> None:
+    """passive_value (Kartenvorteils-/Steuer-Engines) beschleunigt den Aufbau
+    des Sitzes; sac_drain (Aristokraten) drained jeden anderen lebenden
+    Spieler; disruption_lockout (Stax) tappt beim Spieler ein Land."""
+    try:
+        from App.opponent_model.state_equation import query_board_effects as _qbe
+    except ImportError:  # pragma: no cover
+        from opponent_model.state_equation import query_board_effects as _qbe
+    be = _qbe(opp_state)
+    pv = float(be.passive_value_total)
+    if pv > 0:
+        opp_state.board_presence = min(10.0, opp_state.board_presence * (1.0 + float(_td("passive_value_board_bonus", 0.25)) * pv))
+        opp_state.interaction_availability = min(1.0, opp_state.interaction_availability + float(_td("passive_value_interaction_bonus", 0.1)) * pv)
+    sd = float(be.sac_drain_total) * float(_td("sac_drain_life_per_unit", 3.0))
+    if sd >= 0.5:
+        state.life -= sd
+        state.damage_taken += sd
+        for j in _alive_opponent_indices(state):
+            if j != seat:
+                state.opponents[j] = max(0.0, state.opponents[j] - sd)
+        state.log(f"ADVANCED {label}: sacrifice/drain engine - each other player loses {sd:.1f}")
+        if state.life <= 0 and state.lost_turn is None:
+            state.lost_turn = state.turn
+    dl = float(be.disruption_lockout_total)
+    if dl > 0 and rng.random() < min(1.0, dl * float(_td("disruption_tap_chance_per_unit", 1.0))):
+        state.stax_taps_pending = int(getattr(state, "stax_taps_pending", 0)) + 1
+        state.log(f"ADVANCED {label}: stax/lockout piece - you lose a mana next turn")
+
+
+def _pay_stax_taps(state: GameState) -> None:
+    n = int(getattr(state, "stax_taps_pending", 0))
+    if n <= 0:
+        return
+    lands = [p for p in state.lands() if not p.tapped]
+    for p in lands[:n]:
+        p.tapped = True
+        state.log(f"STAX: {p.card.name} stays tapped this turn")
+    state.stax_taps_pending = 0
+
+
+# Einhaken: nach jedem Sitz-Zug (ueber _opp_model_advance-Wrapper, der je Sitz
+# genau einmal pro Runde laeuft) und am Anfang des eigenen Zugs.
+_V4840_opp_advance_old = _opp_model_advance
+
+
+def _opp_model_advance(opp_state, profile, rng, **kwargs):
+    res = _V4840_opp_advance_old(opp_state, profile, rng, **kwargs)
+    ctx = getattr(_opp_model_advance, "_ctx", None)
+    if ctx is not None and _td_on():
+        state, strategy = ctx
+        table = _get_advanced_opponent_table(state, strategy)
+        seat = next((i for i, t in enumerate(table) if t[1] is opp_state), None)
+        if seat is not None:
+            _apply_seat_stocks(state, strategy, seat, opp_state, rng, _seat_label(profile))
+    return res
+
+
+_V4840_adv_phase_old = _apply_advanced_multi_opponent_phase
+
+
+def _apply_advanced_multi_opponent_phase(state: GameState, strategy: Strategy, rng: random.Random) -> None:
+    _opp_model_advance._ctx = (state, strategy)
+    before = float(state.damage_taken)
+    try:
+        return _V4840_adv_phase_old(state, strategy, rng)
+    finally:
+        _opp_model_advance._ctx = None
+        # B4: Commander-Schaden - ein Anteil des Kampfdrucks jedes Sitzes stammt
+        # von dessen Commander; 21 von einem Commander = verloren.
+        share = float(_td("opponent_commander_damage_share", 0.3))
+        dealt = float(state.damage_taken) - before
+        if share > 0 and dealt > 0 and state.lost_turn is None:
+            ledger = getattr(state, "_opp_cmd_dmg", None)
+            if ledger is None:
+                ledger = Counter()
+                state._opp_cmd_dmg = ledger
+            for ev in state.event_log:
+                m = re.match(r"ADVANCED (\S+): took ([\d.]+) combat/pressure", ev)
+                if m:
+                    ledger[m.group(1)] += float(m.group(2)) * share
+            worst = max(ledger.values()) if ledger else 0.0
+            if worst >= 21.0:
+                state.lost_turn = state.turn
+                state.log(f"COMMANDER DAMAGE: 21+ from one opponent's commander ({worst:.1f}) - loss")
+                ledger.clear()
+
+
+_V4840_myco_old = mycoloth_upkeep_trigger
+
+
+def mycoloth_upkeep_trigger(state: GameState, strategy: Strategy):
+    res = _V4840_myco_old(state, strategy)
+    _pay_stax_taps(state)
+    return res
+
+
+# --- B2: Removal-Anteil der Sitz-Interaktion ---------------------------------
+_V4840_removal_on_player_old = _advanced_removal_on_player
+
+
+def _advanced_removal_on_player(state, strategy, rng, profile, seat_label) -> None:
+    if rng.random() >= float(_td("interaction_removal_share", 0.83)):
+        return  # die "Interaktion" war Schutz fuer das eigene Brett - kein Removal
+    return _V4840_removal_on_player_old(state, strategy, rng, profile, seat_label)
+
+
+
+# ===========================================================================
+# v4.84.0 Block C: Qualitaet von Win-Condition-Definitionen
+# Eine Win Condition ohne abgeleitetes Praedikat ("derived": []) prueft nur
+# Karten-Praesenz + Mana. Seit v4.83.0 wird sie beim Erreichen als Tischsieg
+# ausgefuehrt - das ist nur so gut wie die Definition. Neu: Einordnung +
+# Warnung in summary/analysis; Umgang per table_dynamics.json:
+#   win_condition_execution.loose_policy = "execute" (Standard, wie v4.83.0)
+#                                        | "board_lethal" (lose WCs zaehlen nur,
+#                                          wenn das Brett gegen alle Gegner
+#                                          lethal ist - board_damage_lethal/each)
+#                                        | "measure_only" (lose WCs nur messen)
+# ===========================================================================
+_LETHAL_PRED_TYPES = {"opponent_life_at_or_below", "x_spell_lethal", "commander_damage_lethal", "board_damage_lethal"}
+
+
+def win_condition_quality(sc: dict) -> dict:
+    derived = sc.get("derived") or []
+    lethal = [d for d in derived if d.get("type") in _LETHAL_PRED_TYPES]
+    hand_cards = [r.get("card") for r in (sc.get("requirements") or []) if "hand" in (r.get("zones") or [])]
+    if lethal:
+        return {"name": sc.get("name"), "quality": "checked", "hint": ""}
+    hint = ("prueft nur Karten + Mana, keine Lethalitaet - wird beim Erreichen als Tischsieg gewertet"
+            + (f"; Karte(n) auf der Hand ({', '.join(hand_cards)}) muessen erst noch wirken" if hand_cards else "")
+            + ". Fuer Angriffs-/Alpha-Strike-Siege ein Praedikat board_damage_lethal (target=each) ergaenzen, "
+              "fuer echte Endlos-Kombos ist 'loose' in Ordnung.")
+    return {"name": sc.get("name"), "quality": "loose", "hint": hint}
+
+
+_V4840_maybe_wc_old = maybe_execute_focused_win_condition
+
+
+def maybe_execute_focused_win_condition(state: GameState, strategy) -> bool:
+    policy = str(_td("loose_policy", "execute", "win_condition_execution"))
+    if policy == "execute":
+        return _V4840_maybe_wc_old(state, strategy)
+    scs = getattr(strategy, "scenarios", None) or []
+    blocked = []
+    for sc in scs:
+        if sc.get("kind") == "Win Condition" and sc.get("enabled", True) and win_condition_quality(sc)["quality"] == "loose":
+            ok = False
+            if policy == "board_lethal":
+                try:
+                    ok = bool(scenario_predicates_registry.evaluate(sys.modules[__name__], "board_damage_lethal",
+                                                                    {"target": "each"}, state, strategy).satisfied)
+                except Exception:
+                    ok = False
+            if not ok:
+                blocked.append(sc)
+                sc["enabled"] = False
+    try:
+        return _V4840_maybe_wc_old(state, strategy)
+    finally:
+        for sc in blocked:
+            sc["enabled"] = True
+
+
+_V4840_summary_old = streaming_summary_v440
+
+
+def streaming_summary_v440(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy) -> dict:
+    data = _V4840_summary_old(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy)
+    wcs = [sc for sc in (getattr(strategy, "scenarios", None) or []) if sc.get("kind") == "Win Condition" and sc.get("enabled", True)]
+    q = [win_condition_quality(sc) for sc in wcs]
+    o = data.setdefault("outcomes", {})
+    o["win_condition_quality"] = q
+    o["win_condition_loose_count"] = sum(1 for x in q if x["quality"] == "loose")
+    data.setdefault("simulation", {})["loose_win_condition_policy"] = str(_td("loose_policy", "execute", "win_condition_execution"))
+    return data
+
+
+_V4840_overview_old = build_analysis_overview
+
+
+def build_analysis_overview(summary: dict, impact_rows: List[dict]) -> dict:
+    overview = _V4840_overview_old(summary, impact_rows)
+    o = summary.get("outcomes", {}) or {}
+    loose = [x for x in (o.get("win_condition_quality") or []) if x.get("quality") == "loose"]
+    if loose and float(o.get("win_via_win_condition_pct", 0) or 0) > 0:
+        obs = list(overview.get("observations", []))
+        obs.append(
+            f"Win-Condition-Qualitaet: {len(loose)} Win Condition(s) ohne Lethalitaets-Praedikat "
+            f"({', '.join(str(x['name']) for x in loose)}) - {float(o.get('win_via_win_condition_pct', 0)):.1f} % Siege "
+            "kommen ueber Win Conditions zustande und gelten beim Erreichen als Tischsieg. Das ist nur so belastbar wie "
+            "die Definition (fuer Alpha-Strikes board_damage_lethal ergaenzen)."
+        )
+        overview["observations"] = obs
+    return overview
+
+
+
+# --- E/A4: einheitliche Zaehlung der Trigger-Abdeckung (Summary = CSV) --------
+def trigger_line_status(card: Card) -> Tuple[int, int, Counter]:
+    lines, ok, reasons = 0, 0, Counter()
+    derived = None
+    for line in split_oracle_lines(_tb_front_face_text(card)):
+        spec = _TB.parse_trigger(strip_reminder_text(line), card.name)
+        if spec is None:
+            continue
+        lines += 1
+        if card.name in _TB_LEGACY_NAMES or has_dedicated_resolver(card):
+            ok += 1
+        elif spec.supported or spec.reason == "legacy_lifegain":
+            ok += 1
+        elif spec.reason in ("variable_amount", "delayed_trigger"):
+            if derived is None:
+                derived = {s.condition + "|" + s.effect for s, _a in _tb_entries(card)
+                           if s.reason in ("variable_amount_resolved", "delayed_pre_part")}
+            if spec.condition + "|" + spec.effect in derived:
+                ok += 1
+            else:
+                reasons[spec.reason] += 1
+        else:
+            reasons[spec.reason or "unknown"] += 1
+    return lines, ok, reasons
+
+
+_V4840b_summary_old = streaming_summary_v440
+
+
+def streaming_summary_v440(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy) -> dict:
+    data = _V4840b_summary_old(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy)
+    tl = tk = 0
+    rs = Counter()
+    for card in deck:
+        a, b, r = trigger_line_status(card)
+        tl += a
+        tk += b
+        rs.update(r)
+    tb = data.setdefault("simulation", {}).setdefault("trigger_bus", {})
+    tb.update({"triggered_lines_in_deck": tl, "dispatched_generically": tk, "not_dispatched": tl - tk,
+               "not_dispatched_reasons": dict(rs.most_common()),
+               "note": "v4.84.0: ausgeloeste Faehigkeiten laufen ueber App/trigger_bus (inkl. aufgeloester variabler Mengen und "
+                       "Vorab-Teilen verzoegerter Trigger) oder ueber karten-spezifischen Altcode; 'not_dispatched' = Zeilen, die "
+                       "im Spiel nicht wirken (Zwischen-if, optionale Kosten, modale Wahl, unbekannte Bedingung ...)."})
+    return data
+
+
+
+# ===========================================================================
+# v4.85.0 (Nutzer-Auftrag nach v4.84.0)
+#   1 Kombo-/Siegbedingungs-Wirkung waehlbar: Tischsieg / einen Gegner
+#     ausschalten / Ressourcen (Token, Leben, +1/+1-Marken, Mana, Karten,
+#     Drain, Sonstiges; endlich oder unendlich) / nur messen. Erreichen wird
+#     immer gemessen; Wirkungen werden ausgespielt, das Spiel laeuft weiter.
+#   2 Doppelseitige Karten: MDFC = eine Karte mit zwei Optionen (A oder B,
+#     eigene Kosten, auch Land-Rueckseite); Transform-Karten tauschen die
+#     Vorderseite gegen die Rueckseite aus einem "Container" (Tag/Nacht,
+#     "{Kosten}: Transform", Craft, sonst Manawert der Vorderseite).
+#   3 Kreaturen als Kosten opfern (Opfer-Ausgaenge / Aristokraten).
+#   4 Ausloeser beim Legen von +1/+1-Marken.
+# ===========================================================================
+
+class _CtxBox:
+    value = None
+
+
+_V4850_CTX = _CtxBox()
+
+
+# --- 1: Wirkungen von Kombos und Siegbedingungen --------------------------
+EFFECT_TYPES = ("default", "none", "win_all", "eliminate_one", "resource")
+RESOURCE_KINDS = ("tokens", "life", "counters", "mana", "cards", "drain", "other")
+_INFINITE_CAPS = {"tokens": 100, "life": 1000, "counters": 100, "mana": 40, "cards": 30, "drain": 999}
+
+
+def normalize_effect(raw) -> dict:
+    raw = raw if isinstance(raw, dict) else {}
+    t = str(raw.get("type", "default")).lower()
+    if t not in EFFECT_TYPES:
+        t = "default"
+    res = str(raw.get("resource", "tokens")).lower()
+    if res not in RESOURCE_KINDS:
+        res = "other"
+
+    def _i(key, default, lo=0, hi=10000):
+        try:
+            return max(lo, min(hi, int(raw.get(key, default))))
+        except (TypeError, ValueError):
+            return default
+    return {
+        "type": t, "resource": res, "amount": _i("amount", 1), "infinite": bool(raw.get("infinite", False)),
+        "token_power": _i("token_power", 1), "token_toughness": _i("token_toughness", 1, 1),
+        "haste": bool(raw.get("haste", False)),
+        "repeat": "each_turn" if str(raw.get("repeat", "once")) == "each_turn" else "once",
+    }
+
+
+_V4850_normalize_scenario_old = normalize_scenario
+
+
+def normalize_scenario(raw: dict, index: int = 0) -> dict:
+    s = _V4850_normalize_scenario_old(raw, index)
+    if isinstance(raw, dict) and "effect" in raw:
+        s["effect"] = normalize_effect(raw.get("effect"))
+    return s
+
+
+def scenario_effect(sc: dict) -> dict:
+    """Wirkung eines Szenarios. 'default' = bisheriges Verhalten: Win
+    Condition -> Tischsieg (bzw. Einzelziel bei target_scope 'any'), alle
+    anderen Arten -> nur messen."""
+    eff = normalize_effect(sc.get("effect"))
+    if eff["type"] == "default":
+        eff["type"] = "win_all" if sc.get("kind") == "Win Condition" else "none"
+        eff["_default"] = True
+    return eff
+
+
+def _effect_amount(eff: dict, state: GameState) -> int:
+    if eff["infinite"]:
+        cap = _INFINITE_CAPS.get(eff["resource"], 100)
+        if eff["resource"] == "cards":
+            cap = max(0, min(cap, len(state.library) - 1))
+        return cap
+    return max(0, int(eff["amount"]))
+
+
+def _apply_resource_effect(state: GameState, strategy: Strategy, sc: dict, eff: dict) -> str:
+    n = _effect_amount(eff, state)
+    kind = eff["resource"]
+    name = sc.get("name", "Combo")
+    if n <= 0 and kind != "other":
+        return "0"
+    if kind == "tokens":
+        kws = {"haste"} if eff["haste"] else set()
+        create_tokens(state, strategy, f"{name} Token", n, creature=True, power=float(eff["token_power"]),
+                      toughness=float(eff["token_toughness"]), keywords=kws, source=name)
+        return f"{n} {eff['token_power']}/{eff['token_toughness']} token(s){' with haste' if eff['haste'] else ' (summoning sick)'}"
+    if kind == "life":
+        gain_life(state, float(n), name)
+        return f"+{n} life"
+    if kind == "counters":
+        crs = list(state.creatures())
+        if not crs:
+            return "no creature for counters"
+        req = {r.get("card") for r in (sc.get("requirements") or [])}
+        target = next((p for p in crs if p.card.name in req), None) or max(crs, key=lambda p: creature_power(p, state))
+        target.counters += n
+        record_impact(state, target.card.name, "counters", n)
+        return f"+{n} +1/+1 counters on {target.card.name}"
+    if kind == "mana":
+        create_tokens(state, strategy, "Treasure", n, source=name)
+        return f"{n} mana (as Treasure)"
+    if kind == "cards":
+        draw_cards(state, n, reason=name)
+        return f"draw {n}"
+    if kind == "drain":
+        lose_each_opponent(state, float(n), name)
+        return f"each opponent -{n}"
+    return "resource effect logged (no mechanical model)"
+
+
+def _execute_scenario_effect(state: GameState, strategy, sc: dict, rng: random.Random) -> bool:
+    eff = scenario_effect(sc)
+    name = sc.get("name", "Combo")
+    if eff["type"] == "none":
+        return False
+    if _wc_disrupted(state, strategy, rng, name):
+        _wc_disruption_cost(state, strategy, sc)
+        state.combo_disrupted = int(getattr(state, "combo_disrupted", 0)) + 1
+        return False
+    ex = getattr(state, "combo_executions", None)
+    if ex is None:
+        ex = Counter()
+        state.combo_executions = ex
+    ex[name] += 1
+    if eff["type"] == "win_all":
+        state.log(f"WIN CONDITION EXECUTED: {name} - all opponents eliminated")
+        state.wc_executed = name
+        state.opponents = [0.0 for _ in state.opponents]
+        check_win(state)
+        return True
+    if eff["type"] == "eliminate_one":
+        i = _combat_damage_target_index(state)
+        state.log(f"WIN CONDITION EXECUTED: {name} (single target) - opponent {i + 1} eliminated")
+        state.opponents[i] = 0.0
+        check_win(state)
+        return True
+    what = _apply_resource_effect(state, strategy, sc, eff)
+    state.log(f"COMBO EXECUTED: {name} - {what}{' (infinite)' if eff['infinite'] else ''}; the game continues")
+    check_win(state)
+    return True
+
+
+_V4850_maybe_wc_old = maybe_execute_focused_win_condition
+
+
+def _needs_bilbo(sc: dict) -> bool:
+    return any(r.get("card") == BILBO_NAME and "battlefield" in (r.get("zones") or [])
+               for r in sc.get("requirements", []) or [])
+
+
+def maybe_execute_focused_win_condition(state: GameState, strategy) -> bool:
+    scs = getattr(strategy, "scenarios", None) or []
+    explicit = [sc for sc in scs if sc.get("enabled", True) and "effect" in sc
+                and not scenario_effect(sc).get("_default")
+                # Bilbo-Szenarien mit Tischsieg behalten ihren eigenen Ausfuehrer
+                # (Bilbo-Aktivierung, Alt-Pfad); jede andere Wirkung laeuft generisch.
+                and not (scenario_effect(sc)["type"] == "win_all" and _needs_bilbo(sc))]
+    # Alt-Pfad (v4.83/4.84) nur fuer Szenarien OHNE ausdrueckliche Wirkung.
+    for sc in explicit:
+        sc["enabled"] = False
+    try:
+        res = _V4850_maybe_wc_old(state, strategy)
+    finally:
+        for sc in explicit:
+            sc["enabled"] = True
+    if res or state.win_turn is not None or not _td_on("win_condition_execution"):
+        return res
+    tried = getattr(state, "_combo_tried", None)
+    if tried is None or tried[0] != state.turn:
+        tried = (state.turn, set())
+        state._combo_tried = tried
+    once = getattr(state, "_combo_done_once", None)
+    if once is None:
+        once = set()
+        state._combo_done_once = once
+    rng = getattr(state, "_wc_rng", None) or random.Random(zlib.crc32(f"{state.turn}|{len(state.library)}".encode()))
+    for sc in explicit:
+        key = sc.get("id") or sc.get("name")
+        eff = scenario_effect(sc)
+        if key in tried[1] or (eff["repeat"] == "once" and key in once) or eff["type"] == "none":
+            continue
+        try:
+            st = scenario_status(state, strategy, sc)
+        except Exception:
+            continue
+        if not st.get("reached"):
+            continue
+        tried[1].add(key)
+        if _execute_scenario_effect(state, strategy, sc, rng):
+            once.add(key)
+            if state.win_turn is not None:
+                return True
+    return False
+
+
+_V4850_stats_add_old = StreamingStatsV440.add
+
+
+def _streaming_stats_add_v4850(self, rr: dict, tr: List[dict], sr: List[dict]):
+    _V4850_stats_add_old(self, rr, tr, sr)
+    ev = " ".join(str(r.get("events", "")) for r in tr)
+    c = getattr(self, "_v4850_combo", None)
+    if c is None:
+        c = Counter()
+        self._v4850_combo = c
+    for m in re.finditer(r"COMBO EXECUTED: (.+?) - ", ev):
+        c[m.group(1)] += 1
+    names = set(m.group(1) for m in re.finditer(r"COMBO EXECUTED: (.+?) - ", ev))
+    g = getattr(self, "_v4850_combo_games", None)
+    if g is None:
+        g = Counter()
+        self._v4850_combo_games = g
+    for n in names:
+        g[n] += 1
+    self._v4850_transforms = getattr(self, "_v4850_transforms", 0) + ev.count("TRANSFORM:")
+    self._v4850_mdfc = getattr(self, "_v4850_mdfc", 0) + ev.count("MDFC:")
+    self._v4850_sac = getattr(self, "_v4850_sac", 0) + ev.count("SACRIFICE OUTLET:")
+
+
+StreamingStatsV440.add = _streaming_stats_add_v4850
+
+_V4850_summary_old = streaming_summary_v440
+
+
+def streaming_summary_v440(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy) -> dict:
+    data = _V4850_summary_old(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy)
+    n = max(1, getattr(stats, "_v4830_runs", 0))
+    o = data.setdefault("outcomes", {})
+    games = getattr(stats, "_v4850_combo_games", Counter())
+    o["combo_executed_pct"] = {k: round(100.0 * v / n, 2) for k, v in games.items()}
+    o["avg_dfc_transforms"] = getattr(stats, "_v4850_transforms", 0) / n
+    o["avg_mdfc_back_face_plays"] = getattr(stats, "_v4850_mdfc", 0) / n
+    o["avg_sacrifice_outlet_uses"] = getattr(stats, "_v4850_sac", 0) / n
+    eff_rows = []
+    for sc in (getattr(strategy, "scenarios", None) or []):
+        if not sc.get("enabled", True):
+            continue
+        e = scenario_effect(sc)
+        eff_rows.append({"name": sc.get("name"), "kind": sc.get("kind"), "effect": e["type"],
+                         "resource": e["resource"] if e["type"] == "resource" else "",
+                         "infinite": e["infinite"] if e["type"] == "resource" else False,
+                         "explicit": not e.get("_default", False)})
+    o["scenario_effects"] = eff_rows
+    return data
+
+
+# --- 2: doppelseitige Karten ---------------------------------------------
+_DFC_BACKS: Dict[str, Tuple[str, Card]] = {}
+
+
+def _face_keywords(text: str) -> Set[str]:
+    low = strip_reminder_text(text or "").lower()
+    first = [l.strip() for l in low.split("\n") if l.strip()]
+    out = set()
+    for line in first:
+        for part in re.split(r",\s*", line):
+            if part in _V4840_KEYWORDS or part in ("daybound", "nightbound", "defender", "shroud"):
+                out.add(part)
+    return out
+
+
+_V4850_card_from_scryfall_old = card_from_scryfall
+
+
+def card_from_scryfall(entry: DeckEntry, obj: dict, commander_name: Optional[str]) -> Card:
+    card = _V4850_card_from_scryfall_old(entry, obj, commander_name)
+    faces = obj.get("card_faces") or []
+    layout = str(obj.get("layout") or "")
+    if layout in ("transform", "modal_dfc") and len(faces) >= 2:
+        f1 = faces[1]
+        mana_cost = f1.get("mana_cost") or ""
+        if layout == "modal_dfc":
+            mv = float(parse_mana_cost(mana_cost)[0]) if mana_cost else 0.0
+        else:
+            mv = float(card.mana_value)
+        otext = f1.get("oracle_text") or ""
+        produced = set(f1.get("produced_mana") or [])
+        if "Land" in (f1.get("type_line") or "") and not produced:
+            for m in re.finditer(r"[Aa]dd ([^.]*)", otext):
+                produced |= set(re.findall(r"\{([WUBRGC])\}", m.group(1)))
+        back = Card(
+            name=f1.get("name") or (card.name + " (back)"), mana_cost=mana_cost, mana_value=mv,
+            type_line=f1.get("type_line") or "", oracle_text=otext, color_identity=set(card.color_identity),
+            produced_mana=produced, keywords=_face_keywords(otext),
+            power=num_or_none(f1.get("power")), toughness=num_or_none(f1.get("toughness")),
+            commander=bool(card.commander), set_code=card.set_code, collector_number=card.collector_number,
+            metadata_source="scryfall", loyalty=num_or_none(f1.get("loyalty")), defense=num_or_none(f1.get("defense")),
+        )
+        try:
+            back = enrich_semantics(back)
+        except Exception:
+            pass
+        _DFC_BACKS[card.name] = (layout, back)
+    return card
+
+
+def dfc_back(card: Card) -> Optional[Tuple[str, Card]]:
+    got = _DFC_BACKS.get(card.name)
+    if not got:
+        return None
+    layout, back = got
+    if back.commander != card.commander:
+        back = _dc_replace(back, commander=card.commander)
+    return layout, back
+
+
+def _front_of(card: Card) -> Optional[Card]:
+    return getattr(card, "_v485_front", None)
+
+
+def _make_back_instance(front: Card) -> Optional[Card]:
+    got = dfc_back(front)
+    if not got:
+        return None
+    back = _dc_replace(got[1])
+    back._v485_front = front
+    back._v485_layout = got[0]
+    return back
+
+
+# MDFC als Land: wenn keine andere Landkarte auf der Hand ist.
+_V4850_choose_land_old = choose_land
+
+
+def choose_land(state: GameState, strategy: Strategy) -> Optional[Card]:
+    land = _V4850_choose_land_old(state, strategy)
+    if land is not None or not _td_on("trigger_bus"):
+        return land
+    if len(state.lands()) >= int(_td("mdfc_land_until_lands", 8, "trigger_bus")):
+        return None
+    for c in list(state.hand):
+        got = dfc_back(c)
+        if not got or got[0] != "modal_dfc" or not got[1].is_land or c.is_land:
+            continue
+        back = _make_back_instance(c)
+        idx = next(i for i, x in enumerate(state.hand) if x is c)
+        state.hand[idx] = back
+        state.log(f"MDFC: {c.name} played as its land side {back.name}")
+        return back
+    return None
+
+
+# MDFC als Zauber: Seite B, wenn Seite A nicht bezahlbar ist.
+_V4850_cast_option_old = cast_option
+
+
+def cast_option(card: Card, state: GameState, strategy: Strategy) -> Optional[CastOption]:
+    opt = _V4850_cast_option_old(card, state, strategy)
+    if opt is not None or not _td_on("trigger_bus"):
+        return opt
+    got = dfc_back(card)
+    if not got or got[0] != "modal_dfc" or got[1].is_land:
+        return opt
+    back = _make_back_instance(card)
+    bopt = _V4850_cast_option_old(back, state, strategy)
+    if bopt is not None:
+        bopt._v485_front = card
+    return bopt
+
+
+_V4850_try_cast_option_old = try_cast_option
+
+
+def try_cast_option(state: GameState, strategy: Strategy, opt: CastOption) -> bool:
+    front = getattr(opt, "_v485_front", None)
+    if front is not None:
+        idx = next((i for i, x in enumerate(state.hand) if x is front), None)
+        if idx is not None:
+            state.hand[idx] = opt.card
+            state.log(f"MDFC: {front.name} cast as its other side {opt.card.name}")
+    return _V4850_try_cast_option_old(state, strategy, opt)
+
+
+# Container-Tausch fuer Transform-Karten ------------------------------------
+_TRANSFORM_COST_RE = re.compile(r"^((?:\{[^}]+\})+)(?:, \{t\})?: transform\b")
+_CRAFT_RE = re.compile(r"craft with [^{]*((?:\{[^}]+\})+)")
+
+
+def _transform_cost(front: Card) -> Tuple[str, Optional[str]]:
+    """('daynight'|'mana'|'fallback', mana_cost_text)."""
+    low = strip_reminder_text(_tb_front_face_text(front)).lower()
+    kws = {k.lower() for k in front.keywords}
+    if "daybound" in kws or "daybound" in low or "if no spells were cast last turn, transform" in low:
+        return "daynight", None
+    for line in low.split("\n"):
+        m = _TRANSFORM_COST_RE.match(line.strip())
+        if m:
+            return "mana", m.group(1)
+    m = _CRAFT_RE.search(low)
+    if m:
+        return "mana", m.group(1)
+    return "fallback", "{" + str(int(front.mana_value)) + "}" if front.mana_value else "{0}"
+
+
+def _back_is_better(front: Card, back: Card) -> bool:
+    if back.is_planeswalker:
+        return True
+    fp, bp = float(front.power or 0), float(back.power or 0)
+    if back.is_creature and bp > fp:
+        return True
+    try:
+        fa = sum(len(a.actions) for a in parse_oracle_semantics(front))
+        ba = sum(len(a.actions) for a in parse_oracle_semantics(back))
+    except Exception:
+        return False
+    return ba > fa
+
+
+def _transform_permanent(state: GameState, p: Permanent, to_back: bool, why: str) -> None:
+    if to_back:
+        back = _make_back_instance(p.card)
+        if back is None:
+            return
+        p.card = back
+        state.log(f"TRANSFORM: {back._v485_front.name} -> {back.name} ({why})")
+    else:
+        front = _front_of(p.card)
+        if front is None:
+            return
+        state.log(f"TRANSFORM: {p.card.name} -> {front.name} ({why})")
+        p.card = front
+
+
+def _set_daynight(state: GameState, value: str, why: str) -> None:
+    if getattr(state, "daynight", None) == value:
+        return
+    state.daynight = value
+    for p in list(state.battlefield):
+        got = dfc_back(p.card) if _front_of(p.card) is None else None
+        if value == "night" and got and got[0] == "transform" and _transform_cost(p.card)[0] == "daynight":
+            _transform_permanent(state, p, True, why)
+        elif value == "day" and _front_of(p.card) is not None and _transform_cost(_front_of(p.card))[0] == "daynight":
+            _transform_permanent(state, p, False, why)
+
+
+def _dfc_transform_step(state: GameState, strategy: Strategy) -> None:
+    """Am Ende des eigenen Zugs: Tag/Nacht nach eigenen Zaubern, bezahlte
+    Transformationen mit Restmana."""
+    if not _td_on("trigger_bus"):
+        return
+    def _dn(p):
+        front = _front_of(p.card) or p.card
+        got = dfc_back(front)
+        return bool(got and got[0] == "transform" and _transform_cost(front)[0] == "daynight")
+    has_dn = any(_dn(p) for p in state.battlefield)
+    if has_dn:
+        if getattr(state, "daynight", None) is None:
+            state.daynight = "day"
+        n = int(getattr(state, "spells_cast_this_turn", 0))
+        if n == 0:
+            _set_daynight(state, "night", "no spells this turn - night")
+        elif n >= 2:
+            _set_daynight(state, "day", "two or more spells this turn - day")
+    for p in list(state.battlefield):
+        if _front_of(p.card) is not None:
+            continue
+        got = dfc_back(p.card)
+        if not got or got[0] != "transform":
+            continue
+        kind, cost = _transform_cost(p.card)
+        if kind == "daynight":
+            continue
+        if kind == "fallback" and not _back_is_better(p.card, got[1]):
+            continue
+        total, req = parse_mana_cost(cost or "{0}")
+        payment = find_payment(state, strategy, total, req)
+        if not payment:
+            continue
+        apply_payment(state, payment, strategy)
+        _transform_permanent(state, p, True, f"paid {cost}" + (" (container proxy: mana value of the front)" if kind == "fallback" else ""))
+
+
+_V4850_end_step_old = end_step
+
+
+def end_step(state: GameState, strategy: Strategy):
+    _dfc_transform_step(state, strategy)
+    _disturb_from_graveyard(state, strategy)
+    _use_sac_outlets_proactively(state, strategy)
+    return _V4850_end_step_old(state, strategy)
+
+
+def _disturb_from_graveyard(state: GameState, strategy: Strategy) -> None:
+    if not _td_on("trigger_bus"):
+        return
+    for c in list(state.graveyard):
+        m = re.search(r"\bdisturb ((?:\{[^}]+\})+)", strip_reminder_text(c.oracle_text or "").lower())
+        if not m:
+            continue
+        back = _make_back_instance(c)
+        if back is None or back.is_land:
+            continue
+        total, req = parse_mana_cost(m.group(1))
+        payment = find_payment(state, strategy, total, req)
+        if not payment:
+            continue
+        apply_payment(state, payment, strategy)
+        state.graveyard.remove(c)
+        permanent_enters(state, strategy, back)
+        state.log(f"TRANSFORM: disturb - {back.name} cast from the graveyard for {m.group(1)}")
+        return
+
+
+# Nacht, wenn ein Gegner einen "toten" Zug hatte (keine Zauber).
+_V4850_opp_advance_old = _opp_model_advance
+
+
+def _opp_model_advance(opp_state, profile, rng, **kwargs):
+    res = _V4850_opp_advance_old(opp_state, profile, rng, **kwargs)
+    ctx = _V4850_CTX.value
+    if ctx is not None and getattr(opp_state, "dead_turn", False) and getattr(ctx[0], "daynight", None) == "day":
+        _set_daynight(ctx[0], "night", "an opponent cast no spells - night")
+    return res
+
+
+_V4850_adv_phase_old = _apply_advanced_multi_opponent_phase
+
+
+def _apply_advanced_multi_opponent_phase(state: GameState, strategy: Strategy, rng: random.Random) -> None:
+    _V4850_CTX.value = (state, strategy)
+    try:
+        return _V4850_adv_phase_old(state, strategy, rng)
+    finally:
+        _V4850_CTX.value = None
+
+
+# Rueckseite verlaesst das Spielfeld -> in der Zielzone liegt wieder die
+# physische Karte (Vorderseite); der Container wird geleert.
+_V4850_move_old = move_permanent_to_zone
+
+
+def move_permanent_to_zone(state: GameState, strategy: Strategy, permanent: Permanent, destination: str, *,
+                           reason: str = "", rng: Optional[random.Random] = None):
+    back = permanent.card if _front_of(permanent.card) is not None else None
+    res = _V4850_move_old(state, strategy, permanent, destination, reason=reason, rng=rng)
+    if back is not None and permanent not in state.battlefield:
+        front = _front_of(back)
+        for zone in (state.graveyard, state.exile, state.hand, state.library, state.command_zone):
+            for i, c in enumerate(zone):
+                if c is back:
+                    zone[i] = front
+    return res
+
+
+# --- 3: Opfer-Ausgaenge (Kreaturen als Kosten) ------------------------------
+_SAC_COST_RE = re.compile(r"sacrifice (a|an|another) ((?:nontoken |token )?(?:[a-z]+ )?creature|[a-z]+)\b")
+
+
+def _sac_outlets(state: GameState) -> list:
+    out = []
+    for p in state.battlefield:
+        if has_dedicated_resolver(p.card) or p.card.name in _TB_LEGACY_NAMES:
+            continue
+        for a in parse_oracle_semantics(p.card):
+            if a.ability_kind != "activated" or not a.actions:
+                continue
+            cost, _eff = _split_activation_cost_effect(strip_reminder_text(a.raw))
+            m = _SAC_COST_RE.search(cost.lower())
+            if not m:
+                continue
+            noun = m.group(2)
+            if "creature" not in noun and noun not in ("permanent",) and not re.match(r"^[a-z]+$", noun):
+                continue
+            free = int(a.mana_total or 0) == 0 and not a.tap_source
+            out.append({"perm": p, "ability": a, "another": m.group(1) == "another", "noun": noun, "free": free,
+                        "mana": cost})
+    return out
+
+
+def _sac_victim_ok(outlet: dict, victim_card: Card, is_token: bool) -> bool:
+    noun = outlet["noun"]
+    tl = victim_card.type_line.lower() if victim_card is not None else "token creature"
+    if "creature" not in tl:
+        return False
+    if noun.startswith("nontoken") and is_token:
+        return False
+    if noun.startswith("token") and not is_token:
+        return False
+    sub = noun.replace("nontoken", "").replace("token", "").replace("creature", "").strip()
+    if sub and sub not in ("a", "an") and not re.search(rf"\b{re.escape(sub)}s?\b", tl):
+        return False
+    return True
+
+
+def _use_sac_outlet(state: GameState, strategy: Strategy, outlet: dict, victim) -> bool:
+    """victim: Permanent oder TokenGroup."""
+    a, src = outlet["ability"], outlet["perm"]
+    if src not in state.battlefield:
+        return False
+    if outlet["another"] and victim is src:
+        return False
+    total, req = _activation_mana(outlet["mana"])
+    if total:
+        payment = find_payment(state, strategy, total, req)
+        if not payment:
+            return False
+        apply_payment(state, payment, strategy)
+    if a.tap_source:
+        if src.tapped:
+            return False
+        src.tapped = True
+    if isinstance(victim, TokenGroup):
+        if victim.count <= 0:
+            return False
+        victim.count -= 1
+        state.creature_tokens[:] = [g for g in state.creature_tokens if g.count > 0]
+        record_impact(state, src.card.name, "tokens_sacrificed", 1)
+        _tb_emit(state, strategy, "dies", is_token=True, type_line=f"Token Creature — {victim.name}")
+        vname, vtl = victim.name + " token", f"Token Creature — {victim.name}"
+    else:
+        vname, vtl = victim.card.name, victim.card.type_line
+        move_permanent_to_zone(state, strategy, victim, "graveyard", reason=f"sacrificed to {src.card.name}")
+    _tb_emit(state, strategy, "sacrifice", type_line=vtl, is_token=isinstance(victim, TokenGroup))
+    for action in a.actions:
+        execute_semantic_action(state, strategy, src, action)
+    record_impact(state, src.card.name, "sacrifice_outlet_uses", 1)
+    state.log(f"SACRIFICE OUTLET: {src.card.name} - sacrificed {vname}")
+    return True
+
+
+def _free_outlet_for(state: GameState, card: Optional[Card], is_token: bool) -> Optional[dict]:
+    for o in _sac_outlets(state):
+        if o["free"] and _sac_victim_ok(o, card, is_token):
+            return o
+    return None
+
+
+def _is_death_payoff(p: Permanent) -> bool:
+    if not _tb_source_ok(p):
+        return False
+    return any(spec.event in ("dies", "sacrifice") and spec.subject in ("any", "other", "self_or_other")
+               for spec, _a in _tb_entries(p.card))
+
+
+def _has_death_payoff(state: GameState) -> bool:
+    for p in state.battlefield:
+        if not _tb_source_ok(p):
+            continue
+        for spec, _a in _tb_entries(p.card):
+            if spec.event in ("dies", "sacrifice") and spec.subject in ("any", "other", "self_or_other"):
+                return True
+    return False
+
+
+def _use_sac_outlets_proactively(state: GameState, strategy: Strategy) -> None:
+    """Eigenes Zugende: ueberzaehlige kleine Token (Power <= 1, zwei bleiben
+    als Blocker) werden geopfert, wenn ein kostenloser Ausgang UND ein
+    Tod-/Opfer-Payoff im Spiel ist. Kleine, vorsichtige Heuristik."""
+    if not _td_on("trigger_bus") or not _has_death_payoff(state):
+        return
+    budget = int(_td("proactive_sacrifices_per_turn", 4, "trigger_bus"))
+    for g in sorted(list(state.creature_tokens), key=lambda g: token_group_power(g, state)):
+        while budget > 0 and g.count > 0 and token_group_power(g, state) <= 1.0 and \
+                sum(x.count for x in state.creature_tokens) > 2:
+            o = _free_outlet_for(state, None, True)
+            if o is None or not _use_sac_outlet(state, strategy, o, g):
+                return
+            budget -= 1
+
+
+# Antwort auf Wipes/Entfernung: stirbt eine Kreatur ohnehin, wird sie ueber
+# einen kostenlosen Ausgang geopfert (Tod-/Opfer-Payoffs loesen aus).
+_V4850_wipe_old = _advanced_wipe_on_player
+
+
+def _advanced_wipe_on_player(state, strategy, rng, profile, seat_label) -> None:
+    if _td_on("trigger_bus") and _sac_outlets(state):
+        doomed = [q for q in list(state.creatures()) if "indestructible" not in effective_keywords_in_state(q, state)]
+        doomed.sort(key=lambda q: 1 if _is_death_payoff(q) else 0)   # Payoffs zuletzt opfern
+        for p in doomed:
+            o = _free_outlet_for(state, p.card, False)
+            if o is not None and o["perm"] is not p:
+                _use_sac_outlet(state, strategy, o, p)
+        for g in list(state.creature_tokens):
+            while g.count > 0:
+                o = _free_outlet_for(state, None, True)
+                if o is None or not _use_sac_outlet(state, strategy, o, g):
+                    break
+    return _V4850_wipe_old(state, strategy, rng, profile, seat_label)
+
+
+_V4850_spot_remove_old = _spot_remove_target
+
+
+def _spot_remove_target(state, strategy, target, removal_type):
+    if _td_on("trigger_bus") and target in state.battlefield and target.card.is_creature and not target.card.commander:
+        o = _free_outlet_for(state, target.card, False)
+        if o is not None and o["perm"] is not target:
+            if _use_sac_outlet(state, strategy, o, target):
+                state.log(f"SACRIFICE OUTLET: {target.card.name} sacrificed in response to {removal_type}")
+                return None
+    return _V4850_spot_remove_old(state, strategy, target, removal_type)
+
+
+# --- 4: Ausloeser beim Legen von +1/+1-Marken --------------------------------
+_V4850_ACTIVE = _CtxBox()
+
+
+def _on_counters_added(perm: Permanent, n: int) -> None:
+    state = _V4850_ACTIVE.value
+    if state is None or n <= 0 or not _td_on("trigger_bus"):
+        return
+    if not any(p is perm for p in state.battlefield):
+        return
+    if int(getattr(state, "_tb_depth", 0)) >= int(_td("max_depth", 2, "trigger_bus")):
+        return
+    strategy = strategy_for_state(state)
+    for src in list(state.battlefield):
+        if not _tb_source_ok(src):
+            continue
+        for spec, ability in _tb_entries(src.card):
+            if spec.event != "counter_placed":
+                continue
+            if spec.subject == "self" and src is not perm:
+                continue
+            if spec.subject == "other" and src is perm:
+                continue
+            if spec.subject in ("any", "other") and (spec.types or spec.subtypes) and \
+                    not _TB.card_matches(spec, type_line=perm.card.type_line, mana_value=perm.card.mana_value):
+                continue
+            _tb_fire(state, strategy, src, spec, ability, event="counter placed")
+
+
+def _perm_counters_get(self):
+    return self.__dict__.get("_v485_counters", 0)
+
+
+def _perm_counters_set(self, value):
+    old = self.__dict__.get("_v485_counters", None)
+    self.__dict__["_v485_counters"] = value
+    if old is not None:
+        try:
+            if float(value) > float(old):
+                _on_counters_added(self, int(round(float(value) - float(old))))
+        except (TypeError, ValueError):
+            pass
+
+
+Permanent.counters = property(_perm_counters_get, _perm_counters_set)
+
+_V4850_myco_old = mycoloth_upkeep_trigger
+
+
+def mycoloth_upkeep_trigger(state: GameState, strategy: Strategy):
+    _V4850_ACTIVE.value = state
+    return _V4850_myco_old(state, strategy)
+
+
+
+# --- Trigger-Aktionen nur aus dem Effekt-Teil parsen -------------------------
+# Befund v4.85.0: der Parser las die ganze Zeile inkl. Ausloese-Bedingung;
+# "Whenever a +1/+1 counter is put on this creature, draw a card" ergab
+# zusaetzlich eine plus1_counter-Aktion aus der Bedingung (Rueckkopplung).
+def _effect_text_of(raw: str) -> str:
+    t = strip_reminder_text(raw).strip()
+    low = t.lower()
+    m = _ABILITY_WORD_RE_V485.match(low)
+    if m and low[m.end():].startswith(("when ", "whenever ", "at the beginning")):
+        t, low = t[m.end():], low[m.end():]
+    i = low.find(", ")
+    return t[i + 2:] if i >= 0 else ""
+
+
+_ABILITY_WORD_RE_V485 = re.compile(r"^(?:[a-z0-9'’ ,.!-]+?)\s+[—–]\s+")
+_V4850_tb_entries_old = _tb_entries
+
+
+def _tb_entries(card: Card) -> list:
+    key = ("v4850", card.name, card.oracle_text or "")
+    got = _TB_CACHE.get(key)
+    if got is not None:
+        return got
+    out = []
+    for spec, ability in _V4850_tb_entries_old(card):
+        if getattr(ability, "_tb_mult_text", None) or spec.reason == "delayed_pre_part":
+            out.append((spec, ability))
+            continue
+        eff = _effect_text_of(ability.raw)
+        acts = _parse_semantic_actions(eff) if eff else []
+        if acts:
+            ability = _dc_replace(ability, actions=acts)
+        out.append((spec, ability))
+    _TB_CACHE[key] = out
+    return out
+
+
+# ===========================================================================
+# v4.86.0/v4.87.0: Tischpolitik - Zielwahl der Sitze bei ihrem eigenen Kampf-/
+# Praesenzdruck (Spieler oder ein anderer Sitz). Bisher (vor v4.86.0) immer
+# gleichverteilt zufaellig. Vier Bausteine, alle in EINER Gewichtsfunktion
+# (_kingmaking_target) zusammengefuehrt und nur ueber table_dynamics
+# einstellbar (siehe dortige Kommentare fuer die Schaetzwert-Begruendung):
+#   1) Rache-/Kingmaking-Ziel (v4.86.0): ein praktisch chancenloser Sitz
+#      (Leben <= kingmaking_life_threshold) gewichtet stark nach Rache
+#      (kingmaking_revenge_weight) und Tischfuehrung (kingmaking_leader_weight).
+#   2) Groll-Gedaechtnis (v4.87.0): JEDER Sitz - auch oberhalb der Schwelle -
+#      gewichtet leicht nach Rache (grudge_weight, klein). Das Gedaechtnis
+#      (_v4860_ledger) klingt jeden Zug ab - "wer lange verschont hat" wird
+#      dadurch von selbst wieder neutral, ohne eigene Buchhaltung.
+#   3) Gruppenhug-Malus (v4.87.0): Ressourcen-Karten des SPIELERS, die auch
+#      Gegnern etwas geben ("each opponent"/"each player" zieht/gewinnt Leben/
+#      erschafft), senken das Zielgewicht des Spielers (_group_hug_value).
+#   4) Umschalter Tischfuehrung (v4.87.0): table_politics.target_mode
+#      "uniform" (Standard, kein Leader-Bias ausserhalb von 1) oder "threat"
+#      (Leader-Bias mit threat_leader_weight gilt fuer JEDEN Sitz, nicht nur
+#      chancenlose).
+# ===========================================================================
+def _kingmaking_active(state: GameState, i: int) -> bool:
+    if not _td_on("table_politics") or not (0 <= i < len(state.opponents)):
+        return False
+    thr = float(_td("kingmaking_life_threshold", 15.0, "table_politics"))
+    return 0.0 < state.opponents[i] <= thr
+
+
+def _v4860_ledger(state: GameState) -> Dict[Any, "Counter"]:
+    ledger = getattr(state, "_v4860_dmg_ledger", None)
+    last = getattr(state, "_v4860_ledger_turn", None)
+    if ledger is None:
+        ledger = {}
+        state._v4860_dmg_ledger = ledger
+        state._v4860_ledger_turn = state.turn
+        return ledger
+    if state.turn != last:
+        decay = float(_td("kingmaking_grudge_decay", 0.6, "table_politics"))
+        for victim in list(ledger.keys()):
+            row = ledger[victim]
+            for src in list(row.keys()):
+                row[src] *= decay
+                if row[src] < 0.05:
+                    del row[src]
+            if not row:
+                del ledger[victim]
+        state._v4860_ledger_turn = state.turn
+    return ledger
+
+
+def _record_seat_damage(state: GameState, victim, source, amount: float) -> None:
+    """victim/source: Sitzindex oder 'player'. Nur Sitze als Opfer werden
+    gefuehrt (nur Sitze werten das Gedaechtnis fuer ihre eigene Zielwahl aus)."""
+    if amount <= 0 or not _td_on("table_politics") or not isinstance(victim, int):
+        return
+    ledger = _v4860_ledger(state)
+    row = ledger.setdefault(victim, Counter())
+    row[source] += float(amount)
+
+
+def _player_board_proxy(state: GameState) -> float:
+    return float(sum(1 for p in state.battlefield if p.card.is_creature))
+
+
+_GROUP_HUG_RE = re.compile(
+    r"each (?:opponent|player)(?:'s controller)? (?:may )?"
+    r"(?:draws?|gains?|creates?|puts?|untaps?|adds?|ramps?|plays?|searches?) "
+)
+_GROUP_HUG_RE2 = re.compile(r"your opponents each (?:draw|gain|may draw|may gain|create)")
+
+
+def _group_hug_value(state: GameState) -> float:
+    """v4.87.0 (Baustein 3): Schaetzwert dafuer, wie viel eigene Karten den
+    GEGNERN Ressourcen zuschieben (Howling Mine, Rites of Flourishing, Minds
+    Aglow, Prosperity, ...). Textbasierte Heuristik (kein Kalibrierungs-
+    Datensatz), Obergrenze group_hug_value_cap - siehe table_dynamics."""
+    cap = float(_td("group_hug_value_cap", 5.0, "table_politics"))
+    total = 0.0
+    for p in state.battlefield:
+        text = strip_reminder_text(p.card.oracle_text or "").lower()
+        if not text:
+            continue
+        for line in split_oracle_lines(text):
+            if _GROUP_HUG_RE.search(line) or _GROUP_HUG_RE2.search(line):
+                total += 1.0
+                break
+    return min(cap, total)
+
+
+def _kingmaking_target(state: GameState, strategy, seats, i: int, targets: list, rng: random.Random):
+    """Gewichtete Zielwahl fuer den Kampf-/Praesenzdruck eines Sitzes -
+    fasst alle vier Tischpolitik-Bausteine zusammen (siehe Kommentar oben)."""
+    ledger = _v4860_ledger(state).get(i, {})
+    w_board = float(_td("attack_target_board_weight", 3.0))
+    kingmaking = _kingmaking_active(state, i)
+    if kingmaking:
+        revenge_w = float(_td("kingmaking_revenge_weight", 2.0, "table_politics"))
+        leader_w = float(_td("kingmaking_leader_weight", 0.08, "table_politics"))
+    else:
+        revenge_w = float(_td("grudge_weight", 0.1, "table_politics"))
+        threat_on = str(_td("target_mode", "uniform", "table_politics")) == "threat"
+        leader_w = float(_td("threat_leader_weight", 0.08, "table_politics")) if threat_on else 0.0
+    hug_malus = float(_td("group_hug_malus_per_point", 0.15, "table_politics"))
+    hug_value = _group_hug_value(state) if "player" in targets else 0.0
+
+    def life_board(k):
+        if k == "player":
+            return state.life, _player_board_proxy(state)
+        return state.opponents[k], _seat_board(state, strategy, k)
+
+    weights = []
+    for k in targets:
+        life, board = life_board(k)
+        score = max(0.0, life + w_board * board)
+        wt = 1.0 + revenge_w * ledger.get(k, 0.0) + leader_w * score
+        if k == "player" and hug_value > 0:
+            wt *= max(0.1, 1.0 - hug_malus * hug_value)
+        weights.append(max(0.05, wt))
+    total = sum(weights)
+    r = rng.random() * total
+    acc = 0.0
+    for k, wt in zip(targets, weights):
+        acc += wt
+        if r <= acc:
+            return k
+    return targets[-1]
+
+
+# Spielerangriff: jede Verringerung von state.opponents waehrend des eigenen
+# Kampfs (Kampfschaden, Commander-/Gift-Kill, Ausloeser) zaehlt als "player"
+# im Rache-Gedaechtnis des betroffenen Sitzes.
+_V4860_attack_phase_old = attack_phase
+
+
+def attack_phase(state: GameState, strategy: Strategy, rng: Optional[random.Random] = None):
+    before = list(state.opponents)
+    try:
+        return _V4860_attack_phase_old(state, strategy, rng)
+    finally:
+        if _td_on("table_politics"):
+            for idx, prev in enumerate(before):
+                if idx < len(state.opponents) and state.opponents[idx] < prev:
+                    _record_seat_damage(state, idx, "player", prev - state.opponents[idx])
+
+
+# ---------------------------------------------------------------------------
+# v4.87.4: generische Fokus-Metriken fuer die Analysis-Seite.
+#
+# Bisher kannte die Auswertung genau EINE Verlaufsgroesse (Leben pro Zug)
+# und fest verdrahtete Lebens-Schwellen 50/60/80/100/111 - die 111 stammt
+# aus Bilbos Win Condition und ist fuer jedes andere Deck bedeutungslos.
+# Diese Schicht erfasst pro Zug eine Reihe deck-unabhaengiger Groessen
+# (Leben, Kreaturen, Token, Gesamt-/Maximal-Staerke, Handkarten, Marken,
+# Friedhof, Mill, Gegnerleben, Mana ...) und liefert pro Groesse:
+#   - by_turn: Mittelwert + 25/75-%-Band je Zug (ueber die in diesem Zug
+#     noch laufenden Partien),
+#   - peak: Histogramm des besten Wertes je Partie (Maximum, bzw. Minimum
+#     fuer "je kleiner desto besser"-Groessen wie Gegnerleben), aus dem die
+#     Oberflaeche beliebige Benchmarks "in X % der Partien mind. einmal
+#     erreicht" selbst berechnet.
+# Alles wird ueber summary["metrics"] durchgereicht (webui_transform.py).
+# ---------------------------------------------------------------------------
+
+# key, label, unit, direction, group
+FOCUS_METRICS: List[Tuple[str, str, str, str, str]] = [
+    ("life", "Life total", "life", "up", "Life"),
+    ("life_gained", "Life gained, cumulative", "life", "up", "Life"),
+    ("damage_taken", "Damage taken, cumulative", "damage", "up", "Life"),
+    ("creatures", "Creatures on the battlefield", "creatures", "up", "Board"),
+    ("creature_tokens", "Creature tokens", "tokens", "up", "Board"),
+    ("total_power", "Total creature power", "power", "up", "Board"),
+    ("max_power", "Biggest creature's power", "power", "up", "Board"),
+    ("plus1_counters", "+1/+1 counters on your board", "counters", "up", "Board"),
+    ("permanents", "Permanents you control", "permanents", "up", "Board"),
+    ("hand", "Cards in hand", "cards", "up", "Cards"),
+    ("cards_drawn", "Cards drawn, cumulative", "cards", "up", "Cards"),
+    ("graveyard", "Cards in your graveyard", "cards", "up", "Cards"),
+    ("opp_milled", "Cards milled from opponents", "cards", "up", "Opponents"),
+    ("opp_damage", "Life taken from opponents, total", "life", "up", "Opponents"),
+    ("opp_life_min", "Lowest opponent life", "life", "down", "Opponents"),
+    ("mana", "Mana at start of main phase", "mana", "up", "Mana"),
+    ("lands", "Lands on the battlefield", "lands", "up", "Mana"),
+]
+_FOCUS_KEYS = [m[0] for m in FOCUS_METRICS]
+_FOCUS_DIR = {m[0]: m[3] for m in FOCUS_METRICS}
+
+
+def _focus_metric_values(state: GameState, mana_before: float) -> Dict[str, float]:
+    """Momentaufnahme aller Fokus-Metriken am Ende eines eigenen Zuges."""
+    creatures = list(state.creatures())
+    powers = [float(creature_power(p, state)) for p in creatures]
+    token_count = 0
+    for g in state.creature_tokens:
+        n = max(0, int(g.count))
+        if not n:
+            continue
+        token_count += n
+        tp = float(token_group_power(g, state))
+        powers.extend([tp] * n)
+    opp = [float(x) for x in (state.opponents or [])]
+    milled = 0.0
+    for counter in state.impact.values():
+        milled += float(counter.get("mill", 0.0) or 0.0)
+    plus1 = sum(max(0, int(getattr(p, "counters", 0) or 0)) for p in state.battlefield)
+    return {
+        "life": float(state.life),
+        "life_gained": float(getattr(state, "total_life_gained", 0.0) or 0.0),
+        "damage_taken": float(getattr(state, "damage_taken", 0.0) or 0.0),
+        "creatures": float(len(creatures) + token_count),
+        "creature_tokens": float(token_count),
+        "total_power": float(sum(powers)),
+        "max_power": float(max(powers) if powers else 0.0),
+        "plus1_counters": float(plus1),
+        "permanents": float(len(state.battlefield) + token_count),
+        "hand": float(len(state.hand)),
+        "cards_drawn": float(getattr(state, "cards_drawn_total", 0) or 0),
+        "graveyard": float(len(state.graveyard)),
+        "opp_milled": milled,
+        "opp_damage": float(sum(max(0.0, 40.0 - x) for x in opp)),
+        "opp_life_min": float(max(0.0, min(opp)) if opp else 0.0),
+        "mana": float(mana_before or 0.0),
+        "lands": float(len(state.lands())),
+    }
+
+
+_V4874_turn_row_old = _turn_row_v440
+
+
+def _turn_row_v440(run_id, turn, state, strategy, *args, **kwargs) -> dict:
+    row = _V4874_turn_row_old(run_id, turn, state, strategy, *args, **kwargs)
+    # mana_before ist das 5. Positionsargument nach strategy (start_hand,
+    # land_name, casts, mana_before, ...) - so wie es simulate_game_v440 ruft.
+    mana_before = kwargs.get("mana_before", args[3] if len(args) > 3 else row.get("mana_available_start_main", 0.0))
+    try:
+        vals = _focus_metric_values(state, float(mana_before or 0.0))
+    except Exception:  # noqa: BLE001 - eine Kennzahl darf nie eine Partie abbrechen
+        vals = {}
+    for k, v in vals.items():
+        row[f"fm_{k}"] = round(v, 3)
+    return row
+
+
+def _fm_bucket(v: float) -> float:
+    """Ganzzahlige Buckets; Werte bis 20 zusaetzlich auf halbe Punkte, damit
+    kleine Groessen (Handkarten, Kreaturen) nicht zu grob werden."""
+    if abs(v) < 20:
+        return round(v * 2) / 2.0
+    return float(int(round(v)))
+
+
+_V4874_stats_add_old = StreamingStatsV440.add
+
+
+def _streaming_stats_add_v4874(self, rr: dict, tr: List[dict], sr: List[dict]):
+    _V4874_stats_add_old(self, rr, tr, sr)
+    fm = getattr(self, "_v4874_fm", None)
+    if fm is None:
+        fm = {
+            "turn_sum": _defaultdict(Counter),      # turn -> key -> sum
+            "turn_n": Counter(),                    # turn -> rows
+            "turn_hist": _defaultdict(lambda: _defaultdict(Counter)),  # key -> turn -> bucket -> n
+            "peak_hist": _defaultdict(Counter),     # key -> bucket -> games
+            "games": 0,
+        }
+        self._v4874_fm = fm
+    if not tr or "fm_life" not in tr[0]:
+        return
+    fm["games"] += 1
+    peaks: Dict[str, float] = {}
+    for row in tr:
+        t = int(row["turn"])
+        fm["turn_n"][t] += 1
+        for k in _FOCUS_KEYS:
+            v = float(row.get(f"fm_{k}", 0.0) or 0.0)
+            fm["turn_sum"][t][k] += v
+            fm["turn_hist"][k][t][_fm_bucket(v)] += 1
+            if k not in peaks:
+                peaks[k] = v
+            elif _FOCUS_DIR[k] == "down":
+                peaks[k] = min(peaks[k], v)
+            else:
+                peaks[k] = max(peaks[k], v)
+    for k, v in peaks.items():
+        fm["peak_hist"][k][_fm_bucket(v)] += 1
+
+
+StreamingStatsV440.add = _streaming_stats_add_v4874
+
+
+def _hist_quantile(hist: Counter, q: float) -> float:
+    total = sum(hist.values())
+    if not total:
+        return 0.0
+    target = q * total
+    acc = 0
+    for v in sorted(hist):
+        acc += hist[v]
+        if acc >= target:
+            return float(v)
+    return float(max(hist))
+
+
+def build_focus_metrics(stats) -> Dict[str, dict]:
+    fm = getattr(stats, "_v4874_fm", None)
+    if not fm or not fm["games"]:
+        return {}
+    out: Dict[str, dict] = {}
+    turns = sorted(fm["turn_n"])
+    for key, label, unit, direction, group in FOCUS_METRICS:
+        by_turn = []
+        for t in turns:
+            n = fm["turn_n"][t]
+            if not n:
+                continue
+            h = fm["turn_hist"][key][t]
+            by_turn.append({
+                "t": t,
+                "n": int(n),
+                "avg": round(fm["turn_sum"][t][key] / n, 3),
+                "p25": _hist_quantile(h, .25),
+                "p75": _hist_quantile(h, .75),
+                # v4.87.6: the outer tails too, so the chart can show the
+                # strong games of a turn that the middle-half band leaves out.
+                "p10": _hist_quantile(h, .10),
+                "p90": _hist_quantile(h, .90),
+            })
+        peak = fm["peak_hist"][key]
+        out[key] = {
+            "label": label,
+            "unit": unit,
+            "dir": direction,
+            "group": group,
+            "by_turn": by_turn,
+            "peak": {
+                "games": int(fm["games"]),
+                "hist": [[float(v), int(c)] for v, c in sorted(peak.items())],
+                "median": _hist_quantile(peak, .5),
+            },
+        }
+    return out
+
+
+_V4874_summary_old = streaming_summary_v440
+
+
+def streaming_summary_v440(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy) -> dict:
+    data = _V4874_summary_old(deck, stats, cfg, strategy, impact_rows, detailed_runs_logged, log_policy)
+    metrics = build_focus_metrics(stats)
+    if metrics:
+        data["metrics"] = metrics
+    data.setdefault("simulation", {})["commander_posture"] = str(getattr(strategy, "commander_posture", "auto") or "auto")
+    return data
+
+
+
+# ---------------------------------------------------------------------------
+# v4.87.4: Commander-Haltung aus der Oberflaeche durchreichen.
+# ScenarioStrategy.commander_posture ("auto"|"passive"|"balanced"|
+# "aggressive") wird vom Kampfmodell gelesen, liess sich aber bisher ueber
+# run_pipeline_v440 gar nicht setzen - die Auswahl auf der Simulation-Seite
+# war dadurch wirkungslos. Neuer optionaler Parameter commander_posture;
+# ohne ihn bleibt alles exakt wie bisher ("auto").
+# ---------------------------------------------------------------------------
+import threading as _v4874_threading
+
+_V4874_POSTURE = _v4874_threading.local()
+_V4874_VALID_POSTURES = {"auto", "passive", "balanced", "aggressive"}
+
+_V4874_apply_playstyle_old = apply_playstyle_override
+
+
+def apply_playstyle_override(strategy, playstyle):
+    out = _V4874_apply_playstyle_old(strategy, playstyle)
+    posture = getattr(_V4874_POSTURE, "value", None)
+    if posture:
+        strategy.commander_posture = posture
+    return out
+
+
+_V4874_pipeline_old = run_pipeline_v440
+
+
+def run_pipeline_v440(*args, **kwargs):
+    posture = str(kwargs.pop("commander_posture", "") or "").strip().lower()
+    _V4874_POSTURE.value = posture if posture in _V4874_VALID_POSTURES and posture != "auto" else None
+    try:
+        result = _V4874_pipeline_old(*args, **kwargs)
+    finally:
+        _V4874_POSTURE.value = None
+    if posture in _V4874_VALID_POSTURES:
+        try:
+            result["summary"].setdefault("simulation", {})["commander_posture"] = posture
+        except Exception:  # noqa: BLE001
+            pass
+    return result
 
 
 def main_v470():

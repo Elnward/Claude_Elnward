@@ -1,5 +1,843 @@
 # Commander Goldfish
 
+## v4.87.6 — Fokus-Verlauf verständlicher, Leuchtschild im Fact Sheet, GitHub-README
+
+Ausgangslage: Nutzer sah nach einem Bilbo-Lauf „~23 % erreichen 45+ Leben“, während das Band „Middle half of games“ im Verlauf nie über 40 lag, und fragte, was das Band bedeutet. Beides stimmt: Das Band zeigt je Zug die mittleren 50 % der in diesem Zug noch laufenden Partien (25.–75. Perzentil), die Marken links zählen eine Partie, sobald sie den Wert in irgendeinem Zug erreicht hat. Die hohen Partien verteilen sich über verschiedene Züge und liegen in jedem einzelnen Zug im obersten Viertel, also oberhalb des Bandes. Nachgeprüft mit Bilbo V1, 200 Spiele, 20 Züge: 27,5 % erreichen irgendwann 45+, das 75. Perzentil bleibt bis Zug 15 unter 40, das 90. Perzentil liegt ab Zug 8 über 43.
+
+**Änderungen.** `build_focus_metrics` liefert je Zug zusätzlich `p10`/`p90`; der Verlauf zeichnet die besten 10 % je Zug (bei „je niedriger desto besser“ die niedrigsten 10 %) als gestrichelte Linie, mit Legende, Tooltip, Tabellenspalte und einem kurzen Erklärsatz unter dem Diagramm. Das Fact Sheet zeigt dieselbe Linie. Oben rechts auf Seite 1 des Fact Sheets steht jetzt das Leuchtschild (`App/factsheet_assets`: Farbbild + Transparenzmaske als PNG, deren komprimierte Pixeldaten unverändert ins PDF übernommen werden – weiterhin ohne Fremdbibliothek; fehlen die Dateien, entsteht das PDF ohne Schild). Lange Decknamen werden verkleinert, damit sie nicht in das Schild laufen. Neue README für das GitHub-Repository (Wurzelordner) mit Bildern in `Docs/images/`, neue `.gitignore` (lokaler Zustand und Arbeitsordner bleiben draußen).
+
+QA: 5 neue Tests (`tests/test_v4876_neon_pdf_and_tails.py`), 1239/1239 grün. PDF gerendert und geprüft, Fokus-Diagramm per Playwright.
+
+## v4.87.5 — Neon-Grafiken, Tutorial, Fact Sheet (PDF) und Simulationsdaten (ZIP)
+
+Ausgangslage: Nutzer lieferte eigene Neon-Grafiken (Leuchtschild „Urza’s Spearfishing Guide“, START-Pfeil) und ein Tutorial-Etikett und wünschte sich: das Schild auf Home dezent flackernd, den START-Pfeil klein auf die Dose zeigend und beim Start erlöschend, ein Tutorial-Fenster mit vereinfachten Bildschirmskizzen sowie auf der Analyse-Seite einen Download für ein PDF (Deckliste, Randbedingungen, Ergebnisse) und zum Sichern der Simulation.
+
+**Neon-Grafiken.** Die drei Bilder sind als WebP (freigestellt, auf Anzeigegröße ×2) in `window.IMGS` eingebettet (`neonSign`, `neonStart`, `tutorialTag`), die selbstgebaute CSS-Schrift aus v4.87.4 ist ersetzt. Jedes Schild liegt doppelt: darunter eine graue „unbeleuchtete Glas“-Kopie, darüber die leuchtende Grafik. Für das Flackern auf Home gibt es 15 weich ausgeblendete Flecken über Buchstabengruppen und Rahmenstücken, die kurz gedimmt oder ausgeschaltet werden können, ohne harte Kanten. Das erste „i“ in „fishing“ ist die müde Röhre. Ereignisse kommen unregelmäßig alle ~2–9 s und dauern meist unter 0,2 s. Der START-Pfeil auf Simulation (etwa ein Fünftel der Bühnenbreite, Spitze auf die Dose) flackert ebenso selten, erlischt mit einem kurzen Stottern, sobald die Simulation startet, und zündet bei „Run again“ wieder. Bei „Bewegung reduzieren“ bleibt alles ruhig an.
+
+**Tutorial.** Das Etikett hängt an einer Schnur unten rechts am Neon-Schild (bleibt so sichtbar, ohne Inhalte zu verdecken). Es öffnet ein Fenster mit 11 Schritten: Überblick, Deck anlegen, Liste hochladen, Commander, Strategie-Tags, Win Conditions, Play Style, Table, Simulation starten, Analyse lesen, Weiterarbeit. Jeder Schritt zeigt eine vereinfachte Skizze des jeweiligen Bildschirms, das entscheidende Bedienelement ist kobaltblau umrandet und mit Mauszeiger markiert. Kästen „With AI“ erklären die Prompt-Wege (Strategie: *Copy prompt*; Win Conditions: *Import JSON → Copy prompt*) und dass die Simulationsdaten für eine vertiefte KI-Auswertung gedacht sind. Navigation: Pfeile links/rechts, graue Fortschrittspunkte (anklickbar), Pfeiltasten, Esc.
+
+**Analyse-Downloads.** Neuer Knopf „Download“ im Kopf der Analyse-Seite mit zwei Einträgen:
+- *Fact sheet (PDF)*: Die Seite schickt, was sie gerade zeigt (Lauf, Deck, gewählte Fokus-Kennzahl samt Marken, „What stands out“), an `POST /api/factsheet`. Neues Modul `App/factsheet_pdf.py` setzt daraus ein A4-PDF: Setup (Commander, Tags, Play Style, Win Conditions, Spiele/Züge/Seed, Gegner, Haltung, Tischpolitik, Engine), Ergebnisse mit Kennzahlen, Ausgang je Gegnerprofil, Win Conditions mit Balken und häufigsten Lücken, Fokus-Diagramm mit Band, Mana je Zug, Hinweise, Simulationsabdeckung, Karten-Highlights, Referenzvergleich und die Deckliste nach Typ in drei Spalten. Bewusst ohne Fremdbibliothek (eigener kleiner PDF-Schreiber), da auf dem Nutzerrechner nur die Standardbibliothek vorausgesetzt werden kann; Schrift DejaVu Sans Mono ist eingebettet (`App/fonts`, Lizenz beiliegend), passend zur Monospace-Optik der Oberfläche.
+- *Simulation data (ZIP)*: Der komplette Ergebnisordner des Laufs (`GET /api/deck/<deck>/runs/<ordner>/zip`; die Engine legt die ZIP ohnehin an, ältere Ordner werden spontan gepackt). Läufe tragen dafür jetzt `run_dir`/`deck_name` in ihrem Frontend-Datensatz. Pfade werden streng geprüft (nur echte Unterordner von Goldfish_Results).
+
+QA: 9 neue Tests (`tests/test_v4875_factsheet_downloads.py`: PDF-Escaping und WinAnsi-Ersatzzeichen, Zeilenumbruch, gültige Struktur/xref, Inhalte aller Abschnitte, Minimal-Lauf, beide Endpunkte inkl. Pfad-Tricks). 1234/1234 grün. Playwright: Schild- und Pfeil-Zustände (an/gedimmt/aus), Pfeil erlischt beim Start und geht bei „Run again“ wieder an, alle 11 Tutorial-Schritte, beide Downloads über die Oberfläche, Handybreite.
+
+## v4.87.4 — Oberfläche: Neon-Schild, Fokus-Auswahl in der Analyse, Win-Condition-Einträge, ehrliche Simulations-Optionen
+
+Ausgangslage: Nutzerwunsch nach einem weiteren Durchgang über die Web-Oberfläche — intuitiver und übersichtlicher, im bestehenden Grafikstil — mit drei konkreten Punkten: Leuchtreklame statt Sardinendose auf der Startseite, eine frei wählbare Kennzahl statt der fest verdrahteten Bilbo-Lebensschwellen auf der Analyse-Seite, und die Win-Condition-Prozentbalken bei den einzelnen Einträgen statt in einer losgelösten Scroll-Liste.
+
+**Startseite — Neon-Schild.** Die 3D-Sardinendose ist durch ein Leuchtreklame-Schild „Urza’s Spearfishing Guide“ ersetzt: Glasröhren (Schrift *Tilt Neon*, Rückfall Geist Mono) auf einer dunklen Kobalt-Trägerplatte mit vier Schrauben, die einen weichen blauen Lichtschein auf die „Wand“ wirft; eine Harpune als eigene Röhre unter „Guide“. Jeder Buchstabe ist eine eigene Röhre; ein kleiner Zufalls-Taktgeber lässt einzelne Röhren stottern, das ganze Schild kurz einbrechen (der Wandschein folgt) oder eine Röhre für ein, zwei Sekunden ausfallen — das „i“ in „fishing“ ist die müde Röhre und flackert öfter. Beim ersten Anzeigen pro Sitzung zünden die Röhren nacheinander. Bei „Bewegung reduzieren“ im Betriebssystem bleibt das Schild ruhig an. Die Dose bleibt auf der Simulation-Seite als Startknopf/Fortschrittsanzeige erhalten.
+
+**Analyse — Fokus-Auswahl.** Die Engine erfasst jetzt pro Zug 17 deck-unabhängige Kennzahlen (`summary["metrics"]`, neue Schicht am Dateiende von `engine.py`): Leben, Lebensgewinn und erlittener Schaden (kumuliert), Kreaturen, Kreatur-Token, Gesamt- und Maximalstärke, +1/+1-Marken, Permanents, Handkarten, gezogene Karten, eigener Friedhof, beim Gegner gemillte Karten, den Gegnern genommenes Leben, niedrigstes Gegnerleben, Mana zu Beginn der Hauptphase, Länder. Je Kennzahl: Mittelwert pro Zug mit 25–75-%-Band und ein Histogramm des besten Werts je Partie (Maximum, beim Gegnerleben Minimum). Auf der Analyse-Seite ersetzt ein Abschnitt „Focus“ mit Dropdown die alten Karten „Life totals reached“ und „Average life by turn“: die Auswahl steuert beide Hälften — links „in X % der Partien mindestens einmal erreicht“ mit automatisch aus der Verteilung gewählten Marken (endet immer beim besten Einzelspiel), rechts den Verlauf über die Züge mit Band. Eigene Marken lassen sich hinzufügen („Add a benchmark“, pro Kennzahl im Browser gemerkt) — damit ist z. B. Bilbos 111 kein Sonderfall mehr, sondern eine selbst gesetzte Marke. Ältere aufgezeichnete Läufe ohne diese Daten zeigen Leben (mit den alten festen Marken), Mana, Länder und Handkarten mit einem Hinweis, dass ein neuer Lauf mehr zeigt (`webui_transform._legacy_metrics`, gleiche Logik clientseitig für die statische Vorschau). In der Kennzahlenzeile oben ersetzt „Median win turn“ das Bilbo-spezifische „Reached 50 life“.
+
+**Analyse — Win Conditions.** Die separate Scroll-Liste im Abschnittskopf ist weg; jeder Eintrag trägt seine Zahlen selbst in einer Zeile: Name (plus „single target“, typischer Zug), zwei Balken „Setup reached“ und „Cards and thresholds“, ein Mini-Verlauf „bis Zug N erreicht“ (aus `cumulative_reach_by_turn_pct`, jetzt über `webui_transform` durchgereicht, ebenso `median_reached_turn`), und der Aufklapper öffnet direkt darunter, was in den nicht erreichten Partien noch fehlte. Sortiert nach Erreichungsquote.
+
+**Simulation — Optionen, die jetzt wirklich wirken.** Beim Durchsehen fielen vier Bedienelemente auf, die nichts taten: „Commander posture“ wurde nie an den Server geschickt (neu: `run_pipeline_v440(commander_posture=…)`, landet in `ScenarioStrategy.commander_posture`, das Kampfmodell liest es bereits; der Lauf zeigt die Haltung in der Analyse), „Steer toward win conditions“ und die Häkchen unter „Win conditions to observe“ wurden ignoriert (jetzt: nur angehakte, gespeicherte Setups werden mitgeschickt; ohne Steuern laufen sie als reine Beobachtung), „Log every game in detail“ hatte keine Gegenstelle und ist entfernt. Neben der Dose gibt es jetzt einen normalen „Start goldfishing“-Knopf; der Hinweistext zur Vorschau-Wiedergabe erscheint nur noch in der Vorschau.
+
+**Kleinere Politur.** Strategy und Table haben eine unten angeheftete Speichern-Leiste, die „Unsaved changes“ anzeigt, sobald etwas geändert wurde (Table zusätzlich „Reset to defaults“); die Commander-Liste zeigt ausgewählte Commander zuerst und macht Scrollbarkeit sichtbar; die Deck-Seitenleiste (Kurve, Farben, Rollen) bleibt beim Scrollen der Kartenliste stehen; Referenztabelle scrollt auf dem Handy seitlich statt Zahlen umzubrechen; „deaths in 200 games“ nutzt die echte Partienzahl.
+
+QA: 11 neue Tests (`tests/test_v4874_focus_metrics.py`: Momentaufnahme der Kennzahlen, Mill aus erfassten Mill-Impacts, Aggregation mit Max/Min-Peaks und Zugmitteln, Durchreichen und Altlauf-Rückfall in `webui_transform`, Commander-Haltung). 1225/1225 grün. Oberfläche per Playwright im lokalen Server geprüft (Desktop 1440 px und Handy 390 px, echter Lauf über die Oberfläche mit gewählter Haltung, Fokus-Wechsel, eigene Marke, aufgeklappte Win Condition, statische Vorschau), keine JavaScript-Fehler.
+
+## v4.87.3 — Reliability-Sweep-v1-Nachlauf: The Vision, The Scarlet Witch, Shadowborn Apostle
+
+Ausgangslage: Nutzer meldete nach einem eigenen Aziza-V2-Testlauf, dass *The Vision* und *The Scarlet Witch* nicht wirklich abgebildet wurden; der daraufhin gebaute 200-Deck-Reliability-Sweep-v1 (siehe Projekt-Notizen v4.87.1/v4.87.2) meldete zusätzlich genau einen `model_gaps`-Treffer über alle 200 Decks: *Shadowborn Apostle* (22× gecastet, 0,32 Wert/Cast, nur „review“-Text). Statt drei Karten einzeln zu patchen wurde für jede die generische Textinterpreter-Lücke dahinter gesucht und behoben — der Sinn ist, dass jede andere reale Karte mit demselben Schablonentext ab sofort ebenfalls funktioniert, nicht nur diese drei.
+
+**The Scarlet Witch** — „Instant and sorcery spells you cast with mana value 4 or greater cost {X} less to cast, where X is The Scarlet Witch's power.“ `effective_cost_discount` kannte bisher nur feste Ganzzahl-Rabatte („cost {N} less“, beschränkt auf Kreatur-/Artefakt-/Verzauberungszauber) plus einen fest verdrahteten Sonderfall (Ezzaroot, skaliert mit Lebensgewinn diese Runde) — keine dritte, generische Form für „Rabatt = eigene Stärke der Quelle“, gated durch einen Zaubertyp- UND Manawert-Filter. Neue generische Regel erkennt `<Typen> spells you cast [with mana value N or greater] cost {X} less to cast, where X is <Subjekt>'s power`; `<Subjekt>` muss nicht wörtlich der Kartenname sein — dieselbe `text_references_source`-Selbstreferenz-Prüfung, die im Rest der Datei schon für „this creature“/eigener Name benutzt wird, entscheidet das. Getestet inkl. Kreatur-Filter (kein Rabatt für Kreaturzauber), Manawert-Schwelle (kein Rabatt unterhalb) und Skalierung mit +1/+1-Marken.
+
+**The Vision** — „Whenever you cast a noncreature spell, choose one that hasn't been chosen this turn — Solar Beam: … doppelte Klingen … Density Control: … indestructible … Technopathy: Ziehe eine Karte.“ `_modal_choice_blocks` hatte diesen Header-Typ (die „hasn't been chosen“-Variante) schon länger absichtlich ausgeklammert (eigener Kommentar nennt The Vision explizit als Beispiel) — richtig so, denn ohne echte Pro-Runde-Buchführung, welcher Modus schon gewählt wurde, hätte man den Effekt entweder gar nicht oder falsch (als einmaligen statt wiederholten Trigger) abgebildet. Jetzt existiert diese Buchführung (`state.modal_chosen_this_turn`, pro Zug zurückgesetzt, pro Quellpermanent unabhängig), und ein neuer Resolver feuert bei jedem eigenen Zauberspruch generisch für jede Karte mit exakt diesem Schablonentext. Nebenbefund beim Bau: der generische „gains KEYWORD until end of turn“-Parser verlangte bisher zwingend ein Subjekt wie „target/that/another target creature“ — Selbstverstärkung („The Vision gains double strike“, „This creature gains …“) fiel schlicht durch das Raster, obwohl die Ziel-Auflösung (`_semantic_target_creature`/`text_references_source`) Selbstreferenz längst richtig behandelt hätte. Eine Zeile Regel-Erweiterung genügte, da die Ausführung schon vorbereitet war. Getestet: 3 Zauber pro Zug schalten genau die 3 Modi frei (Doppelklinge, Unzerstörbarkeit, beide gesetzt), ein 4. Zauber in derselben Runde tut nichts (kein Absturz, kein doppeltes Feuern), Kreaturzauber lösen gar nicht aus, ein neuer Zug setzt zurück.
+
+**Shadowborn Apostle** — „{1}{B}, Discard a card: Search your library for a card named Shadowborn Apostle, put it into your hand, then shuffle.“ Mana- und Abwurf-Kosten wurden schon vorher korrekt erkannt (`discard_count`, `mana_total`) — nur der Effekt selbst passte auf kein bekanntes Muster, weshalb die ganze Fähigkeit trotz „recognized_cost“ bei `execution_mode="review"` landete (exakt das, was model_gaps zu Recht bemängelte). Neue generische Aktion `named_tutor_to_hand` („Search your library for a card named X, put it into your hand[, then shuffle]“) über die bestehende Keyword-Registry (`App/keyword_library/definitions.json` + `handlers.py`, nur ein neuer Eintrag + ein neuer Handler, kein Eingriff in engine.py-Dispatch nötig) — nutzt das längst vorhandene `tutor_to_hand`. Nicht auf Selbst-Tutoren beschränkt: X kann jede beliebige benannte Karte sein. Nach dem Fix parst Apostles Fähigkeit als `execution_mode="exact"`, verschwindet also aus künftigen `model_gaps`-Reports.
+
+**QA.** 13 neue Tests (`tests/test_v4873_reliability_sweep_followup.py`): Scarlet-Witch-Rabatt (qualifizierend, Zaubertyp-Filter, Manawert-Schwelle, Skalierung mit Marken), Vision-Modus-Freischaltung über mehrere Casts inkl. Rundenwechsel und Kreatur-Filter, Apostle-Parsing (`ability_kind`/`execution_mode`/`discard_count`/`actions`) plus Tutor-Ausführung (Treffer und sauberer No-op ohne Treffer in der Bibliothek). 1214/1214 grün (vorher 1201/1201 — reine Ergänzung, keine bestehende Karte/Verhalten geändert).
+
+## v4.87.0 — Tischpolitik, Bausteine 2–4 + Web-UI-Reiter „Table“
+
+Die drei restlichen Tischpolitik-Bausteine (siehe „Offen“ in v4.86.0) sind jetzt umgesetzt, alle vier zusammen in einer Gewichtsfunktion (`_kingmaking_target`):
+
+* **Groll-Gedächtnis (immer aktiv).** Bisher wirkte Rache nur bei einem praktisch chancenlosen Sitz (Baustein 1). Jetzt gewichtet JEDER Sitz — auch ein gesunder — leicht nach Rache (`table_politics.grudge_weight`, Standard 0,1, deutlich kleiner als `kingmaking_revenge_weight` 2,0). Dasselbe abklingende Gedächtnis wie Baustein 1; „wer lange verschont hat, seltener“ ergibt sich von selbst aus dem Abklingen.
+* **Umschalter Tischführung.** `table_politics.target_mode`: „uniform“ (Standard — außerhalb von Kingmaking kein Bias zum Tischführer) oder „threat“ (`threat_leader_weight` gilt für JEDEN Sitz — der ganze Tisch zielt bevorzugt auf das stärkste Ziel, nicht nur ein chancenloser Sitz auf den Tischführer).
+* **Gruppenhug-Malus.** Eigene Karten, die auch Gegnern etwas geben (Howling Mine, Rites of Flourishing, Minds Aglow, …) senken das Zielgewicht des Spielers multiplikativ (`group_hug_malus_per_point` × Textheuristik-Wert, gedeckelt bei `group_hug_value_cap`). Textbasierte Erkennung (`_group_hug_value`), kein Trainingsdeck-Datensatz.
+
+Alles zusätzlich zum globalen `table_politics.enabled` abschaltbar (dann wieder reine Gleichverteilung wie vor v4.86.0).
+
+**Web-UI: neuer Reiter „Table“.** Globale (nicht pro Deck gespeicherte) Einstellungen für alle vier Bausteine — Schwelle/Gewichte für Kingmaking, Groll-Basisgewicht, Uniform/Threat-Umschalter samt Gewicht, Gruppenhug-Malus/-Deckel — als Schieberegler bzw. Segmentbuttons, mit Speichern-Knopf. Neuer Endpunkt `GET/POST /api/table-politics` in `web_server.py` liest bzw. schreibt gezielt nur den `table_politics`-Block in `Data/Models/table_dynamics.json` (alle anderen Kalibrierungsabschnitte und die `_comment`/`_comment_v487`-Begründungstexte bleiben unangetastet); eine Änderung wirkt sofort im laufenden Prozess (`engine.TABLE_DYNAMICS`), kein Neustart nötig. Diese Positionierung war eine Nutzerentscheidung (eigener Reiter statt Unterbringung in Simulation oder einer Profil-Reiterstruktur unter Strategy — letztere bleibt für ein künftiges, noch nicht umgesetztes pro-Deck-„Erfahrung/Misplay“-Feature vorgemerkt).
+
+**Kalibrierung.** `combat_damage_per_board_unit` bleibt 1,8: Stichprobe A 28,6 %, B 25,4 % Siege (je 40 Decks, 40 Partien, 20 Züge) — beide weiter im historischen Streubereich (v4.85/4.86: 21,5–26,4 %), A liegt am oberen Rand. Bei den Nutzerdecks (unten) fällt der Anstieg deutlicher aus als im abstrakten Kalibrierungs-Sample; wahrscheinlicher Mechanismus: das neue Baustein-2-Gedächtnis lässt Sitze jetzt auch UNTEREINANDER (nicht nur gegen den Spieler) gezielter zurückschlagen, was Sitze im Lauf einer 20-Zug-Partie schneller gegenseitig ausdünnt (weniger Sitze am Tisch spät im Spiel = weniger Druck auf den Spieler) — passt dazu, dass bei 10 Zügen kaum Verschiebung zu sehen ist, bei 20 Zügen aber schon. Keine Rekalibrierung von `combat_damage_per_board_unit` vorgenommen, da beide Kalibrierungsstichproben weiter im Rahmen liegen; sollte künftig weiter beobachtet werden.
+
+**Nutzerdecks (200 Partien, Siege bei 10 → 20 Zügen; in Klammern v4.86.0 bei 20 Zügen):** Bartz 5,5 → 27,5 % (25,5), Sheoldred 35,5 → 76,0 % (70), Bello 63,5 → 79,5 % (73,5), Edgar 16,0 → 41,5 % (36,5), Wilhelt 4,5 → 33,5 % (36), Ms. Bumbleflower 0,5 → 23,0 % (17), Pasted 5,0 → 34,0 % (30), Aziza 2,5 → 12,5 % (16), Mice 1,5 → 21,5 % (14,5), Katara 3,0 → 28,5 % (24,5), Lathril 4,5 → 31,0 % (30,5). Überwiegend ein spürbarer, aber plausibler Anstieg (s. o.); zwei Decks (Wilhelt, Aziza) sinken leicht — kein einseitiger Bug-Verdacht, da die Richtung pro Deck unterschiedlich ausfällt.
+
+**Selbstprüfung.** Ein erster Testlauf der Nutzerdecks lieferte deutlich höhere (und pro Deck uneinheitlich verzerrte) Zahlen als hier berichtet; Ursache war eine Race Condition zwischen diesem Messlauf und der parallel laufenden Web-UI-Verifikation desselben Runden (Playwright-Test speicherte testweise andere `table_politics`-Werte über `/api/table-politics`, während einzelne Multiprocessing-Worker `Data/Models/table_dynamics.json` gerade erst luden). Gefunden durch den Abgleich mit einem isolierten Einzel-Deck-Kontrollwert; behoben durch einen sauberen, isolierten Wiederholungslauf ohne gleichzeitige Schreibzugriffe — die oben stehenden Zahlen stammen aus diesem sauberen Lauf.
+
+**QA.** 8 neue Tests im Spielpfad (`tests/test_v4870_table_politics_generalized.py`): Gruppenhug-Erkennung (Howling Mine/Rites-of-Flourishing-Muster, Deckel), Basis-Groll ohne Kingmaking (spürbarer aber nicht dominanter Bias; Kontrolltest ohne Groll bleibt gleichverteilt), Uniform- vs. Threat-Modus (Bias nur im Threat-Modus, auch außerhalb von Kingmaking), Ende-zu-Ende-Vergleich mit/ohne Gruppenhug-Karte über `_apply_advanced_multi_opponent_phase`. Ein bestehender Regressionstest in `tests/test_v4860_table_politics.py` musste an das neue Verhalten angepasst werden (ein gesunder Sitz ist jetzt NICHT mehr automatisch immun gegen einen großen künstlichen Groll-Wert, da Baustein 2 das Gedächtnis auch außerhalb von Kingmaking auswertet — der Test prüft jetzt stattdessen „ohne Groll bleibt gleichverteilt“). 1201/1201 grün.
+
+## v4.86.0 — Tischpolitik, Baustein 1: Rache-/Kingmaking-Ziel
+
+Ein Sitz, der praktisch chancenlos ist (Leben <= `table_politics.kingmaking_life_threshold`, Standard 15 von 40), zielt bei seinem eigenen Kampf-/Präsenzdruck nicht mehr gleichverteilt auf ein zufälliges Ziel (Spieler oder ein anderer Sitz), sondern gewichtet:
+* **Rache** – wer ihn in den letzten Zügen am stärksten angegriffen hat. Jeder Sitz führt dafür ein kleines Gedächtnis, das jeden Zug mit `kingmaking_grudge_decay` (0,6) abklingt.
+* **Tischführung** – wer am besten dasteht (Leben + `attack_target_board_weight` × Brett – dieselbe Formel wie die eigene Fokus-Zielwahl des Spielers, hier aber invertiert: das stärkste statt das schwächste Ziel gilt als attraktiv).
+
+Alle anderen Sitze (oberhalb der Schwelle) sowie gezielte Entfernung und Board-Wipes bleiben unverändert bei der bisherigen Gleichverteilung. Die Parameter sind Schätzwerte ohne Trainingsdeck-Grundlage (anders als z. B. `interaction_removal_share`) und über `table_politics.enabled` zusätzlich zum globalen Schalter abschaltbar.
+
+**Kalibrierung.** `combat_damage_per_board_unit` bleibt 1,8: Stichprobe A 26,4 %, B 21,5 % Siege (je 40 Decks, 40 Partien, 20 Züge) – unverändert im Rahmen von v4.84.0/v4.85.0.
+
+**Nutzerdecks (200 Partien, Siege bei 10 → 20 Zügen; in Klammern v4.85.0 bei 20 Zügen):** Bartz 25,5 % (30,5), Sheoldred 70 % (67), Bello 73,5 % (75), Edgar 36,5 % (37,5), Wilhelt 36 % (35), Ms. Bumbleflower 17 % (21), Pasted 30 % (33), Aziza 16 % (13,5), Mice 14,5 % (19), Katara 24,5 % (24), Lathril 30,5 % (28) – alle Verschiebungen im Rauschen von ±5 pp bei 200 Partien.
+
+**QA.** 9 neue Tests im Spielpfad (`tests/test_v4860_table_politics.py`): Schwellenwert, Gedächtnis samt Abklingen, Gewichtungslogik (Rache- und Tischführungs-Bias, Kontrolltest ohne Groll bleibt gleichverteilt), zwei Ende-zu-Ende-Läufe über `_apply_advanced_multi_opponent_phase` (chancenloser Sitz revanchiert sich statistisch deutlich häufiger, gesunder Sitz bleibt gleichverteilt), Aufzeichnung des eigenen Kampfschadens des Spielers ins Gedächtnis des getroffenen Sitzes. 1193/1193 grün.
+
+**Offen (weitere Tischpolitik-Bausteine, vom Nutzer priorisiert):** Groll-/Bündnis-Gedächtnis über die Zieltabelle hinaus, Gruppenhug-Malus, Umschalter „größte Bedrohung zuerst" – noch nicht umgesetzt.
+
+## v4.85.0 — Kombo-Wirkungen, doppelseitige Karten, Opfer-Ausgänge, Marken-Auslöser
+
+**1 – Kombos und Siegbedingungen werden gemessen UND ausgespielt.** Jedes Szenario im Kombo-Baukasten hat das neue Feld „When reached“ (Szenario-JSON: `effect`):
+* `default` – Altverhalten: Win Condition = Tischsieg (inkl. `loose_policy`), Setup/Combo = nur messen.
+* `none` – nur messen.
+* `win_all` – alle Gegner verlieren.
+* `eliminate_one` – der Fokus-Gegner (niedrigstes Leben) scheidet aus, das Spiel geht weiter.
+* `resource` – Ressourcen: `tokens` (Kreatur-Token mit P/T, optional Eile – ohne Eile gilt Einsatzverzögerung, Angriff erst im nächsten Kampf), `life`, `counters` (+1/+1-Marken auf die Kombo-Kreatur bzw. die stärkste Kreatur), `mana` (als Treasure), `cards`, `drain` (jeder Gegner verliert), `other` (nur messen). Menge frei oder „Infinite“ (Obergrenzen: 100 Token/Marken, 1000 Leben, 40 Mana, 30 Karten, 999 Drain). Wiederholung „einmal pro Partie“ oder „jeden Zug, in dem das Setup steht“.
+* Gegner können die Ausführung stören (wie v4.83.0, `disruption_use_share`). Endliche Token-Erzeuger brauchen kein eigenes Feld – sie ergeben sich aus Mana und Karten.
+* Summary: `outcomes.combo_executed_pct` (Anteil Partien je Kombo), `outcomes.scenario_effects`; die Startseite der Web-UI zeigt „Combos executed“. Bilbo-Szenarien mit `win_all` behalten ihren Bilbo-Ausführer; jede andere Wirkung läuft generisch.
+
+**2 – Doppelseitige Karten („zweite Hand“ als Container).** Die Rückseite wird beim Laden als eigenes Kartenobjekt hinterlegt und bei Bedarf gegen die Vorderseite getauscht; verlässt die Karte das Spielfeld, liegt wieder die Vorderseite in der Zielzone.
+* MDFC (zwei Kosten, Seite A oder B): ist A nicht bezahlbar, wird B gewirkt; eine Land-Rückseite wird gespielt, wenn kein anderes Land auf der Hand ist und weniger als `trigger_bus.mdfc_land_until_lands` (8) Länder liegen.
+* Transform: bezahlte Transformation („{Kosten}: Transform“, Craft) im Endschritt, wenn die Rückseite besser ist; Tag/Nacht (daybound/nightbound, alte Werwolf-Texte): Nacht nach einem Zug ohne Zauber, Tag nach zwei Zaubern, Nacht auch beim Ausscheiden eines Gegners. Disturb vom Friedhof.
+* Summary: `avg_dfc_transforms`, `avg_mdfc_back_face_plays`.
+
+**3 – Kreaturen opfern als Kosten.** Opfer-Ausgänge („Sacrifice a/another creature: …“, auch mit Mana-/Tapp-Kosten) werden genutzt: als Antwort auf Wipes (Todes-Auslöser zuletzt), auf gezielte Entfernung (geopfert statt exiliert) und freiwillig im Endschritt mit schwachen Token, wenn ein Todes-Auslöser liegt (höchstens `trigger_bus.proactive_sacrifices_per_turn` = 4, zwei bleiben stehen). Summary: `avg_sacrifice_outlet_uses`.
+
+**4 – „Whenever a +1/+1 counter is put on …“.** Neues Trigger-Bus-Ereignis `counter_placed` (diese Kreatur / eine andere / eine beliebige, mit Typfilter). Dabei behoben: Aktionen einer ausgelösten Fähigkeit werden nur noch aus dem Wirkungsteil gelesen – vorher erzeugte die Bedingung „+1/+1 counter“ selbst eine Marken-Aktion (Rückkopplung).
+
+**5 – Web-UI.** Im Kombo-Baukasten unter „Parameters“ der Schalter „When reached“ (Default / Measure only / Win / Eliminate one / Resources mit Ressource, Infinite, Menge, Token-P/T, Eile, Wiederholung). Importierte Lethalitäts-Prädikate (`derived`) gehen beim Speichern nicht mehr verloren. Die Startseite aktualisiert sich nach einem Live-Lauf.
+
+**Kalibrierung.** `combat_damage_per_board_unit` bleibt 1,8: Stichprobe A 25,6 %, B 21,9 % Siege (je 40 Decks, 40 Partien, 20 Züge; v4.84.0: 25,1 / 24,3 %) – im Rauschen um 25 %.
+
+**Nutzerdecks (200 Partien, Siege bei 10 → 20 Zügen; in Klammern v4.84.0 bei 20 Zügen):**
+
+| Deck | 10 Züge | 20 Züge |
+|---|---|---|
+| Bartz | 11 % | 30,5 % (31) |
+| Sheoldred | 33,5 % | 67 % (73) |
+| Bello | 56,5 % | 75 % (68,5) |
+| Edgar | 15 % | 37,5 % (40) |
+| Wilhelt | 4,5 % | 35 % (27,5) – nutzt jetzt Opfer-Ausgänge |
+| Ms. Bumbleflower | 0 % | 21 % (23) |
+| Pasted | 6,5 % | 33 % (37,5) |
+| Aziza | 2 % | 13,5 % (14) |
+| Mice | 2 % | 19 % (13,5) |
+| Katara | 2,5 % | 24 % (22) |
+| Lathril | 8,5 % | 28 % (31) |
+
+Sheoldred wurde gegengeprüft (v4.84.0 vs. v4.85.0, drei Seeds, plus Abschalten jedes neuen Bausteins einzeln): v4.84.0 72,5 %, v4.85.0 67–71,7 %; kein einzelner Baustein erklärt den Abstand (alle Varianten 68–75 %, Rauschen ±3 pp bei 300 Partien).
+
+**QA.** 14 neue Tests im Spielpfad (`tests/test_v4850_combos_dfc_sac_counters.py`), 1184/1184 grün (1 übersprungen). Web-UI im Headless-Browser geprüft (Schalter, Speichern, Übergabe an die Engine, Anzeige „Combos executed“, keine JS-Fehler).
+
+**Offen:** Politik am Tisch (nächster Schritt).
+
+## v4.84.0 — offene Punkte A–F aus v4.83.0
+
+**A – Deck-Spiel/Mechaniken.**
+* Statische Animation („each … you control with mana value 4 or greater is a 4/4 creature … haste“; Bello, March of the Machines): betroffene Permanents greifen im eigenen Kampf als Kreaturen an, inkl. vergebener Keywords und „bei Kampfschaden: ziehe“.
+* „If this is the second time this ability has resolved this turn“ (Ms. Bumbleflower) wird ausgewertet.
+* Trigger-Bus erweitert:
+  * variable Mengen („for each opponent/creature/<Typ> you control“, „equal to the number of …“; „for each opponent who …“ bleibt aus),
+  * Vorab-Teil verzögerter Trigger,
+  * sterbende Token,
+  * „whenever you sacrifice …“,
+  * „whenever you gain life“ (außer den drei Altcode-Mustern),
+  * Ressourcen-Token-ETB,
+  * Zauber der Gegner (inkl. „a player casts“; Rhystic-Steuer mit 50 % Zahlquote).
+* Spontan-/Hexereizauber führen jetzt auch Kreatur-Token, +1/+1-Marken, Mill, Abwerfen, Keyword-Vergabe, Fight usw. aus (vorher nur Ziehen/Leben/Drain/Scry/Ressourcen-Token). Storm kopiert.
+* Neue Aktion `land_search` (Nature's Lore, Three Visits, Cultivate, Wood Elves …, vorher wirkungslos) samt Ramp-Rolle.
+* Rückseiten doppelseitiger Karten wirken nicht mehr (die Engine transformiert nicht).
+* `card_model_coverage.csv` hat die Spalte „Trigger im Spielpfad“, die ehrlich zählt; die Summary nutzt dieselbe Zählung.
+
+**B – Gegner/Tisch.**
+* Einfache Profile laufen als drei Sitze dieser Strategie am symmetrischen Tisch (`simple_profiles_use_table`).
+* Datenbasierte Parameter aus den 1.585 Trainingsdecks:
+  * Removal-Anteil der Sitz-Interaktion 0,83 (7,36 Removal vs. 1,52 Protection je Deck),
+  * Stör-Anteil für Win Conditions 0,70 (Anteil Spontan/Flash).
+* Erste Spielwirkung der Sitz-Bestände: passive Engines beschleunigen, Opfer-Drain trifft alle anderen, Stax tappt ein Land.
+* Commander-Schaden durch Gegner (30 % des Drucks, 21 = verloren).
+* Benchmark-Datenfehler behoben: doppelseitige Karten trugen im synthetischen Cache Namenspräfixe und Rückseiten-Text (Tovolar-Ausreißer).
+
+**C – Win Conditions.** Einordnung „checked/loose“ (`outcomes.win_condition_quality`), Hinweis in Analyse und Web-UI, Umgangsregel `win_condition_execution.loose_policy` (`execute` Standard / `board_lethal` / `measure_only`). Beispiel bei 20 Zügen:
+
+| Deck | execute | board_lethal | measure_only |
+|---|---|---|---|
+| Bello | 79 % | 59 % | 54 % |
+| Sheoldred | 78 % | 57 % | 60 % |
+
+**D – Kalibrierung.** `combat_damage_per_board_unit` bleibt 1,8. Endstand: Stichprobe A 25,1 %, B 24,3 % Siege (je 40 Decks, 40 Partien, 20 Züge). Eigene Interaktionsschwellen sind unkritisch (Unterschiede im Rauschen). Spieltempo: erster Ausfall am Tisch im Median Zug 10, eigene Partie entschieden im Median Zug 11.
+
+**E – Oberfläche.** Web-UI zeigt „Won via win condition“, „Opponents knocked out“ sowie Hinweise zu losen Win Conditions und zur Trigger-Abdeckung; Legende nennt das echte Zuglimit. Tk-GUI Standard 20 Züge.
+
+**F – QA.** 18 neue End-to-end-Tests im Spielpfad (`tests/test_v4840_open_items.py`), 1170/1170 grün. Selbstprüfung: ein Import-Fehler hatte die Sitz-Bestände zunächst stumm wirkungslos gelassen (breites `except`); gefunden durch Messung und behoben (`except` entfernt).
+
+**Nutzerdecks (200 Partien, Siege bei 10 → 20 Zügen):**
+
+| Deck | 10 Züge | 20 Züge |
+|---|---|---|
+| Bartz | 10,5 % | 31 % |
+| Sheoldred | 32,5 % | 73 % (Win Condition 39 %) |
+| Bello | 50 % | 68,5 % (Win Condition 46,5 %) |
+| Edgar | 12 % | 40 % |
+| Wilhelt | 4 % | 27,5 % |
+| Ms. Bumbleflower | 3 % | 23 % |
+| Pasted | 9 % | 37,5 % |
+| Aziza | 1 % | 14 % |
+| Mice | 2 % | 13,5 % |
+| Katara | 4 % | 22 % |
+| Lathril | 8 % | 31 % |
+
+**Offen:** Transformieren doppelseitiger Karten; Opfer von Kreaturen als Kosten (Aristokraten-Outlets); Counter-gelegt-Trigger; Politik am Tisch; Tempo-Ziel und Umgang mit losen Win Conditions sind Nutzerentscheidungen (siehe unten im Bericht).
+
+## v4.83.0 — Siegquoten-Debug: symmetrischer Vierertisch, Trigger-Bus, Win-Conditions
+
+**Anlass:** drei Testdecks (Bartz, Sheoldred, Bello; 200 Partien, 10 Züge,
+Advanced-Gegnermodell, 3 zufällige Bracket-3-Sitze) gewannen 0 von 600
+Partien. Erwartung: Decks in Trainingsdaten-Güte ~25 %.
+
+**Diagnose (selbstkritisch):** Das Problem lag nicht an den Testdecks. Ein
+neuer Trainingsdeck-Benchmark (`App/benchmark/training_deck_benchmark.py`:
+40 echte EDHREC-Durchschnittsdecks — genau die Datenbasis der abstrakten
+Gegner — gegen denselben Tisch) ergab **0,6 % Siege** und ~6 Schaden pro
+Partie gegen die Gegner, bei ~40 erlittenem. Die Engine war mit ihren
+eigenen Lehrdaten nicht konsistent. Ursachen:
+
+1. *Tisch-Asymmetrie:* Sitze griffen nur den Spieler an, nie einander;
+   kein Gegner konnte außer durch den Spieler sterben (120 Leben allein
+   abzuräumen); tote Gegner handelten weiter; `interaction_availability`/
+   `wipe_readiness` (laut state_equation die Wahrscheinlichkeit, live
+   Interaktion auf der Hand zu haben) wurden beim Einsatz nie gesenkt
+   (gemessen 4,3 Interaktions-Einsätze je Sitz in 10 Zügen, jetzt 2,2;
+   Decklisten-Dichte ergibt grob 2,4–2,8 — vorher also ~1,7× zu viel); Wipes trafen nur das Brett des Spielers; der Gegner verlor
+   in normalen Kämpfen nie Kreaturen; `state.opponents` war fest [40]×3
+   unabhängig von der Sitzzahl.
+2. *Ausgelöste Fähigkeiten liefen nicht:* der Parser klassifizierte
+   „Whenever you cast …“, „Whenever another creature enters …“, Landfall,
+   Upkeep/Endschritt, Tod, Kampfschaden, Constellation … als `exact`, aber
+   kein Dispatcher führte sie aus (nur handverdrahtete Einzelfälle). Die
+   Abdeckungsanzeige war damit irreführend. Das betraf auch meine eigenen
+   v4.81.0-Keywords (Amass/Fabricate/Support im ETB) — die Funktionen waren
+   getestet, der Spielpfad nicht.
+3. *Win-Conditions wurden nie ausgeführt* (Bello 36 %, Sheoldred 18 %
+   „erreicht, aber kein Sieg“).
+4. *Eigene Removal/Wipes/Counterspells wurden nie gewirkt* („reactive only“).
+5. *Schadensverteilung auf den Gegner mit dem MEISTEN Leben* — niemand starb.
+6. Parser-Fehler: „target opponent draws a card“ ließ den Spieler ziehen;
+   Rückseiten-Trigger von DFCs feuerten; „When it dies, …“ innerhalb eines
+   Effekts wurde sofort ausgeführt.
+
+**Lösungen (alle abschaltbar, `Data/Models/table_dynamics.json`):**
+symmetrischer Tisch (Sitze greifen zufällig den Spieler ODER einen anderen
+lebenden Sitz an, Tausch-Attrition, Removal auch gegen Sitze, Verbrauch von
+Interaktion/Wipes, Wipes treffen alle Bretter, Sitz wiped nur im Rückstand,
+tote Sitze passen, Sitzzahl = Gegnerzahl); gewöhnliche Kampf-Kills zählen als
+Attrition (`keyword_effects.ordinary_kill_credit`); mehrspieler-Angriffswahl
+(Ziel = min(Leben + 3·Brett), Blockrate × Brett des Ziels / 3, Commander mit
+„balanced“ greift offene Gegner an); Fokus-Zielwahl für „target opponent“;
+eigene Removal/Wipes/Counterspells gegen die Sitze; Win-Condition-Ausführung
+mit Störungswurf (Interaktion der Sitze, verbraucht Interaktion, kostet ein
+Kombo-Teil); generischer Trigger-Bus `App/trigger_bus` (Cast, ETB self/other/
+Constellation, Landfall inkl. Fetch-Ramp, Tod, Angriff, „whenever you attack“,
+Kampfschaden, Upkeep/Endschritt/Kampfbeginn, Ziehen, „whenever an opponent
+draws“) — konservativ: Zwischen-if, optionale Kosten, modale/verzögerte
+Effekte und variable Mengen werden NICHT ausgeführt und in
+`summary.simulation.trigger_bus` als „not_dispatched“ gezählt; neue Aktionen
+„target player loses N life“ und Hingabe-Drain (Gray Merchant).
+Web-UI/Server: Standard 20 statt 10 Züge (nach 10 Zügen ist am Vierertisch erst
+~die Hälfte der Partien entschieden). Neue Kennzahlen: `win_via_win_condition_pct`,
+`win_condition_disrupted_pct`, `avg_trigger_bus_fires`, `avg_opponents_eliminated`,
+`avg_opponent_life_lost_total`, `active_at_turn_limit_pct`.
+
+**Kalibrierung:** einziger freier Hauptparameter `combat_damage_per_board_unit`
+über den Trainingsdeck-Benchmark (20 Züge): 1,0 → 35,8 % Siege, 1,5 → 28,7 %,
+2,0 → 21,8 %; gewählt 1,8. Endstand: Stichprobe A 25,6 % Siege / 67,0 %
+Niederlagen / 7,4 % offen, unabhängige Kontroll-Stichprobe B 23,1 / 68,1 / 8,8 %.
+
+**Effekt auf die Nutzerdecks (200 Partien, Siege % bei 10 → 20 Zügen; vorher
+bei 10 Zügen überall 0–0,5 %):** Bartz 6 → 23,5; Sheoldred 29 → 67 (davon
+Win-Condition 40,5); Bello 41,5 → 53,5 (Win-Condition 43); Edgar 11 → 39; Wilhelt
+1,5 → 29,5; Lathril 5,5 → 31,5; Katara 2,5 → 25,5; Pasted (Sauron) 1 → 26,5;
+Mice 3 → 18,5; Aziza 1 → 7,5; Ms. Bumbleflower 0 → 3,5.
+
+*Nachtrag Selbstprüfung:* Der Störungswurf der Win-Conditions nutzte anfangs einen nur aus Zug/Handgröße abgeleiteten Zufallsgenerator (alle Partien würfelten gleich); jetzt der Partie-RNG — Werte für Sheoldred/Bello oben entsprechend neu gemessen.
+
+**Offen / ehrliche Grenzen:** Win-Conditions werden so ernst genommen, wie sie
+definiert sind — „Karte X auf der Hand + Bello im Spiel + 7 Mana“ zählt als
+Tischsieg (Bello/Sheoldred profitieren davon stark; für Alpha-Strikes besser
+ein `board_damage_lethal`-Prädikat hinterlegen). Bellos eigener Motor
+(Verzauberungen/Artefakte mit MV ≥ 4 werden 4/4-Angreifer) ist weiterhin
+nicht modelliert; ebenso Spellslinger-/Kopier-Pakete (Aziza, Bumbleflower)
+nur teilweise. Die Sitze bleiben abstrakt (keine konkreten Karten), der Tisch
+kennt keine Politik. Die 25 %-Eichung stützt sich auf die Trainingsdecks
+selbst (Selbstkonsistenz), nicht auf echte Partie-Ergebnisse — die gibt es in
+den Daten nicht.
+
+## v4.82.0 — "Runde 4": farbabhängiges Keyword-Kampfmodell
+
+Nutzer-Idee: Keywords, die ohne echtes Gegner-Board nicht direkt wirken können
+(Flying, Deathtouch, Reach, Menace, ...), werden als Wahrscheinlichkeits-
+Verschiebungen bzw. (abklingende) Buffs/Debuffs auf die bestehende abstrakte
+Kampf- und Gegnerfunktion abgebildet — und zwar abhängig davon, wie gut die
+jeweilige Gegnerfarbe mit dem Keyword umgehen kann bzw. wie oft sie es selbst
+aufs Board bringt.
+
+**Datenbasis:** `Data/Models/color_keyword_profile.json`, abgeleitet von
+`App/combat_model/derive_color_keyword_profile.py` aus den 1.585 echten
+EDHREC-Bracket-3-Average-Decks (`deck_cards_slim.csv` + `unique_cards_enriched.csv`),
+mengengewichtet je Farbidentität (alle 32 + "ALL"): Anteile der Kreaturen mit
+Flying/Reach/Deathtouch/Menace/First Strike/Trample/Lifelink/..., Artefakt- und
+Farbanteile, mittlere Power/Toughness, Kreaturen je Deck, Farbanteile der
+Nicht-Land-Karten. Beispiele: Azorius 42 % Flying/Reach-Kreaturen, Gruul 12 %;
+Deathtouch bei Mono-Grün 8,1 %, Dimir 6,7 %; First Strike Mono-Weiß 10,6 %.
+
+**Eigene Angriffe** (`combat_model/keyword_effects.py`, `interaction.py`):
+Eingeschränkte-Blocker-Keywords (Flying, Fear, Intimidate, Protection from X,
+Shadow, Horsemanship, Landwalk) nutzen eine gemeinsame Formel `1-(1-s)^k`
+(s = Anteil gegnerischer Kreaturen, die blocken können). k ≈ 1,93 ist so
+geeicht, dass der bisherige globale Flying-Faktor 0,35 gegen den gepoolten
+Durchschnittsgegner exakt erhalten bleibt — gegen Azorius steigt er auf 0,65,
+gegen Gruul fällt er auf 0,22, gegen Mono-Grün auf 0,14. Menace skaliert mit
+der Kreaturdichte (verankert 0,55). Trample: statt flachem Block-Faktor echter
+Überschussschaden beim Block (Power − typische Toughness; mit Deathtouch
+Power − 1). Neu außerdem: Afflict, Frenzy, Toxic, Exalted, Battle cry,
+Training, Mentor, Annihilator, Flanking/Bushido/Rampage, Lifelink auch beim
+Block.
+
+**Gegnerischer Druck** (`combat_model/defense.py`): der fliegende Anteil des
+Gegnerdrucks ist nur noch für eigene Flying/Reach-Blocker erreichbar (am
+ALL-Wert verankert, gegen den Durchschnittsgegner bleibt der boden-blockbare
+Anteil exakt wie in v4.76.0); Menace-Angreifer binden zwei Blocker,
+gegnerisches Deathtouch/First Strike tötet Blocker häufiger, Trample drückt
+Überschuss durch. Eigene First-Strike-Blocker sterben seltener, Deathtouch-/
+Wither-/Infect-Blocker töten den Angreifer, Lifelink-Blocker gewinnen Leben.
+
+**"Deathtouch = Removal" (Attrition):** jede so getötete Gegnerkreatur
+(Deathtouch, Wither/Infect, Fight, Annihilator) wirkt wie ein Removal:
+im Advanced-Modell sinkt `board_presence` des Sitzplatzes (die
+Zustandsgleichung wächst von dort nach), bei einfachen Profilen wirkt sie als
+abklingender Druck-Debuff (volle Wirkung in der nächsten Gegnerrunde, danach
+je Runde halbiert). Goad und Detain unterdrücken Angreifer für genau eine
+Runde. Eigene Blocker-Kills OHNE Keyword werden bewusst nicht gutgeschrieben
+(würde die Kalibrierung des gesamten Blockmodells verschieben — offener
+Diskussionspunkt).
+
+**Removal-Schutz:** Shroud schützt jetzt wie Hexproof; Protection from X
+(Advanced) verhindert gezieltes Removal eines Sitzplatzes, dessen
+Nicht-Land-Karten zu ≥ 50 % Farbe X haben; Flash-Kreaturen weichen im Zug ihres
+Erscheinens Wipes/Spot-Removal aus.
+
+**Korrektur zu v4.81.0:** Hexproof, Ward und Indestructible waren entgegen der
+v4.81.0-Datenbank bereits vorher real wirksam (gegnerisches Removal/Wipes).
+Die korrigierte Datenbank liegt als `Docs/keyword_database_v4_82_0.json` vor.
+
+**Wirkung auf echte Decks:** Vergleich aller 5 Decks gegen midrange/aggro
+und 3× Azorius/3× Gruul (Advanced) — Änderungen meist im Bereich weniger
+Prozentpunkte; ein auffälliger Einzelwert (Aziza vs. Gruul +9 pp Loss)
+schrumpfte bei 3 Seeds × 400 Runs auf +1,7 pp (Rauschen). Das Modell
+verschiebt Wahrscheinlichkeiten, es kippt keine Ergebnisse.
+
+`"keyword_effects": {"enabled": false}` in `combat_interaction_weights.json`
+stellt das Verhalten vor v4.82.0 bytegleich wieder her.
+
+**QA:** 1123/1123 Tests grün (1094 bestehende + 29 neue,
+`tests/test_v4820_color_keyword_combat.py`).
+
+## v4.81.0 — "Runde 3": vollständige Keyword-Recherche + Proxy-Implementierungen
+
+Nutzer-Feedback zu Runde 2: die dort deferred Mechaniken (Amass, Monarch,
+Support, City's Blessing/Ascend) wurden zurückgewiesen — für ein Tool, das
+BELIEBIGE hochgeladene Decks prüfen soll (nicht nur die 5 aktuell
+getesteten), muss ein etabliertes MTG-Keyword in irgendeiner (auch bewusst
+vereinfachten) Form ausführbar sein, statt nur erkannt und ignoriert zu
+werden — Realdeck-Nutzung in den eigenen 5 Decks ist dafür kein
+ausreichendes Ausschlusskriterium.
+
+**Vollständige Keyword-Datenbank:** `Docs/keyword_database_v4_81_0.json`
+kategorisiert jedes recherchierte MTG-Keyword (evergreen, deciduous,
+Keyword-Aktionen, Set-Mechaniken) in eine von vier Kategorien:
+`implemented_generic` (41 Einträge, real ausführbar), `recognized_no_op_combat`
+(23 Einträge — erkannt/getaggt, aber strukturell wirkungslos, da dieses
+Engine-Modell kein Gegner-Board/echten Combat simuliert — eine bewusste
+Design-Entscheidung, kein Versehen), `deferred_documented` (13 Einträge —
+noch nicht umgesetzt, mit Proxy-Idee und Prioritäts-Einschätzung für
+künftige Runden) und die Feststellung, dass "Ability Words" (Raid, Landfall,
+Metalcraft, Delirium, Ferocious, Domain, Coven, Alliance, Corrupted, Valiant,
+Adamant, Undergrowth, ...) KEINE echten Keywords sind — sie tragen keine
+geteilte Regelbedeutung, jede Karte schreibt ihre Bedingung explizit aus,
+daher ist dafür kein generischer Resolver möglich (nur je Karte über
+DEDICATED_RESOLVERS).
+
+**Neu umgesetzt (9 generische Keyword-Aktionen + Monarch + Ascend/City's
+Blessing):**
+
+| Keyword | Vereinfachung |
+|---|---|
+| Amass [Typ] N | Counter werden direkt in Power/Toughness der Army-TokenGroup gefaltet (Tokens haben in diesem Modell kein separates Counter-Feld) |
+| Mill N | **Echter Bugfix**: vorher nur eine Value-Metrik ohne State-Mutation — jetzt echte Bibliothek→Friedhof-Bewegung. Nur Selbst-Mill; Gegner-Bibliotheken existieren in diesem Modell nicht |
+| Explore | Land→Hand; sonst +1/+1-Counter + feste Keep-oder-Mill-Heuristik statt echter freier Spielerwahl |
+| Bolster N | Exakt: N Counter auf die eigene Kreatur mit geringster Toughness |
+| Fabricate N | Immer der Counter-Zweig statt der echten Wahl Counter-vs-Token |
+| Monstrosity N | Exakt (einmal pro Kreatur, getrackt über einen 'monstrous'-Flag-Counter) |
+| Populate | Kopiert immer die stärkste eigene Kreatur-TokenGroup |
+| Support N | Nur eigene Kreaturen (kein Gegner-Board), schwächste Toughness zuerst, analog zu Bolster |
+| Discover N | Free-Cast-Zweig der echten Regel wird zu "in die Hand" vereinfacht; übersprungene Karten werden gemillt wie im Original |
+| Monarch | Unsimulierbare Dauer ("bis eine gegnerische Kreatur Kampfschaden zufügt") ersetzt durch befristeten Bonus: 2 Extra-Kartenzüge |
+| Ascend / City's Blessing | Monotones Zustands-Flag (≥10 Permanents, einmal erreicht dauerhaft); kartenspezifische Auszahlungstexte brauchen weiterhin eigene DEDICATED_RESOLVERS-Einträge |
+
+**Neues wiederverwendbares Modul: `App/hand_evaluation/`** — generalisiert
+die bestehende `discard_score`-Logik (Connive, Aktivierungskosten-Discard)
+für beliebige "wähle Karte(n) aus der Hand"-Effekte: berücksichtigt
+zusätzlich zum bisherigen Rollen-/Kosten-Schema den aktuellen Land-Bedarf
+(Land-Anzahl vs. Zugzahl) und ob eine Nicht-Landkarte mit der aktuellen
+Manabasis bald castbar wäre. Erster Verbraucher: eine neue generische
+`discard_hand`-Aktion für bare "Discard a card."/"Discard N cards."-EFFEKTE
+(nie Kosten — die waren schon vorher über `SemanticAbility.discard_count`
+abgedeckt). Eine echte gewichtete Zufallsauswahl (Nutzer-Vorschlag) wurde
+erwogen, aber bewusst NICHT umgesetzt: das bestehende Projekt-Muster
+(`discard_score` + striktes `min()`) ist deterministisch und testbar; eine
+Zufallsauswahl hätte diese Eigenschaft für jeden künftigen Test auf diesem
+Modul zerstört. Stattdessen: deterministische Wertärmste-zuerst-Auswahl,
+gleiches Ergebnis (schwache Karten werden bevorzugt), volle Testbarkeit.
+
+**Bewusst weiterhin nicht umgesetzt** (mit Proxy-Idee für künftige Runden,
+siehe `keyword_database_v4_81_0.json` → `deferred_documented`): Kicker
+(bestehende Scope-Notiz — echte Chirurgie an der Kern-Cast-Pipeline),
+Madness, Morph/Megamorph/Disguise/Manifest (verdecktes-Karten-Tracking),
+Suspend, eine echte Convoke/Improvise-Zahlungsintegration (Kern-Payment-
+Pipeline, hohes Risiko), Splice, Cascade, die Escape/Eternalize/Embalm/
+Unearth/Disturb/Jump-start-Familie, Adapt/Evolve/Afterlife/Renown/
+Bloodthirst/Graft/Modular, Boast/Exert/Outlast/Raid, Cipher/Extort. Fight,
+Goad, Ninjutsu, Detain und alle reinen Kampf-/Blocker-Keywords (Deathtouch,
+Reach, Landwalk, Banding, Flanking, Bushido, ...) bleiben strukturell
+No-Ops, weil dieses Engine-Modell kein Gegner-Board/echten Combat simuliert
+— das ist keine Lücke, sondern eine von Anfang an dokumentierte
+Design-Grenze dieses Goldfishing-Simulators.
+
+**QA:** 1094/1094 Tests grün (1060 bestehende + 34 neue,
+`tests/test_v4810_runde3_keyword_proxies.py`), zusätzlich saubere
+End-to-End-Läufe gegen alle 5 echten Decks ohne Exceptions.
+
+## v4.80.0 — "Runde 2": generische Interpreter-Erweiterungen (Modal-Choice, Keyword-Grant-Generalisierung, Proliferate, Landcycling)
+
+Zweite von zwei Runden generischer Interpreter-Erweiterungen (Runde 1 siehe
+v4.79.0-Eintrag unten, der aus einer vorherigen, token-knapp abgebrochenen
+Session leider nie in dieses Changelog geschrieben wurde - siehe Notiz am
+Ende dieses Eintrags). Anders als in Runde 1 wurde der Umfang hier NICHT aus
+einer festen Themenliste abgearbeitet, sondern zuerst per Real-Deck-Scan
+priorisiert: alle 5 aktuell getesteten Decks (Bilbo V1, Katara V3, Mice with
+Swords, Aziza V2, Lathril - 365 Karten insgesamt) wurden gegen den lokalen
+Scryfall-Cache auf tatsächliche Nutzung der ursprünglich elf angefragten
+Mechaniken geprüft, bevor Implementierungsaufwand investiert wurde:
+
+| Mechanik | Treffer in den 5 Decks |
+|---|---|
+| "Choose one/two" (modal) | **21** |
+| Convoke | 2 |
+| Basic Landcycling | 2 |
+| Proliferate | 1 |
+| Disguise | 1 |
+| Monarch, Amass, Support (Counter-Spread), City's Blessing/Ascend | je **0** |
+
+Entsprechend wurden Monarch, Amass, Support, City's Blessing/Ascend, eine
+echte Convoke-Zahlungs-Integration (nur eine Wert-Schaetzformel existierte
+bereits, `convoke_improvise_mana_equivalent`) und Disguise NICHT umgesetzt -
+bei 0-2 Realkarten und teils erheblichem Architekturrisiko (Convoke würde in
+die zentrale Mana-/Kreatur-Tap-Zahlungslogik eingreifen) war das Aufwand-
+Nutzen-Verhältnis schlecht. Alle vier bleiben als klar benannte, spätere
+Einzelpakete verfügbar, sollte ein künftiges Deck sie tatsächlich nutzen.
+
+### WP-A: Generische "Choose one -"/"Choose two -" Bullet-Auflösung
+
+Vorher: `_parse_semantic_actions` stufte jede Zeile mit "choose one"/"choose
+two" pauschal als `complex_markers` ein (nie "exact", oft "review") und
+`split_oracle_lines` behandelte jeden "•"-Bullet als eigene, unabhängige
+Ability-Zeile - es gab keinerlei Mechanismus, der tatsächlich EINEN Modus
+auswählte.
+
+Neu (`resolve_modal_choice_actions`, `App/engine.py`): für jeden erkannten
+"Choose one/two -"-Block wird jeder Bullet einzeln durch den bestehenden
+`_parse_semantic_actions`-Parser geschickt. Ein Bullet gilt nur dann als
+"auflösbar", wenn dieser Parser mindestens eine Aktion erkennt - da dieser
+Parser keinerlei Vorstellung von "destroy"/"exile"/"fight" oder sonstiger
+Interaktion mit gegnerischen Permanents hat (diese Engine modelliert
+grundsätzlich kein gegnerisches Board), scheidet ein Entfernungs-Modus
+(die weit überwiegende Mehrheit der real vorkommenden Modal-Texte) automatisch
+aus, ohne eigene Ausschlussliste. Unter den auflösbaren Bullets entscheidet
+eine offengelegte, feste Prioritäts-Heuristik (`_MODAL_CHOICE_KIND_WEIGHT`:
+Schaden > Kartenziehen > Token/Counter/Pump > Lebensgewinn > Rest), keine
+Spielbaum-Suche. "Choose two" löst nur auf, wenn mindestens ZWEI Bullets
+unabhängig auflösbar sind (kein Rückfall auf "wie choose one", der ein
+"choose two" falsch darstellen würde).
+
+Zwei Anbindungen: `resolve_direct_spell_effects` (Instant/Sorcery-Zauber,
+z.B. Abrade/Boros Charm/Artistic Process/Lorehold Charm/Megaton's Fate) und
+`own_etb_effects` (permanentes-eigener "When ~ enters, choose one -"
+Self-Trigger, z.B. White Widow, Free Agent) - jeweils mit
+`has_dedicated_resolver`-Schutz (ein bereits namentlich sonderbehandeltes
+Karte wird nie angefasst) und, bei der ETB-Variante, einer zusätzlichen
+Beschränkung auf ETB-förmige Header-Zeilen (`when`/`whenever` + `enters`),
+damit eine unabhängige AKTIVIERTE Modal-Fähigkeit derselben Karte nicht
+versehentlich beim Eintreten kostenlos mit ausgeführt wird. Ein wiederholter/
+getrackter Modal-Choice ("choose one that hasn't been chosen this turn",
+Gala Greeters/The Vision) wird bewusst NIE aufgelöst - das würde einen
+Pro-Ereignis-Choice fälschlich als Einmaleffekt darstellen, und diese Engine
+führt kein "diesen Zug schon gewählt"-Buchführung.
+
+**Wichtiger Nebenfund/Fix:** `resolve_direct_spell_effects`s eigene, ältere
+Zeilen-Scanner (fixer Lebensgewinn / Food-Treasure-Clue-Erzeugung /
+Gegner-Lebensverlust - alle vor Modal-Choice geschrieben) laufen blind über
+JEDE Zeile, die nicht mit "when/whenever/at the beginning/if/as" beginnt -
+inklusive Bullet-Zeilen. Ohne Gegenmaßnahme hätte ein gewählter Bullet sein
+Ergebnis doppelt bekommen (einmal blind, einmal bewusst über Modal-Choice),
+und ein NICHT gewählter Bullet hätte trotzdem gefeuert, sobald sein Text
+zufällig eines dieser alten Muster trifft (z.B. Megaton's Fates
+"Detonate"-Text enthält kein Treasure, aber "Disarm" schon - unabhängig
+davon, welcher Modus gewählt wird). Fix: `_strip_modal_bullet_lines` entfernt
+vor dem Aufruf der älteren Kette jede Bullet-Zeile unter einem erkannten
+Modal-Header (ob aufgelöst oder nicht) aus einer Kopie der Oracle-Zeilen;
+der Original-Text bleibt für die eigene Modal-Auflösung erhalten.
+
+### WP-B: Team-Pump + Keyword-Liste, singuläres "each creature you control"
+
+`_parse_semantic_actions`s generischer (typ-loser, "Overrun"-förmiger)
+`team_pt_bonus`-Treffer erfasste bisher nur die "+N/+N"-Hälfte von
+"Creatures you control get +N/+N and gain KEYWORD[, KEYWORD...] until end of
+turn" (ein Pump und ein Keyword-Grant in EINEM Satz - z.B. Lorehold Charms
+dritter Modus). Der `grant_team_keyword`-Regex verlangt "creatures you
+control (?:gain|have)" direkt, nicht "... get +N/+N and gain ...", daher
+ging die Keyword-Hälfte bisher komplett verloren. Neu: dieselbe "ganze
+Keyword-Liste einfangen, dann jedes KNOWN_KEYWORD dagegen prüfen"-Technik
+wie beim v4.79.0-Multi-Keyword-Fix - beliebig viele Keywords, nicht nur zwei
+wie in App/team_effects' eigener typisierter/stammesbezogener Variante
+(bewusst unangetastet gelassen, anderer Anwendungsfall). Zusätzlich: die
+singuläre Form "each creature you control gains/has ..." wurde vorher gar
+nicht erkannt (nur die plurale "creatures you control ..."-Form).
+
+### WP-C: Proliferate als ausführbare Aktion
+
+Vorher: "proliferate" wurde nur zum Tagging in `keyword_set()` erkannt, nie
+als ausführbare `SemanticAction`. Neu: `engine.proliferate()` (Vereinfachung,
+offengelegt) wählt immer jede Counter-Art, die für uns eindeutig gut ist -
+eigene +1/+1-Counter, Planeswalker-Loyalität, sonstige benannte Counter auf
+eigenen Permanents, gegnerische Poison-Counter (ein echter Nachteil für SIE,
+also ein Vorteil für uns) - nie eigene -1/-1-Counter. Doubling Season
+verdoppelt jeden eigenen Zuwachs (gleiche Präzedenz wie `plus1_counter`),
+nie gegnerisches Poison. Die reale Aktivierungskosten-Erkennung war bereits
+generisch genug: High Perfect Morcants "Tap three untapped Elves you
+control: Proliferate." wird korrekt über die bereits bestehende v4.76.0
+`execute_semantic_ability`-`tap_n_cost`-Erweiterung bezahlt (3 echte Elfen
+werden getappt, nicht kostenlos ausgeführt) - Ende-zu-Ende gegen die reale
+Karte getestet.
+
+### WP-D: Basic Landcycling
+
+Spiegelt exakt das bestehende `maybe_cycle_cards`/`maybe_flashback_cards`-
+Muster (`find_payment`/`apply_payment`, günstigste-zuerst, begrenzte
+Schleife): `maybe_landcycle_cards` sucht bei "Basic landcycling {cost}" statt
+einer gezogenen Karte ein Basisland (`find_basic_for_fetch`) und legt es auf
+die Hand statt aufs Feld. Scope bewusst auf "(Basic) Landcycling" begrenzt
+(Borough Backup, Migratory Route - die zwei Realkarten); eine
+Einzeltyp-Variante ("Islandcycling" etc.) ist eine eigene Regex, die diese
+Runde nicht hinzufügt (keine Realkarte nutzt sie).
+
+### Nebenfix: Cycling-Familie aus der "review"-Fehlalarm-Filterung
+
+`_is_false_alarm_review_line` (v4.79.0) kannte Mana-Fähigkeiten und nackte
+Keyword-Zeilen bereits als Fehlalarme; Cycling/Basic-Landcycling/Flashback-
+Kostenzeilen liefen bislang trotzdem als "review", obwohl sie über eigene,
+dedizierte End-of-Turn-Pässe vollständig ausgeführt werden (Borough Backups
+Landcycling-Zeile zeigte fälschlich "review:1" trotz korrekter Ausführung).
+Jetzt als vierte Fehlalarm-Kategorie ergänzt.
+
+### Tests / Ausrollung
+
+14 neue Tests (`tests/test_v4800_runde2_generic_extensions.py`), alle
+1060/1060 Tests grün. Gegen die echte Aziza-V2-Decklist end-to-end
+verifiziert (20 reale Simulationsläufe, `card_model_coverage.csv` zeigt
+`modal_choice:resolved` für Artistic Process/Boros Charm/Lorehold
+Charm/Megaton's Fate, `exact:2` statt `review:1` für Borough Backup).
+ENGINE_VERSION 4.79.0 -> 4.80.0.
+
+**Notiz zu diesem Changelog:** die v4.78.0- (G1-G10 UI-Fixpakete) und
+v4.79.0-Einträge (Runde 1: Win-Check-Diskrepanz, Multi-Keyword-Grant-Fix,
+False-Alarm-Filter, `board_damage_lethal`) fehlen hier noch - die Session,
+die sie umgesetzt hat, ist während der Arbeit an einer Doku-Nachbereitung
+token-knapp abgebrochen. Der tatsächliche Code/die Tests dieser beiden
+Versionen sind vollständig live und ausgeliefert (siehe `ENGINE_VERSION`-
+Historie und die jeweiligen `tests/test_v47*`/`test_v4790_*`-Dateien); nur
+dieser Changelog-Eintrag steht noch aus.
+
+## v4.77.0 — Deck-weiter Spielstil, Gegner-Board an eigene Blockrate angebunden, erweitertes Modell als Standard
+
+Drei Arbeitspakete auf Nutzer-Vorgabe, sequentiell umgesetzt (WP-A -> WP-B ->
+WP-C), Anlass beide Male die offenen Punkte aus der v4.76.0-Lathril-Diagnose.
+
+### WP-A: Deck-weiter Spielstil (drei Regler statt fester Angriffs-/Blockregeln)
+
+**Ausgangspunkt:** Offener Punkt 1 aus v4.76.0 (Lathril-Diagnose): gewöhnliche
+Kreaturen ohne Commander-/Engine-Rolle griffen bislang unbedingt jeden Zug an
+(`attack_phase`, `always_attack`-Zweig) - bei Lathril 1,7 eigene Kampftode
+pro Spiel, überwiegend 1/1-Mana-Elfen. Nutzervorschlag: ein deck-weites
+Pendant zu Commander Posture (aggressiv/passiv/Engine), das Angreifen und
+Blocken nicht verbietet, sondern nur wahrscheinlicher/unwahrscheinlicher
+macht - motiviert durch "was macht man mit seinen ganzen 1/1-Elfen, die für
+Mana tappen".
+
+**App/combat_model/playstyle.py (neu) + Data/Models/combat_interaction_weights.json
+-> "playstyle":** drei Regler, je 0..100, pro Deck in Decks/.deck_meta.json
+gespeichert (wie Tags), auf `ScenarioStrategy.playstyle` getragen:
+- **Aggressivität:** wie oft eine als "schwach" geltende Kreatur trotzdem
+  angreift. 0 = nie (außer bei Alpha-Strike), 100 (Standard) = immer.
+- **Angriffsauswahl:** wo die Schwelle "schwach" liegt. 100 (Standard) =
+  Schwelle bei 0 Stärke, also ist nie etwas schwach (heutiges Verhalten
+  bytegleich); 0 = Schwelle bei `attacker_selection_max_power` (Erst-
+  schätzung 3.0) - nur Kreaturen ab dieser Stärke, mit Evasion-Keyword
+  (fliegend/Bedrohlich/Trampelschaden) oder Rolle "finisher" gelten
+  unbedingt als nicht schwach.
+- **Blockbereitschaft:** 50 (Standard) = exakt die feste WP2-Politik aus
+  v4.76.0 (Chump-Schwelle 15, Commander/Engines nur gegen tödlichen
+  Schaden, jeder taugliche Blocker wird genutzt); darüber wird bereit-
+  williger geblockt (höhere Chump-Schwelle, geschützte Kreaturen dürfen ab
+  80 auch vor tödlichem Schaden chumpen), darunter zurückhaltender
+  (niedrigere Chump-Schwelle, nur ein willingness/50-Anteil der
+  verfügbaren Blocker wird überhaupt angeboten).
+
+Ein **Alpha-Strike** (dieser Zug wäre mit dem gesamten möglichen Board
+tödlich, oder ein Team-Pump/Anthem wie Craterhoof/Overrun ist gerade aktiv)
+setzt Aggressivität/Angriffsauswahl in jedem Fall außer Kraft - die Regler
+formen gewöhnliche Züge, nie einen Combo-Kill.
+
+**Umsetzung (rein additiv):** `attack_phase` bekommt einen neuen äußeren
+Wrapper, der VOR dem unveränderten Original entscheidet, welche
+ungegateten Kreaturen/Token-Gruppen "zuhause bleiben" - über denselben
+Tap-vor-Combat/Verstecken-Trick, den `scenario_preserve_untapped` und der
+v4.76.0-Token-Wrapper schon nutzen (danach wird exakt zurückgesetzt). Die
+Original-Entscheidungslogik (inkl. Commander Posture für Commander/
+Engine-Rollen) bleibt unberührt. `playstyle == {}` (der Default) nimmt
+einen schnellen Rückweg direkt zum unveränderten Original - bytegleiches
+Verhalten, keine zusätzliche Board-Abfrage. Blockbereitschaft ist in
+`combat_model/defense.py::absorb_pressure` verdrahtet (bereits über
+`strategy` erreichbar, keine Signaturänderung nötig).
+
+**Web-Oberfläche:** drei Schieberegler unter "Change commander" (Feld
+"Play style", deck-gebunden wie die Strategie-Tags); der Win-Condition-/
+Combo-Prompt ("Copy prompt" bei Import JSON) fragt optional zusätzlich
+einen Playstyle-Vorschlag ab - ein zurückgegebenes `"playstyle": {...}`
+wird beim Import auf das Deck-Profil angewendet, hat aber keinen Effekt
+auf die importierten Scenarios/Combos selbst.
+
+**Messung** (200 Spiele, Seed 1, Gegner "random", PYTHONHASHSEED=0):
+Standard-Regler (100/100/50) vs. eine testweise restriktive Einstellung
+(30/20/70, bewusst NICHT pro Deck kalibriert, nur zur Prüfung, dass der
+Hebel wirkt) - Sieg % / Niederlage % / durchschnittliche eigene
+Kampftode pro Spiel:
+
+| Deck | Modell | Standard | Restriktiv (30/20/70) |
+|---|---|---|---|
+| Lathril | einfach | 2,0 / 31,0 / 1,99 | 2,0 / 23,5 / 1,55 |
+| Lathril | 3-Sitz | 1,5 / 56,5 / 1,11 | 0,5 / 50,0 / 0,85 |
+| Bilbo V1 | einfach | 1,5 / 10,0 / 0,98 | 3,0 / 9,5 / 0,91 |
+| Bilbo V1 | 3-Sitz | 0,0 / 39,0 / 0,40 | 0,0 / 41,5 / 0,41 |
+| Katara V3 | einfach | 0,5 / 42,0 / 0,62 | 0,0 / 37,5 / 0,46 |
+| Katara V3 | 3-Sitz | 0,0 / 56,0 / 0,44 | 0,0 / 52,5 / 0,21 |
+| Mice with Swords | einfach | 0,0 / 29,0 / 1,68 | 0,0 / 24,0 / 1,15 |
+| Mice with Swords | 3-Sitz | 0,0 / 52,5 / 1,01 | 0,0 / 52,5 / 0,62 |
+| Aziza V2 | einfach | 0,0 / 38,0 / 0,87 | 0,0 / 33,5 / 0,50 |
+| Aziza V2 | 3-Sitz | 0,0 / 60,0 / 0,38 | 0,0 / 59,5 / 0,22 |
+
+Eigene Kampftode sinken in jeder Zeile deutlich, Niederlagen meist auch
+(Ausnahme Bilbo 3-Sitz, innerhalb der Rauschgrenze bei 200 Spielen);
+Siegquoten bleiben im Rahmen der Stichprobengröße im Wesentlichen
+unverändert - der Regler verschiebt Überlebensfähigkeit, löst aber nicht
+die in v4.76.0 offengelegten Grundprobleme (Gegnerdruck-Kalibrierung,
+Siegbedingung). Bewusst keine pro-Deck-Kalibrierung dieser Demo-Werte
+(Projektgrundsatz "keine spekulative Kalibrierung") - die sinnvolle
+Einstellung pro Deck ist Sache des Nutzers.
+
+Tests: 45 neue (test_v4770_playstyle 26, _attack_phase_playstyle 11,
+_defense_willingness 8).
+
+### WP-B: Gegner-Board-Präsenz an die eigene Blockrate angebunden
+
+**Ausgangspunkt:** Nutzerfrage (siehe unten) nach der Zustandslogik der
+Gegnerprofile deckte auf: `query_combat_state`
+(App/opponent_model/state_equation.py, seit v4.38.0) wurde nirgends
+aufgerufen. Schlimmer: die Blockrate für eigene Angriffe
+(`attack_phase` -> `combat_interaction.resolve_combat_interaction`)
+nutzte immer `strategy.opponent_profile` als Tabellen-Schlüssel in
+`combat_interaction_weights.json` -> `"profiles"` - im erweiterten Modell
+steht dort aber typischerweise `"random"`/`"?"` (Web-UI-Default), kein
+registrierter Schlüssel dort (nur goldfish/aggro/midrange/control/horde).
+`_profile_weights` fiel dadurch still auf `"goldfish"` zurück
+(block_rate_base 0,0) - **eigene Angriffe wurden im erweiterten Modell mit
+"random" NIE geblockt**, unabhängig vom bereits in v4.76.0 offengelegten
+Punkt ("nutzt das zufällige Run-Profil statt der Sitzplätze").
+
+**Umsetzung (additiv):** ein neuer `attack_phase`-Wrapper berechnet aus
+derselben Sitzplatz-Tabelle, die `_apply_advanced_multi_opponent_phase`
+ohnehin führt (`_get_advanced_opponent_table`): (a) einen repräsentativen
+Profilnamen - die häufigste tatsächliche Sitzplatz-Strategie, ein echter
+`"profiles"`-Schlüssel - und (b) einen kombinierten
+`block_chance_multiplier` aus `query_combat_state(sitzplatz)`, gemittelt
+über alle Sitzplätze (dieses Modell löst einen Angreifer gegen EINEN
+abstrakten Gegner auf, der erst NACH dem Block gewählt wird - es gibt also
+keine Zuordnungsregel "welcher Sitzplatz verteidigt genau diesen Angriff";
+eine Gleichverteilung ist die am wenigsten spekulative verfügbare
+Kombination, nicht auf ein Ergebnis hin abgestimmt). Beides fließt über
+eine temporäre, exakt zurückgesetzte Skalierung von `block_rate_base` in
+genau einen Aufruf von `resolve_combat_interaction` ein - die bestehende
+Turn-Ramp-/Wide-Board-/Evasion-/Commander-Bias-Mathematik in
+`block_rate_for` bleibt unverändert und wird wiederverwendet, nicht
+dupliziert. Nicht-erweiterte Läufe (der häufigere Fall) nehmen einen
+schnellen, unveränderten Pfad.
+
+**Messung** (200 Spiele, Seed 1, Gegner "random", erweitertes Modell,
+PYTHONHASHSEED=0; Sieg % / Niederlage %) - vorher = WP-B testweise
+deaktiviert (Blockrate bleibt bei 0 %), nachher = WP-B aktiv:
+
+| Deck | vorher (kein Block) | nachher (Board-abhängiger Block) |
+|---|---|---|
+| Lathril | 1,5 / 56,5 | 0,0 / 49,5 |
+| Bilbo V1 | 0,0 / 39,0 | 0,0 / 38,5 |
+| Katara V3 | 0,0 / 56,0 | 0,0 / 59,0 |
+| Mice with Swords | 0,0 / 52,5 | 0,0 / 51,5 |
+| Aziza V2 | 0,0 / 60,0 | 0,0 / 62,5 |
+
+Überwiegend innerhalb der Rauschgrenze bei 200 Spielen (eine geblockte
+eigene Kreatur wirkt sich nur indirekt auf Niederlagen aus - über WP2s
+Verteidigung bei späteren Zügen); dies ist in erster Linie eine
+Korrektur eines stillen Fallbacks, kein auf Siegquote optimierter Hebel.
+
+Tests: 11 neue (test_v4770_advanced_block).
+
+### WP-C: erweitertes Modell als Standard
+
+Web-UI-Checkbox "Advanced opponent model" ist jetzt vorbelegt (`checked`);
+`web_server.py::_run_job` setzt `advanced_opponent_model` serverseitig
+ebenfalls auf `True`, wenn ein Aufruf das Feld ganz wegläßt (z. B. ein
+Skript gegen `/api/simulate`); die Tkinter-Desktop-Oberfläche
+(`App/gui.py`) zieht denselben Default-Wechsel nach. Ein explizites
+`false`/ein deaktiviertes Häkchen schaltet weiterhin auf das einfache
+Modell zurück - keine Verhaltensänderung für wer das bereits bewusst
+gewählt hatte. `App/engine.py::ScenarioStrategy.advanced_opponent_model`
+selbst bleibt `False` (unverändert) - das ist der Default für ein direkt
+konstruiertes Strategy-Objekt (Tests, Skripte, die die Pipeline direkt
+aufrufen), nur die drei Nutzer-Einstiegspunkte wurden umgestellt.
+
+**Gesamt-Tests v4.77.0:** 56 neue (26 + 11 + 8 + 11), alle 1007 grün;
+Versions-Assertions der Vorversionen wie üblich auf 4.77.0 nachgezogen.
+
+## v4.76.0 — Lathril-Diagnose: skalierendes Mana, board-abhängige Verteidigung, Team-Finisher, Modell-Lücken-Warnung
+
+**Ausgangspunkt:** Nutzertest mit einem populären Moxfield-Deck (Lathril,
+Blade of the Elves, Elfball mit Craterhoof/Finale/Ezuri): 2 % Siege gegen
+Aggro bei 94 % Niederlagen, gegen Midrange/Control kein einziger Sieg.
+Frage: Bedienfehler, Programmfehler oder Kalibrierung? Diagnose aus dem
+exportierten Lauf (card_impact.csv, card_model_coverage.csv, summary.json)
+plus Code-Durchsicht - Ergebnis: überwiegend Programm-/Modellgrenzen, kein
+Bedienfehler.
+
+**Befunde (alle vor der Änderung gemessen, 200 Spiele, Seed 1):**
+- Mana-Parser las "Add {G} for each Elf" als 1 Mana, "X mana ... number of
+  Elves" und "equal to its power" als 0 Mana (Priest of Titania 57 Mana über
+  200 Spiele, Wirewood Channeler/Marwyn 0).
+- Gegnerdruck war ein reiner Zug-Zeitplan (Aggro 1,4 x (Zug-1) +-30 %),
+  völlig unabhängig vom eigenen Board - jedes Deck ohne viel Lifegain verlor
+  gegen "Aggro" um Zug 9 (Lathril, Katara, Mice, Aziza: 98-100 %).
+- Craterhoofs +X/+X wurde nie angewendet, Finale of Devastation nie
+  gewirkt, Elvish Warmasters Pump lief nie, Ezuri pumpte ALLE Kreaturen
+  statt nur Elfen, Stammes-Lords (Imperious Perfect, Elvish Champion, Mabel)
+  wurden ignoriert, Overrun-Hexereien verpufften.
+- Umgekehrt zu großzügig: Lathrils "{T}, Tap ten untapped Elves" feuerte
+  ohne die zehn Elfen (nur {T} geprüft) - 510 Gegnerleben gratis.
+- Reproduzierbarkeit: derselbe Seed lieferte zwischen Programmstarts andere
+  Zahlen (Python-Hash-Randomisierung ordnet Mengen je Prozess anders; Bilbo
+  V1: 18,0 % vs. 15,0 % Niederlagen bei identischer Konfiguration).
+
+**WP1 - App/mana_scaling (Registry, definitions.json + handlers):**
+skalierende Mana-Fähigkeiten pro Typ/Kreatur ("you control" exakt, "on the
+battlefield" als Untergrenze, da kein gegnerisches Board existiert), X Mana
+einer Farbe, Mana = eigene Stärke, "Tap N untapped <Typ>: Add ..." (Heritage
+Druid) nur mit genug ungetappten Kreaturen, die Mit-Zahler werden beim
+Bezahlen wirklich getappt. Additiver Wrapper um card_mana_options; Karten
+ohne diese Muster laufen bytegleich wie vorher (4 Vergleichsdecks
+bit-identisch bei fester Hash-Saat).
+
+**WP2 - App/combat_model/defense.py (+ "defense" in
+combat_interaction_weights.json):** ungetappte eigene Kreaturen blocken
+einen Teil des abstrakten Drucks (Erwartungswert-Näherung, keine
+Kampfsimulation): Druck -> abstrakte Angreifer profiltypischer Stärke,
+profiltypischer blockbarer Anteil, höchstens 80 % verhinderbar; sichere
+Blocks immer, Chump-Blocks erst unter 15 Leben, Commander/Engines nur gegen
+tödlichen Schaden; unterlegene Blocker sterben meist. Gilt für beide
+Gegnermodelle; "enabled": false stellt das alte Verhalten her. Neue
+Kennzahlen: outcomes.avg_damage_prevented_by_blockers / avg_blockers_lost
+(auch je Gegnerprofil), turns.csv-Spalten. Außerdem: die Checkbox "Advanced
+opponent model" der Web-Oberfläche war bisher ohne Funktion - sie schaltet
+jetzt das kalibrierte Drei-Sitzplatz-Modell (Bracket 3) ein.
+Bewusst NICHT geändert: die damage_scale-Werte selbst (keine Daten für eine
+Neukalibrierung, Projektgrundsatz "keine spekulative Kalibrierung").
+
+**WP3 - App/team_effects (Registry) + keyword_library "typed_pt_bonus":**
+Craterhoof-ETB (+X/+X, Trample, X = eigene Kreaturen inkl. Token),
+typbegrenzte aktivierte Pumps (Ezuri nur Elfen, Warmaster jetzt ausführbar),
+statische Stammes-Lords (auch Spielsteine per Namen; "other" schließt die
+Quelle aus; generischer Doppelzähler von Archdruid entfernt),
+Overrun-Hexereien, X-Kreatur-Tutoren (Finale/Green Sun's Zenith: Ziel =
+ETB-Finisher ab 4 angriffsfähigen Kreaturen, sonst Tutor-Priorität; Finales
++X/+X/Haste ab X>=10), "Tap N untapped <Typ> you control"-Kosten werden
+geprüft UND bezahlt (bezahlte Token greifen in dem Zug nicht an und blocken
+nicht; Token, die angegriffen haben, zählen nicht).
+
+**WP4 - Modell-Lücken-Warnung:** jeder Lauf schreibt model_gaps.json und
+summary["model_gaps"]: Schlüsselkarten (Commander, Finisher/Engine/Ramp/
+Tutor/Token-Rolle, in einer Win Condition genannt), die oft gesehen aber nie
+gewirkt wurden oder trotz vieler Casts fast keinen modellierten Wert haben
+und nur "review"-Fähigkeiten tragen (reaktive Karten ausgenommen). Die
+Analyse-Seite zeigt dazu einen Hinweiskasten und einen Eintrag in "What
+stands out"; der früher fest verdrahtete Bilbo-Text "Engine check" zeigt
+jetzt die echten Invarianten des Laufs und welches Gegnermodell lief.
+Angewendet auf den ursprünglichen Lathril-Lauf: 12 Lücken, darunter Finale
+(nie gewirkt), Craterhoof, Marwyn, Elvish Champion - nach WP1+3 keine davon
+mehr.
+
+**Reproduzierbarkeit:** Start_Urzas_Spearfishing_Guide.py startet den
+Webserver jetzt mit PYTHONHASHSEED=0 (gleicher Seed = gleiche Zahlen);
+web_server.py weist beim Direktstart darauf hin.
+
+**Messung vorher -> nachher** (200 Spiele, Seed 1, Gegner "random",
+PYTHONHASHSEED=0; Sieg % / Niederlage %):
+
+| Deck | einfaches Modell vorher | nachher | Drei-Sitz-Modell vorher | nachher |
+|---|---|---|---|---|
+| Lathril | 1,0 / 47,5 | 1,5 / 30,5 | 0,0 / 64,0 | 0,0 / 56,5 |
+| Bilbo V1 | 2,0 / 14,5 | 4,0 / 8,0 | 0,5 / 40,0 | 0,0 / 36,5 |
+| Katara V3 | 0,5 / 47,0 | 0,5 / 42,0 | 0,0 / 67,5 | 0,0 / 56,0 |
+| Mice with Swords | 0,0 / 50,0 | 0,0 / 29,0 | 0,0 / 67,5 | 0,0 / 52,5 |
+| Aziza V2 | 0,0 / 46,5 | 0,0 / 38,0 | 0,0 / 65,0 | 0,0 / 60,0 |
+
+Lathril-Einzelwerte: Mana zu Beginn von Zug 8 6,84 -> 8,29; Priest of
+Titania 57 -> 390 erzeugtes Mana, Channeler 0 -> 147; Craterhoof pumpt
+jetzt (+2 ... +9), Finale holt Craterhoof bei X=10-15; Lathrils Drain
+0 statt 510 (Kosten jetzt real). Win-Condition-Setup erreicht 3,0 -> 5,0 %.
+
+**Offen, bewusst nicht in dieser Version (je eigenes Arbeitspaket):**
+1. Angriffspolitik: gewöhnliche 1/1-Kreaturen (Mana-Elfen) greifen jeden Zug
+   an und sterben (Lathril: 1,7 eigene Kampftode pro Spiel) - Boards
+   erreichen selten 10+ Kreaturen (5 von 200 Spielen), was Craterhoof/
+   Lathril-Drain klein hält.
+2. Sieg heißt weiterhin: alle drei Gegner (120 Leben) bis Zug 10 auf 0.
+3. Gegnerdruck beider Modelle ist weiter eine Erst-Schätzung (~40
+   Schaden bis Zug 10), nicht an echten Spieldaten kalibriert.
+4. Verbleibende Modell-Lücken laut model_gaps.json (z.B. Fauna Shaman,
+   Glissa Sunslayer, Wood Elves' Land-ETB, Farseek, Allosaurus Shepherd),
+   Endlos-Kombos (Staff of Domination, Quest for Renewal).
+
+Tests: 36 neue (test_v4760_mana_scaling 13, _defense 9, _team_effects 9,
+_model_gaps 5), alle 951 grün; Versions-Assertions der Vorversionen wie
+üblich auf 4.76.0 nachgezogen.
+
 ## v4.75.0 — Fix: Absturz beim Programmstart ohne installiertes `numpy`
 
 **Ausgangspunkt:** Nutzer meldete direkt nach v4.74.0 einen Absturz beim

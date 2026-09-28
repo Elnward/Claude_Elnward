@@ -1,14 +1,15 @@
 {
   "version": "1.0",
   "note": "Deklarative Beschreibung aller vom Semantic Layer erkannten Keywords/Mechaniken. Jeder Eintrag verweist per 'handler' auf eine Python-Funktion in handlers.py. Mehrere Mechaniken duerfen sich einen Handler teilen (siehe 'hobbit_second_breakfast' unten), wenn sie regeltechnisch identisch sind - dafuer ist KEIN neuer Python-Code noetig, nur ein neuer JSON-Eintrag.",
-
   "keywords": [
     {
       "id": "draw",
       "category": "action",
       "model_layer": "exact",
       "description_de": "Ziehe N Karten.",
-      "expects": ["amount"],
+      "expects": [
+        "amount"
+      ],
       "handler": "draw"
     },
     {
@@ -16,15 +17,30 @@
       "category": "action",
       "model_layer": "exact",
       "description_de": "Erhalte N Leben (inkl. Lifegain-Replacement-Effekten wie Alhammarret's Archive).",
-      "expects": ["amount"],
+      "expects": [
+        "amount"
+      ],
       "handler": "gain_life"
+    },
+    {
+      "id": "named_tutor_to_hand",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.87.3: 'Search your library for a card named <X>, put it into your hand[, then shuffle].' Sucht die exakt genannte Karte (beliebiger Name, nicht nur die Quellkarte selbst) und legt sie auf die Hand. Gefunden ueber den reliability-sweep-v1-Nachlauf: Shadowborn Apostle.",
+      "expects": [
+        "token"
+      ],
+      "handler": "named_tutor_to_hand"
     },
     {
       "id": "opponent_life_loss",
       "category": "action",
       "model_layer": "exact",
       "description_de": "Ein oder alle Gegner verlieren N Leben.",
-      "expects": ["amount", "target"],
+      "expects": [
+        "amount",
+        "target"
+      ],
       "handler": "opponent_life_loss"
     },
     {
@@ -32,7 +48,9 @@
       "category": "action",
       "model_layer": "exact",
       "description_de": "Scry N: oberste N Bibliothekskarten ansehen, beliebig neu ordnen (oben behalten oder unten legen).",
-      "expects": ["amount"],
+      "expects": [
+        "amount"
+      ],
       "handler": "scry"
     },
     {
@@ -40,7 +58,9 @@
       "category": "action",
       "model_layer": "exact",
       "description_de": "Surveil N: oberste N Bibliothekskarten ansehen, beliebige davon in den Friedhof legen, Rest in beliebiger Reihenfolge oben behalten.",
-      "expects": ["amount"],
+      "expects": [
+        "amount"
+      ],
       "handler": "surveil"
     },
     {
@@ -48,7 +68,9 @@
       "category": "action",
       "model_layer": "exact",
       "description_de": "Connive N: ziehe eine Karte, lege dann eine Karte ab; falls dabei eine Nicht-Landkarte abgelegt wurde, lege einen +1/+1-Counter auf die connivende Kreatur.",
-      "expects": ["amount"],
+      "expects": [
+        "amount"
+      ],
       "handler": "connive"
     },
     {
@@ -56,7 +78,9 @@
       "category": "action",
       "model_layer": "review",
       "description_de": "PLATZHALTER: neue, im Hobbit-Set eingefuehrte Mechanik mit Aehnlichkeit zu Connive (draw+discard mit bedingtem Value). Sobald der exakte Oracle-Wortlaut vorliegt: 'aliases' unten mit dem echten Reminder-/Keyword-Text befuellen und 'model_layer' auf 'exact' oder 'simplified' setzen, je nachdem ob die Abweichung zu Connive rein kosmetisch ist oder echte Regel-Unterschiede hat (z.B. andere Bedingung fuer den Counter, zusaetzlicher Trigger, Life-Bezug statt Counter). Aktuell wird sie 1:1 auf den connive-Handler gemappt, weil frueher im Projekt eine Aehnlichkeit zu Connive genannt wurde - das ist eine ANNAHME und muss verifiziert werden, bevor Runs sich darauf verlassen.",
-      "expects": ["amount"],
+      "expects": [
+        "amount"
+      ],
       "handler": "connive",
       "aliases": []
     },
@@ -65,7 +89,10 @@
       "category": "action",
       "model_layer": "exact",
       "description_de": "Erzeuge N Token eines benannten Typs (Creature/Food/Treasure/Clue/...).",
-      "expects": ["amount", "token"],
+      "expects": [
+        "amount",
+        "token"
+      ],
       "handler": "create_token"
     },
     {
@@ -73,7 +100,10 @@
       "category": "action",
       "model_layer": "exact",
       "description_de": "Lege N +1/+1-Counter auf ein Ziel.",
-      "expects": ["amount", "target"],
+      "expects": [
+        "amount",
+        "target"
+      ],
       "handler": "plus1_counter"
     },
     {
@@ -81,7 +111,10 @@
       "category": "action",
       "model_layer": "exact",
       "description_de": "Lege einen benannten Keyword-Counter (z.B. 'flying counter') auf ein Ziel.",
-      "expects": ["keyword", "target"],
+      "expects": [
+        "keyword",
+        "target"
+      ],
       "handler": "keyword_counter"
     },
     {
@@ -89,7 +122,10 @@
       "category": "action",
       "model_layer": "exact",
       "description_de": "Ziel erhaelt ein Keyword bis zum Ende des Zuges.",
-      "expects": ["keyword", "target"],
+      "expects": [
+        "keyword",
+        "target"
+      ],
       "handler": "grant_keyword_until_eot"
     },
     {
@@ -97,7 +133,9 @@
       "category": "action",
       "model_layer": "exact",
       "description_de": "Tappe ein Zielpermanent.",
-      "expects": ["target"],
+      "expects": [
+        "target"
+      ],
       "handler": "tap_target"
     },
     {
@@ -105,7 +143,9 @@
       "category": "action",
       "model_layer": "simplified",
       "description_de": "Team-weiter P/T-Bonus als befristeter Board Modifier bis Zugende.",
-      "expects": ["amount"],
+      "expects": [
+        "amount"
+      ],
       "handler": "team_pt_bonus"
     },
     {
@@ -113,7 +153,9 @@
       "category": "action",
       "model_layer": "simplified",
       "description_de": "Team-weites Keyword als befristeter Board Modifier bis Zugende.",
-      "expects": ["keyword"],
+      "expects": [
+        "keyword"
+      ],
       "handler": "grant_team_keyword"
     },
     {
@@ -121,28 +163,267 @@
       "category": "action",
       "model_layer": "simplified",
       "description_de": "Setzt Basis-Power/Toughness eines Ziels (z.B. Waterbend) als befristeter Board Modifier.",
-      "expects": ["target", "raw"],
+      "expects": [
+        "target",
+        "raw"
+      ],
       "handler": "set_base_pt"
+    },
+    {
+      "id": "proliferate",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.80.0 Runde 2: Proliferate. Vereinfachung (siehe engine.proliferate()): waehlt immer alle fuer uns eindeutig guenstigen Counter-Arten (eigene +1/+1-Counter, Planeswalker-Loyalitaet, sonstige benannte Counter auf eigenen Permanents, gegnerische Poison-Counter) - nie eigene -1/-1-Counter. Vorher wurde 'proliferate' nur zum Tagging in keyword_set() erkannt, aber nie als ausfuehrbare Aktion.",
+      "expects": [],
+      "handler": "proliferate"
+    },
+    {
+      "id": "typed_pt_bonus",
+      "category": "action",
+      "model_layer": "exact",
+      "description_de": "v4.76.0 WP3: +N/+N (und ggf. Keywords) bis Zugende fuer eigene Kreaturen EINES Typs (target = Typ, z.B. 'elf'; 'creature' = alle). Ersetzt fuer solche Zeilen den generischen team_pt_bonus, der den Bonus bisher an ALLE Kreaturen gab. Siehe App/team_effects.",
+      "expects": [
+        "amount"
+      ],
+      "handler": "typed_pt_bonus"
+    },
+    {
+      "id": "discard_hand",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.81.0 Runde 3: generisches 'discard a card'/'discard N cards' als EFFEKT (nie als Kosten - siehe App/hand_evaluation). Waehlt deterministisch die wertaermsten Handkarten via hand_evaluation.choose_worst_hand_cards statt echter freier Spielerwahl.",
+      "expects": [
+        "amount"
+      ],
+      "handler": "discard_hand"
+    },
+    {
+      "id": "mill",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.81.0 Runde 3: echte Mill-N-Umsetzung (Bibliothek->Friedhof), vorher nur ein Value-Metrik-Stub ohne State-Mutation. Nur Selbst-Mill wird simuliert - gegnerische Bibliotheken existieren in diesem Engine-Modell nicht.",
+      "expects": [
+        "amount"
+      ],
+      "handler": "mill"
+    },
+    {
+      "id": "amass",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.81.0 Runde 3: Amass [Typ] N. Zaehler werden vereinfachend direkt in Power/Toughness der bestehenden Army-TokenGroup gefaltet statt in ein separates Counter-Feld (Tokens haben in diesem Engine-Modell keine individuellen Counter).",
+      "expects": [
+        "amount",
+        "token"
+      ],
+      "handler": "amass"
+    },
+    {
+      "id": "explore",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.81.0 Runde 3: Explore. Land -> Hand; sonst +1/+1-Counter und eine feste Heuristik (statt echter freier Spielerwahl) entscheidet, ob die aufgedeckte Karte oben bleibt oder in den Friedhof geht.",
+      "expects": [],
+      "handler": "explore"
+    },
+    {
+      "id": "bolster",
+      "category": "action",
+      "model_layer": "exact",
+      "description_de": "v4.81.0 Runde 3: Bolster N - N +1/+1-Counter auf die eigene Kreatur mit der geringsten Toughness.",
+      "expects": [
+        "amount"
+      ],
+      "handler": "bolster"
+    },
+    {
+      "id": "fabricate",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.81.0 Runde 3: Fabricate N. Echte Regel ist eine Wahl (Counter ODER Token-Erzeugung) - hier vereinfachend immer Counter auf die Kreatur selbst.",
+      "expects": [
+        "amount"
+      ],
+      "handler": "fabricate"
+    },
+    {
+      "id": "monstrosity",
+      "category": "action",
+      "model_layer": "exact",
+      "description_de": "v4.81.0 Runde 3: Monstrosity N - nur einmal pro Kreatur nutzbar (getrackt ueber einen 'monstrous'-Named-Counter als reines Flag).",
+      "expects": [
+        "amount"
+      ],
+      "handler": "monstrosity"
+    },
+    {
+      "id": "populate",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.81.0 Runde 3: Populate. Kopiert vereinfachend immer die staerkste eigene Kreatur-TokenGroup (Power+Toughness) statt echter freier Spielerwahl.",
+      "expects": [],
+      "handler": "populate"
+    },
+    {
+      "id": "support",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.81.0 Runde 3: Support N. Echte Regel erlaubt beliebige Ziele (auch gegnerisch) - hier vereinfachend nur eigene Kreaturen, schwaechste Toughness zuerst, analog zu Bolster.",
+      "expects": [
+        "amount"
+      ],
+      "handler": "support"
+    },
+    {
+      "id": "discover",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.81.0 Runde 3: Discover N. Der Free-Cast-Zweig der echten Regel wird vereinfachend immer durch 'in die Hand' ersetzt; uebersprungene Karten wandern wie im Original in den Friedhof.",
+      "expects": [
+        "amount"
+      ],
+      "handler": "discover"
+    },
+    {
+      "id": "monarch",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.81.0 Runde 3: 'You become the monarch'. Nicht simulierbar (kein Gegner-Board), daher bewusst als befristeter Bonus modelliert: 2 zusaetzliche Kartenzuege statt einer unsimulierbaren 'bis ein Gegner Kampfschaden zufuegt'-Dauer.",
+      "expects": [],
+      "handler": "monarch"
+    },
+    {
+      "id": "goad",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.82.0 Runde 4: Goad. Kein Gegner-Board -> temporaere Unterdrueckung gegnerischer Angreifer (Druck-Refund) fuer genau die naechste Gegnerrunde. 'each creature your opponents control' = ganze Runde, 'each creature target player controls' = goad_one_player_units.",
+      "expects": [],
+      "handler": "goad"
+    },
+    {
+      "id": "detain",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "v4.82.0 Runde 4: Detain. Wie Goad: N gegnerische Angreifer fehlen in der naechsten Gegnerrunde.",
+      "expects": [],
+      "handler": "detain"
+    },
+    {
+      "id": "fight",
+      "category": "action",
+      "model_layer": "probabilistic",
+      "description_de": "v4.82.0 Runde 4: Fight / 'deals damage equal to its power to target creature'. Gegen eine abstrakte Gegnerkreatur mit typischer Power/Toughness der Gegnerfarbe(n): Kill-Anteil als Attrition (Removal-Wirkung auf das Gegner-Board), eigener Kaempfer stirbt, wenn die typische Gegner-Power seine Toughness erreicht.",
+      "expects": [],
+      "handler": "fight"
+    },
+    {
+      "id": "devotion_drain",
+      "category": "action",
+      "model_layer": "exact",
+      "description_de": "Jeder Gegner verliert X Leben, X = deine Hingabe an eine Farbe (Gray Merchant); optional gewinnst du das verlorene Leben (v4.83.0).",
+      "expects": [
+        "keyword"
+      ],
+      "handler": "devotion_drain"
+    },
+    {
+      "id": "land_search",
+      "category": "action",
+      "model_layer": "simplified",
+      "description_de": "Suche N Standardland-Karten (ggf. bestimmte Typen) und bringe sie (getappt) ins Spiel; optional weitere auf die Hand (Cultivate). v4.84.0.",
+      "expects": [
+        "amount",
+        "keyword",
+        "token"
+      ],
+      "handler": "land_search"
     }
   ],
-
   "static_keywords": [
-    { "id": "flying", "model_layer": "exact", "description_de": "Kann nur von Flying/Reach geblockt werden." },
-    { "id": "first strike", "model_layer": "exact", "description_de": "Schadenspriorität in einer separaten Schadensstufe." },
-    { "id": "double strike", "model_layer": "exact", "description_de": "Verursacht Schaden in beiden Combat-Damage-Stufen." },
-    { "id": "deathtouch", "model_layer": "exact", "description_de": "Jeder Schaden, egal wie gering, ist letal fuer Kreaturen." },
-    { "id": "haste", "model_layer": "exact", "description_de": "Keine Sommerkrankheit; kann sofort angreifen/tappen." },
-    { "id": "hexproof", "model_layer": "exact", "description_de": "Kann nicht von Gegnern gezielt werden." },
-    { "id": "indestructible", "model_layer": "exact", "description_de": "Wird nicht durch 'destroy' oder letalen Schaden zerstoert." },
-    { "id": "lifelink", "model_layer": "exact", "description_de": "Verursachter Schaden gewinnt gleichzeitig Leben." },
-    { "id": "menace", "model_layer": "exact", "description_de": "Muss von mindestens zwei Kreaturen geblockt werden." },
-    { "id": "reach", "model_layer": "exact", "description_de": "Kann Flying blocken." },
-    { "id": "trample", "model_layer": "simplified", "description_de": "Ueberschuessiger Blocking-Schaden geht zum Spieler durch." },
-    { "id": "vigilance", "model_layer": "exact", "description_de": "Tappt beim Angreifen nicht; bleibt combat-relevant, auch wenn spaeter fuer eine Ability getappt wird." },
-    { "id": "ward", "model_layer": "simplified", "description_de": "Zusatzkosten/Gegenwert bei gegnerischem Targeting." },
-    { "id": "flash", "model_layer": "exact", "description_de": "Kann wie ein Instant gecastet werden." },
-    { "id": "defender", "model_layer": "exact", "description_de": "Kann nicht angreifen." },
-    { "id": "protection", "model_layer": "simplified", "description_de": "Blockt/faengt/entzielt Effekte einer Qualitaet ab." },
-    { "id": "shroud", "model_layer": "exact", "description_de": "Kann von niemandem gezielt werden." }
+    {
+      "id": "flying",
+      "model_layer": "exact",
+      "description_de": "Kann nur von Flying/Reach geblockt werden."
+    },
+    {
+      "id": "first strike",
+      "model_layer": "exact",
+      "description_de": "Schadenspriorität in einer separaten Schadensstufe."
+    },
+    {
+      "id": "double strike",
+      "model_layer": "exact",
+      "description_de": "Verursacht Schaden in beiden Combat-Damage-Stufen."
+    },
+    {
+      "id": "deathtouch",
+      "model_layer": "exact",
+      "description_de": "Jeder Schaden, egal wie gering, ist letal fuer Kreaturen."
+    },
+    {
+      "id": "haste",
+      "model_layer": "exact",
+      "description_de": "Keine Sommerkrankheit; kann sofort angreifen/tappen."
+    },
+    {
+      "id": "hexproof",
+      "model_layer": "exact",
+      "description_de": "Kann nicht von Gegnern gezielt werden."
+    },
+    {
+      "id": "indestructible",
+      "model_layer": "exact",
+      "description_de": "Wird nicht durch 'destroy' oder letalen Schaden zerstoert."
+    },
+    {
+      "id": "lifelink",
+      "model_layer": "exact",
+      "description_de": "Verursachter Schaden gewinnt gleichzeitig Leben."
+    },
+    {
+      "id": "menace",
+      "model_layer": "exact",
+      "description_de": "Muss von mindestens zwei Kreaturen geblockt werden."
+    },
+    {
+      "id": "reach",
+      "model_layer": "exact",
+      "description_de": "Kann Flying blocken."
+    },
+    {
+      "id": "trample",
+      "model_layer": "simplified",
+      "description_de": "Ueberschuessiger Blocking-Schaden geht zum Spieler durch."
+    },
+    {
+      "id": "vigilance",
+      "model_layer": "exact",
+      "description_de": "Tappt beim Angreifen nicht; bleibt combat-relevant, auch wenn spaeter fuer eine Ability getappt wird."
+    },
+    {
+      "id": "ward",
+      "model_layer": "simplified",
+      "description_de": "Zusatzkosten/Gegenwert bei gegnerischem Targeting."
+    },
+    {
+      "id": "flash",
+      "model_layer": "exact",
+      "description_de": "Kann wie ein Instant gecastet werden."
+    },
+    {
+      "id": "defender",
+      "model_layer": "exact",
+      "description_de": "Kann nicht angreifen."
+    },
+    {
+      "id": "protection",
+      "model_layer": "simplified",
+      "description_de": "Blockt/faengt/entzielt Effekte einer Qualitaet ab."
+    },
+    {
+      "id": "shroud",
+      "model_layer": "exact",
+      "description_de": "Kann von niemandem gezielt werden."
+    }
   ]
 }

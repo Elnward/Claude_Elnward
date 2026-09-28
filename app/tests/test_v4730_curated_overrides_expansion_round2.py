@@ -44,11 +44,11 @@ class VersionSyncTests(unittest.TestCase):
     # jedem weiteren Versionssprung auf die jeweils aktuelle Version
     # aktualisiert (gleiche Konvention wie bei allen aelteren Sync-Checks).
     def test_engine_version_is_4_73_0(self):
-        self.assertEqual(engine.ENGINE_VERSION, "4.75.0")
+        self.assertEqual(engine.ENGINE_VERSION, "4.87.0")
 
     def test_gui_title_mentions_4_73_0(self):
         src = _GUI_SRC.read_text(encoding="utf-8")
-        self.assertIn("Commander Goldfish v4.75.0", src)
+        self.assertIn("Commander Goldfish v4.87.0", src)
 
     def test_readme_has_v4730_entry(self):
         text = _README.read_text(encoding="utf-8")
